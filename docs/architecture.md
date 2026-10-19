@@ -7,19 +7,19 @@
 ```
 Assets/_Project/
 ├── Scripts/
-│   ├── Domain/          DropThatSugar.Domain
-│   ├── App/             DropThatSugar.App
-│   ├── Infrastructure/  DropThatSugar.Infrastructure
-│   ├── Presentation/    DropThatSugar.Presentation
-│   └── Bootstrap/       DropThatSugar.Bootstrap
+│   ├── Domain/          SugarDash.Domain
+│   ├── App/             SugarDash.App
+│   ├── Infrastructure/  SugarDash.Infrastructure
+│   ├── Presentation/    SugarDash.Presentation
+│   └── Bootstrap/       SugarDash.Bootstrap
 └── Tests/
     └── EditMode/
-        ├── Domain/          DropThatSugar.Domain.Tests
-        └── Infrastructure/  DropThatSugar.Infrastructure.Tests
+        ├── Domain/          SugarDash.Domain.Tests
+        └── Infrastructure/  SugarDash.Infrastructure.Tests
 ```
 
-- 어셈블리 이름과 루트 네임스페이스는 같다. 예: `DropThatSugar.Domain`
-- 테스트는 EditMode 테스트로 작성한다. 다른 계층의 테스트 어셈블리는 필요할 때 `DropThatSugar.{계층}.Tests` 형식으로 추가한다.
+- 어셈블리 이름과 루트 네임스페이스는 같다. 예: `SugarDash.Domain`
+- 테스트는 EditMode 테스트로 작성한다. 다른 계층의 테스트 어셈블리는 필요할 때 `SugarDash.{계층}.Tests` 형식으로 추가한다.
 
 ## 2. 계층별 역할
 
@@ -109,19 +109,19 @@ Assets/_Project/
 
 1. Project 창에서 `Assets/_Project/Tests/EditMode/`를 선택하고 `Assets > Create > Testing > Tests Assembly Folder`를 실행한다.
 2. 생성된 폴더 이름을 계층 이름으로 바꾼다. 예: `App`
-3. asmdef 파일 이름을 `DropThatSugar.{계층}.Tests.asmdef`로 바꾼다. 이름 변경은 에디터에서 한다(`.meta` 유지).
+3. asmdef 파일 이름을 `SugarDash.{계층}.Tests.asmdef`로 바꾼다. 이름 변경은 에디터에서 한다(`.meta` 유지).
 4. asmdef 내용을 아래처럼 고친다. `optionalUnityReferences`는 템플릿 그대로 둔다.
-   - `name`, `rootNamespace`: `DropThatSugar.{계층}.Tests`
+   - `name`, `rootNamespace`: `SugarDash.{계층}.Tests`
    - `references`: 테스트 대상 계층과, 그 계층이 쓰는 타입의 어셈블리
    - `includePlatforms: ["Editor"]` 추가 (메뉴 템플릿은 Editor 전용이 아니어서 그대로 두면 PlayMode 테스트 어셈블리가 된다)
 
 ```json
 {
-    "name": "DropThatSugar.App.Tests",
-    "rootNamespace": "DropThatSugar.App.Tests",
+    "name": "SugarDash.App.Tests",
+    "rootNamespace": "SugarDash.App.Tests",
     "references": [
-        "DropThatSugar.App",
-        "DropThatSugar.Domain"
+        "SugarDash.App",
+        "SugarDash.Domain"
     ],
     "optionalUnityReferences": [
         "TestAssemblies"

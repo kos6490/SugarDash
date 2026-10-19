@@ -1,8 +1,8 @@
 {
-    "name": "DropThatSugar.Domain.Tests",
-    "rootNamespace": "DropThatSugar.Domain.Tests",
+    "name": "SugarDash.Domain.Tests",
+    "rootNamespace": "SugarDash.Domain.Tests",
     "references": [
-        "DropThatSugar.Domain"
+        "SugarDash.Domain"
     ],
     "optionalUnityReferences": [
         "TestAssemblies"

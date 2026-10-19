@@ -8,8 +8,8 @@
 | 항목 | 값 | 비고 |
 | --- | --- | --- |
 | Company Name | `ZeroSugar` | `Application.persistentDataPath` 경로에 들어간다. 바꾸면 저장 위치가 바뀐다 |
-| Product Name | `DropThatSugar` | |
-| Package Name (Android) | `com.zerosugar.dropthatsugar` | 스토어 등록 후에는 바꿀 수 없다 |
+| Product Name | `SugarDash` | |
+| Package Name (Android) | `com.zerosugar.sugardash` | 스토어 등록 후에는 바꿀 수 없다 |
 | Version | `0.1.0` | `bundleVersion` |
 | Bundle Version Code | `1` | `AndroidBundleVersionCode` |
 

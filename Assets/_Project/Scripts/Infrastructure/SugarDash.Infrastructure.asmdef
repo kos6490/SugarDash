@@ -1,17 +1,16 @@
 {
-    "name": "DropThatSugar.Bootstrap",
-    "rootNamespace": "DropThatSugar.Bootstrap",
+    "name": "SugarDash.Infrastructure",
+    "rootNamespace": "SugarDash.Infrastructure",
     "references": [
-        "DropThatSugar.Domain",
-        "DropThatSugar.App",
-        "DropThatSugar.Infrastructure",
-        "DropThatSugar.Presentation"
+        "SugarDash.Domain"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
