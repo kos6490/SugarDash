@@ -1,0 +1,18 @@
+{
+    "name": "DropThatSugar.Infrastructure",
+    "rootNamespace": "DropThatSugar.Infrastructure",
+    "references": [
+        "DropThatSugar.Domain"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

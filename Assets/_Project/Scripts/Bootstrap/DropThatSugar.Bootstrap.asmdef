@@ -1,0 +1,19 @@
+{
+    "name": "DropThatSugar.Bootstrap",
+    "rootNamespace": "DropThatSugar.Bootstrap",
+    "references": [
+        "DropThatSugar.Domain",
+        "DropThatSugar.App",
+        "DropThatSugar.Infrastructure",
+        "DropThatSugar.Presentation"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -30,6 +30,7 @@ crashlytics-build.properties
 
 # ===== IDE =====
 .vs/
+.vsconfig
 .idea/
 .vscode/*
 !.vscode/extensions.json

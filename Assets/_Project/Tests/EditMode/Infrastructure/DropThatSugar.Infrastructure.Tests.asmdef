@@ -1,0 +1,14 @@
+{
+    "name": "DropThatSugar.Infrastructure.Tests",
+    "rootNamespace": "DropThatSugar.Infrastructure.Tests",
+    "references": [
+        "DropThatSugar.Infrastructure",
+        "DropThatSugar.Domain"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ]
+}

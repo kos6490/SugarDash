@@ -1,0 +1,19 @@
+{
+    "name": "DropThatSugar.Presentation",
+    "rootNamespace": "DropThatSugar.Presentation",
+    "references": [
+        "DropThatSugar.App",
+        "DropThatSugar.Domain",
+        "XCharts.Runtime",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
