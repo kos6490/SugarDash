@@ -1,0 +1,14 @@
+{
+    "name": "SugarDash.Infrastructure.Tests",
+    "rootNamespace": "SugarDash.Infrastructure.Tests",
+    "references": [
+        "SugarDash.Infrastructure",
+        "SugarDash.Domain"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ]
+}

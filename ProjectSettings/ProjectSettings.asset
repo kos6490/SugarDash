@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: ZeroSugar
-  productName: DropThatSugar
+  productName: SugarDash
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -170,7 +170,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.4
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.zerosugar.dropthatsugar
+    Android: com.zerosugar.sugardash
     Standalone: com.Unity-Technologies.com.unity.template.urp-blank
     iPhone: com.Unity-Technologies.com.unity.template.urp-blank
   buildNumber:
@@ -850,14 +850,14 @@ PlayerSettings:
   editorAssembliesCompatibilityLevel: 1
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: DropThatSugar
+  metroPackageName: SugarDash
   metroPackageVersion: 
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
   metroCertificateIssuer: 
   metroCertificateNotAfter: 0000000000000000
-  metroApplicationDescription: DropThatSugar
+  metroApplicationDescription: SugarDash
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 0
@@ -931,7 +931,7 @@ PlayerSettings:
   cloudProjectId: 4b020dcb-33ff-498a-9baa-8e7df4781120
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: DropThatSugar 2026-10-12_14-34-05
+  projectName: SugarDash
   organizationId: kos4913
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0

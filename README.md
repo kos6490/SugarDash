@@ -1,4 +1,4 @@
-# DropThatSugar
+# SugarDash
 
 제1형 당뇨병 아동의 자가 관리 교육을 위한 기능성 게임 (Serious Game)
 
@@ -62,8 +62,8 @@ Unity Hub
 위 폴더 위치로 이동 후 아래 명령어를 순서대로 실행
 
 ```bash
-git clone https://github.com/kos6490/DropThatSugar.git
-cd DropThatSugar
+git clone https://github.com/kos6490/SugarDash.git
+cd SugarDash
 git lfs install
 git lfs pull
 git config core.hooksPath .githooks
@@ -85,7 +85,7 @@ git config core.hooksPath .githooks
 ### 2-4. 프로젝트 열기
 
 1. Hub `Projects > Add > Add project from disk`
-2. 2-2에서 클론한 `DropThatSugar` 폴더(`Assets/`가 있는 폴더, 예: `C:\dev\DropThatSugar`, `~/dev/DropThatSugar`) 선택 후 열기
+2. 2-2에서 클론한 `SugarDash` 폴더(`Assets/`가 있는 폴더, 예: `C:\dev\SugarDash`, `~/dev/SugarDash`) 선택 후 열기
 3. 첫 실행은 오래 걸릴 수 있음
 
 ### 2-5. 스크립트 편집기 연동
@@ -115,7 +115,7 @@ git config core.hooksPath .githooks
 
 씬·프리팹 충돌 시 Unity 전용 병합 도구를 쓰기 위한 로컬 설정, 리포마다 1회 필요
 
-1. 2-2에서 클론한 `DropThatSugar` 폴더(예: `C:\dev\DropThatSugar`, `~/dev/DropThatSugar`)에서 터미널을 열고, 아래 명령어를 실행해 로컬 설정 파일을 열기
+1. 2-2에서 클론한 `SugarDash` 폴더(예: `C:\dev\SugarDash`, `~/dev/SugarDash`)에서 터미널을 열고, 아래 명령어를 실행해 로컬 설정 파일을 열기
 
 ```bash
 git config --local -e

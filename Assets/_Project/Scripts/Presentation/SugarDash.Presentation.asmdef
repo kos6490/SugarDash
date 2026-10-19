@@ -1,16 +1,17 @@
 {
-    "name": "DropThatSugar.Infrastructure",
-    "rootNamespace": "DropThatSugar.Infrastructure",
+    "name": "SugarDash.Presentation",
+    "rootNamespace": "SugarDash.Presentation",
     "references": [
-        "DropThatSugar.Domain"
+        "SugarDash.App",
+        "SugarDash.Domain",
+        "XCharts.Runtime",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [
-        "Newtonsoft.Json.dll"
-    ],
+    "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

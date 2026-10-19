@@ -1,9 +1,7 @@
 {
-    "name": "DropThatSugar.App",
-    "rootNamespace": "DropThatSugar.App",
-    "references": [
-        "DropThatSugar.Domain"
-    ],
+    "name": "SugarDash.Domain",
+    "rootNamespace": "SugarDash.Domain",
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
@@ -12,5 +10,5 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
-    "noEngineReferences": false
+    "noEngineReferences": true
 }

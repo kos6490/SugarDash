@@ -1,11 +1,11 @@
 {
-    "name": "DropThatSugar.Presentation",
-    "rootNamespace": "DropThatSugar.Presentation",
+    "name": "SugarDash.Bootstrap",
+    "rootNamespace": "SugarDash.Bootstrap",
     "references": [
-        "DropThatSugar.App",
-        "DropThatSugar.Domain",
-        "XCharts.Runtime",
-        "Unity.InputSystem"
+        "SugarDash.Domain",
+        "SugarDash.App",
+        "SugarDash.Infrastructure",
+        "SugarDash.Presentation"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
