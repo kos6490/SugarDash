@@ -1,0 +1,27 @@
+{
+  "configVersion": "0.1.0",
+  "unit": "mg/dL",
+  "time": {
+    "timeScale": null,
+    "recheckIntervalRealMin": 15,
+    "recheckIntervalSource": "ISPAD 2022 Ch.12, doi:10.1111/pedi.13443"
+  },
+  "glucose": {
+    "initial": null,
+    "min": null,
+    "max": null,
+    "hypoThreshold": null,
+    "hypoReleaseMargin": null,
+    "hyperThreshold": null,
+    "baseDecayPerSec": null,
+    "runDecayPerSec": null
+  },
+  "recurrence": { "cooldownSec": null },
+  "display": { "delaySec": null, "warningThreshold": null },
+  "hypo": { "step1TimeLimitSec": null },
+  "suddenDrop": { "chancePerSec": null, "amount": null, "durationSec": null },
+  "snacks": [
+    { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
+    { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
+  ]
+}

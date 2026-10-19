@@ -6,6 +6,7 @@
 
 ```
 Assets/_Project/
+├── Config/              game-config.json (빌드에 포함되는 설정, PLACEHOLDER는 null)
 ├── Scripts/
 │   ├── Domain/          SugarDash.Domain
 │   ├── App/             SugarDash.App
