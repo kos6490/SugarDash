@@ -6,6 +6,7 @@
 
 ```
 Assets/_Project/
+├── Config/              game-config.json (빌드에 포함되는 설정, PLACEHOLDER는 null)
 ├── Scripts/
 │   ├── Domain/          SugarDash.Domain
 │   ├── App/             SugarDash.App
@@ -27,11 +28,21 @@ Assets/_Project/
 | --- | --- |
 | Domain | 혈당 모델, 이벤트 결정, 4단계 대처 상태 기계, 점수·지표·진행 판정 같은 게임 규칙. Unity와 직렬화 라이브러리에 의존하지 않는 순수 C# 코드 |
 | App | 화면·게임 상태 흐름, 주행 진행, 구간 해금과 퀴즈 관문 흐름. 판정은 Domain에 맡긴다 |
-| Infrastructure | 설정 읽기, 기록 저장·조회 같은 파일 입출력. Domain이 정의한 인터페이스(포트)를 구현한다 |
+| Infrastructure | 설정 읽기, 기록 저장·조회 같은 파일 입출력과 난수 생성. Domain이 정의한 인터페이스(포트)를 구현한다 |
 | Presentation | 입력, 캐릭터·트랙, HUD, 선택지 UI, 결과 화면, 보호자 리포트 차트(XCharts) 같은 화면과 MonoBehaviour |
 | Bootstrap | 모든 계층을 참조하는 조립 지점. 구현체를 생성해 연결하고 주입한다 |
 
 - 의존성은 Bootstrap에서만 만들고 연결한다. 다른 계층에서 싱글턴이나 `FindObjectOfType` 같은 오브젝트 검색으로 의존성을 얻지 않는다.
+- Domain은 시간과 난수를 직접 얻지 않는다. 경과 시간은 인자로 받고, 난수는 `IRandomSource` 포트로 주입받는다. 그래야 테스트가 재현된다.
+
+| 포트 (Domain) | 구현 (Infrastructure) | 용도 |
+| --- | --- | --- |
+| `IConfigSource` | `ConfigProvider` | 설정 읽기. JSON을 도메인 설정 객체로 바꾸고 불변식을 검증한다 |
+| `ILogRepository` | `LogRepository` | 기록 쓰기 |
+| `ILogQuery` | `ReportQueryService` | 기록 조회 |
+| `IRandomSource` | `SystemRandomSource` | 시드 지정 가능한 난수 (`System.Random`) |
+
+- 혈당 모델과 이벤트 판정의 상세 설계는 [glucose-model.md](glucose-model.md)에 있다.
 
 ## 3. 참조 규칙
 
