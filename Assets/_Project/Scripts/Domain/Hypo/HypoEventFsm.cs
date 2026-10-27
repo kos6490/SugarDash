@@ -117,7 +117,7 @@ namespace SugarDash.Domain.Hypo
                     Error(HypoStep.Notify, null, HypoErrorCode.RcNoNotify, Resolve);
                     break;
                 case HypoPhase.GuardianPrompt:
-                    Eliminate();
+                    Eliminate(EliminationCause.PromptTimeout);
                     break;
                 case HypoPhase.ResumeCountdown:
                     Publish(new GraceStarted(EventId, _model.SimTime, _model.DecisionTime));
@@ -230,7 +230,7 @@ namespace SugarDash.Domain.Hypo
                     Error(HypoStep.Notify, ChoiceRunAgain, HypoErrorCode.RcNoNotify, Resolve);
                     return true;
                 case HypoPhase.GuardianPrompt:
-                    Eliminate();
+                    Eliminate(EliminationCause.Declined);
                     return true;
                 default:
                     return false;
@@ -360,9 +360,10 @@ namespace SugarDash.Domain.Hypo
             afterNotify();
         }
 
-        private void Eliminate()
+        private void Eliminate(EliminationCause cause)
         {
-            Publish(new RunEliminated(EventId, _promptStep, _promptError, _model.SimTime, _model.DecisionTime));
+            Publish(new RunEliminated(EventId, _promptStep, _promptError, cause, _model.SimTime,
+                _model.DecisionTime));
             _afterNotify = null;
             Phase = HypoPhase.Eliminated;
         }
@@ -377,8 +378,10 @@ namespace SugarDash.Domain.Hypo
         private void PublishAnswer(HypoStep step, string choiceId, bool isCorrect, HypoErrorCode code,
             bool helpInstead, bool measuredBeforeWarning)
         {
+            // 큰 프레임 dt 뒤의 시간 초과처럼 마감을 넘겨 처리돼도 판단 시간은 제한 시간을 넘기지 않는다.
+            double decisionSec = Math.Min(_model.DecisionTime, _deadline) - _phaseStart;
             Publish(new StepAnswered(EventId, step, choiceId, isCorrect, code, helpInstead,
-                _model.DecisionTime - _phaseStart, measuredBeforeWarning, _model.SimTime, _model.DecisionTime));
+                decisionSec, measuredBeforeWarning, _model.SimTime, _model.DecisionTime));
         }
 
         private void PublishMeter(int eventId, bool inGrace)
