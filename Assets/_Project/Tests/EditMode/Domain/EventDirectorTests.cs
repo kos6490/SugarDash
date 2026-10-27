@@ -22,6 +22,7 @@ namespace SugarDash.Domain.Tests
         private EventDirector _director;
         private List<HypoEventTriggered> _hypos;
         private List<SuddenDropStarted> _drops;
+        private List<GaugeWarningRaised> _warnings;
 
         private void Setup(Action<ConfigBuilder> configure, params double[] randoms)
         {
@@ -33,6 +34,8 @@ namespace SugarDash.Domain.Tests
             _drops = new List<SuddenDropStarted>();
             bus.Subscribe<HypoEventTriggered>(_hypos.Add);
             bus.Subscribe<SuddenDropStarted>(_drops.Add);
+            _warnings = new List<GaugeWarningRaised>();
+            bus.Subscribe<GaugeWarningRaised>(_warnings.Add);
             _model = new GlucoseModel(config);
             _director = new EventDirector(config, _model, new FakeRandom(randoms), bus);
         }
@@ -42,7 +45,7 @@ namespace SugarDash.Domain.Tests
         {
             for (int i = 0; i < seconds; i++)
             {
-                _model.Tick(1, 0);
+                _model.Tick(1, 1, 1, 0);
                 _director.Evaluate(1);
             }
         }
@@ -76,7 +79,7 @@ namespace SugarDash.Domain.Tests
             Assert.That(_hypos, Has.Count.EqualTo(1));
             Assert.That(_hypos[0].IsRecurrence, Is.False);
             Assert.That(_hypos[0].Actual, Is.EqualTo(69).Within(1e-9));
-            Assert.That(_hypos[0].SimTime, Is.EqualTo(3).Within(1e-9));
+            Assert.That(_hypos[0].SimT, Is.EqualTo(3).Within(1e-9));
             Assert.That(_director.IsHypoEventActive, Is.True);
         }
 
@@ -86,6 +89,7 @@ namespace SugarDash.Domain.Tests
             Setup(b => { b.Initial = 72; b.BaseDecayPerSec = 1; }, Never(30));
             Run(3);
             _director.NotifyHypoEventEnded();
+            _director.NotifyGraceEnded();
 
             Run(9); // cooldown 10 미만
             Assert.That(_hypos, Has.Count.EqualTo(1));
@@ -101,6 +105,7 @@ namespace SugarDash.Domain.Tests
             Setup(b => { b.Initial = 72; b.BaseDecayPerSec = 1; }, Never(40));
             Run(3); // 69
             _director.NotifyHypoEventEnded();
+            _director.NotifyGraceEnded();
             _model.EatSnack("juice", 1);
 
             Run(3); // 69 - 3 + 30 = 96 ≥ 80 → 재무장
@@ -117,6 +122,7 @@ namespace SugarDash.Domain.Tests
             Setup(b => { b.Initial = 72; b.BaseDecayPerSec = 0.25; }, Never(60));
             Run(15); // 9초에 발동, 15초에 68.25
             _director.NotifyHypoEventEnded();
+            _director.NotifyGraceEnded();
             _model.EatSnack("juice", 0.25); // +7.5, 최고 75
 
             Run(10); // cooldown 종료 시 73.25, 70~80 사이
@@ -143,13 +149,13 @@ namespace SugarDash.Domain.Tests
         {
             Setup(b => b.SuddenDropChancePerSec = 0.5, 0.1);
 
-            _model.Tick(1, 0);
+            _model.Tick(1, 1, 1, 0);
             _director.Evaluate(1);
 
             Assert.That(_drops, Has.Count.EqualTo(1));
             Assert.That(_model.IsSuddenDropActive, Is.True);
 
-            _model.Tick(1, 0);
+            _model.Tick(1, 1, 1, 0);
             _director.Evaluate(1); // 진행 중이면 난수를 읽지 않는다
             Assert.That(_drops, Has.Count.EqualTo(1));
         }
@@ -159,7 +165,7 @@ namespace SugarDash.Domain.Tests
         {
             Setup(b => b.SuddenDropChancePerSec = 0.5, 0.6);
 
-            _model.Tick(1, 0);
+            _model.Tick(1, 1, 1, 0);
             _director.Evaluate(1);
 
             Assert.That(_drops, Is.Empty);
@@ -171,7 +177,7 @@ namespace SugarDash.Domain.Tests
             // p = 1 − (1 − 0.5)^2 = 0.75
             Setup(b => b.SuddenDropChancePerSec = 0.5, 0.7);
 
-            _model.Tick(2, 0);
+            _model.Tick(2, 2, 2, 0);
             _director.Evaluate(2);
 
             Assert.That(_drops, Has.Count.EqualTo(1));
@@ -183,11 +189,96 @@ namespace SugarDash.Domain.Tests
             Setup(b => b.SuddenDropChancePerSec = 1); // 난수 없음: 읽으면 예외
 
             _director.Evaluate(0);
-            _model.SetMode(GlucoseClockMode.ActualFrozen);
-            _model.Tick(1, 0);
-            _director.Evaluate(1);
+            _model.Tick(0, 0, 1, 0);
+            _director.Evaluate(0);
 
             Assert.That(_drops, Is.Empty);
+        }
+
+        [Test]
+        public void EventIds_IncreaseFromOne()
+        {
+            Setup(b => { b.Initial = 72; b.BaseDecayPerSec = 1; });
+            Run(3);
+            _director.NotifyHypoEventEnded();
+            _director.NotifyGraceEnded();
+
+            Run(10);
+
+            Assert.That(_hypos, Has.Count.EqualTo(2));
+            Assert.That(_hypos[0].EventId, Is.EqualTo(1));
+            Assert.That(_hypos[1].EventId, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void GaugeWarning_RaisedOnceWhenDisplayedCrossesBelow()
+        {
+            Setup(b => b.BaseDecayPerSec = 1); // warning 80, delay 3
+
+            Run(42); // 표시 = actual(39) = 81
+            Assert.That(_warnings, Is.Empty);
+            Assert.That(_director.IsGaugeWarningOn, Is.False);
+
+            Run(2); // 표시 = actual(41) = 79
+            Assert.That(_warnings, Has.Count.EqualTo(1));
+            Assert.That(_warnings[0].Displayed, Is.EqualTo(79).Within(1e-9));
+            Assert.That(_director.IsGaugeWarningOn, Is.True);
+
+            Run(3);
+            Assert.That(_warnings, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void GaugeWarning_TurnsOffWhenDisplayedRecovers_AndCanRaiseAgain()
+        {
+            Setup(b => b.BaseDecayPerSec = 1);
+            Run(44); // 경고 켜짐, actual 76
+            _model.EatSnack("juice", 1);
+
+            Run(6); // actual(47) = 103, 표시 = 103
+            Assert.That(_director.IsGaugeWarningOn, Is.False);
+
+            Run(25); // 표시 = actual(72) = 78
+            Assert.That(_warnings, Has.Count.EqualTo(2));
+            Assert.That(_director.IsGaugeWarningOn, Is.True);
+        }
+
+        [Test]
+        public void GaugeWarning_InitiallyOn_IsNotPublished()
+        {
+            Setup(b => b.Initial = 75);
+
+            Assert.That(_director.IsGaugeWarningOn, Is.True);
+            Run(1);
+            Assert.That(_warnings, Is.Empty);
+        }
+
+        [Test]
+        public void DuringSuppression_NoTriggerAndNoSuddenDrop()
+        {
+            Setup(b => { b.Initial = 72; b.BaseDecayPerSec = 1; b.SuddenDropChancePerSec = 0.5; },
+                0.99, 0.99, 0.99, 0.99);
+            Run(3); // 발동, 난수 3개 사용
+            _director.NotifyHypoEventEnded();
+
+            Run(20); // cooldown 10보다 길다. 억제 중에는 난수를 읽지 않는다.
+            Assert.That(_hypos, Has.Count.EqualTo(1));
+            Assert.That(_drops, Is.Empty);
+
+            _director.NotifyGraceEnded();
+            Run(1); // 남은 난수 1개로 급하강 판정(미발생), 재발 발동
+
+            Assert.That(_hypos, Has.Count.EqualTo(2));
+            Assert.That(_hypos[1].IsRecurrence, Is.True);
+            Assert.That(_drops, Is.Empty);
+        }
+
+        [Test]
+        public void NotifyGraceEnded_WithoutSuppression_Throws()
+        {
+            Setup(null);
+
+            Assert.Throws<InvalidOperationException>(() => _director.NotifyGraceEnded());
         }
 
         [Test]

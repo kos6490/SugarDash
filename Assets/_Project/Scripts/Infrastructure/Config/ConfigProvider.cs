@@ -66,7 +66,8 @@ namespace SugarDash.Infrastructure.Config
                 var timeConfig = new TimeConfig(
                     Number(time?.TimeScale, "time.timeScale", time),
                     Number(time?.RecheckIntervalRealMin, "time.recheckIntervalRealMin", time),
-                    Text(time?.RecheckIntervalSource, "time.recheckIntervalSource", time));
+                    Text(time?.RecheckIntervalSource, "time.recheckIntervalSource", time),
+                    Number(time?.FastForwardTickSimSec, "time.fastForwardTickSimSec", time));
 
                 var glucose = Section(dto.Glucose, "glucose");
                 var levels = new GlucoseLevelConfig(
@@ -77,7 +78,8 @@ namespace SugarDash.Infrastructure.Config
                     Number(glucose?.HypoReleaseMargin, "glucose.hypoReleaseMargin", glucose),
                     Number(glucose?.HyperThreshold, "glucose.hyperThreshold", glucose),
                     Number(glucose?.BaseDecayPerSec, "glucose.baseDecayPerSec", glucose),
-                    Number(glucose?.RunDecayPerSec, "glucose.runDecayPerSec", glucose));
+                    Number(glucose?.RunDecayPerSec, "glucose.runDecayPerSec", glucose),
+                    Number(glucose?.NormalRangeMin, "glucose.normalRangeMin", glucose));
 
                 var recurrence = Section(dto.Recurrence, "recurrence");
                 var recurrenceConfig = new RecurrenceConfig(
@@ -89,7 +91,20 @@ namespace SugarDash.Infrastructure.Config
                     Number(display?.WarningThreshold, "display.warningThreshold", display));
 
                 var hypo = Section(dto.Hypo, "hypo");
-                var hypoConfig = new HypoConfig(Number(hypo?.Step1TimeLimitSec, "hypo.step1TimeLimitSec", hypo));
+                var doses = hypo == null ? null : Section(hypo.Doses, "hypo.doses");
+                var hypoConfig = new HypoConfig(
+                    Number(hypo?.Step1TimeLimitSec, "hypo.step1TimeLimitSec", hypo),
+                    Number(hypo?.Step2TimeLimitSec, "hypo.step2TimeLimitSec", hypo),
+                    Number(hypo?.Step3TimeLimitSec, "hypo.step3TimeLimitSec", hypo),
+                    Number(hypo?.Step4TimeLimitSec, "hypo.step4TimeLimitSec", hypo),
+                    Number(hypo?.GuardianPromptTimeLimitSec, "hypo.guardianPromptTimeLimitSec", hypo),
+                    Number(hypo?.ResumeCountdownSec, "hypo.resumeCountdownSec", hypo),
+                    Number(hypo?.GraceSec, "hypo.graceSec", hypo),
+                    Text(hypo?.GuardianSnackId, "hypo.guardianSnackId", hypo),
+                    new DoseConfig(
+                        Number(doses?.Under, "hypo.doses.under", doses),
+                        Number(doses?.Proper, "hypo.doses.proper", doses),
+                        Number(doses?.Over, "hypo.doses.over", doses)));
 
                 var drop = Section(dto.SuddenDrop, "suddenDrop");
                 var dropConfig = new SuddenDropConfig(

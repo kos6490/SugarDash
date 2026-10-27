@@ -26,6 +26,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? TimeScale { get; set; }
         public double? RecheckIntervalRealMin { get; set; }
         public string RecheckIntervalSource { get; set; }
+        public double? FastForwardTickSimSec { get; set; }
     }
 
     [Preserve]
@@ -39,6 +40,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? HyperThreshold { get; set; }
         public double? BaseDecayPerSec { get; set; }
         public double? RunDecayPerSec { get; set; }
+        public double? NormalRangeMin { get; set; }
     }
 
     [Preserve]
@@ -58,6 +60,22 @@ namespace SugarDash.Infrastructure.Config.Dto
     public sealed class HypoDto
     {
         public double? Step1TimeLimitSec { get; set; }
+        public double? Step2TimeLimitSec { get; set; }
+        public double? Step3TimeLimitSec { get; set; }
+        public double? Step4TimeLimitSec { get; set; }
+        public double? GuardianPromptTimeLimitSec { get; set; }
+        public double? ResumeCountdownSec { get; set; }
+        public double? GraceSec { get; set; }
+        public string GuardianSnackId { get; set; }
+        public DosesDto Doses { get; set; }
+    }
+
+    [Preserve]
+    public sealed class DosesDto
+    {
+        public double? Under { get; set; }
+        public double? Proper { get; set; }
+        public double? Over { get; set; }
     }
 
     [Preserve]

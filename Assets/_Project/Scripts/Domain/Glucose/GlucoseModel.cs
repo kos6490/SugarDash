@@ -18,7 +18,6 @@ namespace SugarDash.Domain.Glucose
         private readonly DisplayDelayBuffer _display;
         private readonly List<double> _breakpoints = new List<double>();
 
-        private double _displayClock;
         private double _suddenDropEnd = double.NegativeInfinity;
 
         public GlucoseModel(GlucoseConfig config)
@@ -31,46 +30,33 @@ namespace SugarDash.Domain.Glucose
 
         public double Actual { get; private set; }
         public double Displayed => _display.Current;
-        /// <summary>혈당 모델 시계. 정지하거나 빨리 감긴다.</summary>
+        /// <summary>simDt 누적. 혈당 모델과 표시 혈당 지연 버퍼의 시계다. 로그의 SimT.</summary>
         public double SimTime { get; private set; }
-        /// <summary>항상 흐르는 시계. 단계 제한 시간과 판단 시간에 쓴다.</summary>
-        public double RealElapsed { get; private set; }
-        public GlucoseClockMode Mode { get; private set; } = GlucoseClockMode.Running;
+        /// <summary>decisionDt 누적. 단계 제한 시간과 판단 시간에 쓴다. 로그의 T.</summary>
+        public double DecisionTime { get; private set; }
         public bool IsSuddenDropActive => SimTime < _suddenDropEnd;
 
-        public void SetMode(GlucoseClockMode mode) => Mode = mode;
-
-        /// <param name="dtReal">실제 경과 시간(초).</param>
-        /// <param name="activity">달리기 강도 0~1. 주행 중이 아니면 0.</param>
-        public void Tick(double dtReal, double activity)
+        /// <summary>
+        /// 세 시계를 함께 진행한다(docs/superpowers/specs/2026-10-20-hypo-event-fsm-design.md 3절).
+        /// 기본 하강·간식 흡수·급하강·표시 지연은 simDt로, 달리기 감소는 worldDt가 흐를 때만 적용한다.
+        /// </summary>
+        /// <param name="simDt">혈당 모델 경과 시간(게임 초).</param>
+        /// <param name="worldDt">주행 경과 시간. 0(세계 정지) 또는 simDt와 같아야 한다.</param>
+        /// <param name="decisionDt">판단 시계 경과 시간.</param>
+        /// <param name="activity">달리기 강도 0~1.</param>
+        public void Tick(double simDt, double worldDt, double decisionDt, double activity)
         {
-            if (!(dtReal >= 0)) throw new ArgumentOutOfRangeException(nameof(dtReal), dtReal, "0 이상이어야 한다");
+            if (!(simDt >= 0)) throw new ArgumentOutOfRangeException(nameof(simDt), simDt, "0 이상이어야 한다");
+            if (!(decisionDt >= 0))
+                throw new ArgumentOutOfRangeException(nameof(decisionDt), decisionDt, "0 이상이어야 한다");
             if (!(activity >= 0 && activity <= 1))
                 throw new ArgumentOutOfRangeException(nameof(activity), activity, "0~1 이어야 한다");
+            if (worldDt != 0 && worldDt != simDt)
+                throw new ArgumentException($"worldDt는 0 또는 simDt와 같아야 한다 (worldDt={worldDt}, simDt={simDt})",
+                    nameof(worldDt));
 
-            RealElapsed += dtReal;
-            switch (Mode)
-            {
-                case GlucoseClockMode.Running:
-                    Advance(dtReal, activity);
-                    break;
-                case GlucoseClockMode.ActualFrozen:
-                    _displayClock += dtReal;
-                    _display.Add(_displayClock, Actual);
-                    break;
-                case GlucoseClockMode.AllFrozen:
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 4단계 재확인용 빨리 감기. 달리기 항은 0으로 두고 기본 하강과 간식 흡수만 적용한다.
-        /// 모드와 무관하게 simTime과 표시 시계를 함께 진행하고, realElapsed는 바꾸지 않는다.
-        /// </summary>
-        public void FastForward(double simSec)
-        {
-            if (!(simSec >= 0)) throw new ArgumentOutOfRangeException(nameof(simSec), simSec, "0 이상이어야 한다");
-            Advance(simSec, 0);
+            DecisionTime += decisionDt;
+            Advance(simDt, worldDt > 0 ? activity : 0);
         }
 
         /// <summary>아동이 실제로 고른 간식과 양을 그대로 반영한다(정책 A).</summary>
@@ -119,8 +105,7 @@ namespace SugarDash.Domain.Glucose
                 foreach (var window in _windows) delta += window.DeltaOver(segmentStart, segmentEnd);
 
                 Actual = Math.Max(levels.Min, Math.Min(levels.Max, Actual + delta));
-                _displayClock += segmentEnd - segmentStart;
-                _display.Add(_displayClock, Actual);
+                _display.Add(segmentEnd, Actual);
                 segmentStart = segmentEnd;
             }
 

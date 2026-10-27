@@ -3,13 +3,15 @@ namespace SugarDash.Domain.Events
     /// <summary>급하강 이벤트가 시작됐다.</summary>
     public sealed class SuddenDropStarted
     {
-        public SuddenDropStarted(double simTime, double realElapsed)
+        public SuddenDropStarted(double simT, double t)
         {
-            SimTime = simTime;
-            RealElapsed = realElapsed;
+            SimT = simT;
+            T = t;
         }
 
-        public double SimTime { get; }
-        public double RealElapsed { get; }
+        /// <summary>simDt 누적 시각.</summary>
+        public double SimT { get; }
+        /// <summary>decisionDt 누적 시각.</summary>
+        public double T { get; }
     }
 }

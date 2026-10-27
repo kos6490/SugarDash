@@ -23,7 +23,7 @@ dBG/dt = − baseDecay                      (시간 경과)
 ### 1.2 급하강
 - 확률 이벤트다. 발생 판정은 EventDirector가 하고, 난수는 `IRandomSource` 포트로 주입받아 단위 테스트가 재현되도록 한다. GlucoseModel은 판정된 급하강을 혈당에 적용만 한다.
 - 발생 확률은 `p = 1 − (1 − chancePerSec)^simDt`로 계산해 프레임 길이와 무관하게 한다.
-- 급하강은 simTime이 흐를 때만 판정한다(정지 구간에서는 발생하지 않음).
+- 급하강은 simTime이 흐를 때만 판정한다. 저혈당 이벤트 발동부터 재개 후 유예 시간 끝까지는 판정하지 않는다(2.3절).
 
 ### 1.3 시간 압축
 - 설정에 `timeScale`(실제 시간 ÷ 게임 시간)을 하나 둔다.
@@ -33,27 +33,46 @@ dBG/dt = − baseDecay                      (시간 경과)
 
 ## 2. 저혈당 이벤트 중 혈당과 시계
 
-### 2.1 시계 두 개
-| 시계 | 용도 | 동작 |
-|---|---|---|
-| `simTime` | 혈당 모델 | 정지하거나 빨리 감김 |
-| `realElapsed` | 단계 제한 시간, 판단 시간(지표) | 항상 흐름 |
+### 2.1 시계 세 개
+RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘긴다. 어떤 시계를 멈출지는 HypoEventFsm의 현재 단계가 정하고(`IsWorldFrozen`), RunController는 그 값을 읽어 worldDt를 0으로 만든다.
 
-`Tick(dtReal, activity)` 하나만 받는다. simTime으로 넘길지는 호출자(App, HypoEventFsm)가 지정한 시계 모드(`Running`, `ActualFrozen`, `AllFrozen`)로 정한다. 모델은 FSM 단계를 모른다. 기록(LogRepository)에는 두 시각을 모두 남긴다.
+| 시계 | 누적값(기록 필드) | 쓰는 곳 |
+|---|---|---|
+| `worldDt` | - | 러너 이동, 트랙 생성, 달리기로 인한 혈당 감소 |
+| `simDt` | `SimTime` (`SimT`) | 기본 하강, 간식 흡수, 급하강, 표시 혈당 지연 버퍼, cooldown, 유예 시간 |
+| `decisionDt` | `DecisionTime` (`T`) | HypoEventFsm 제한 시간, 판단 시간(지표) |
+
+- `GlucoseModel.Tick(simDt, worldDt, decisionDt, activity)`. `worldDt`는 0 또는 `simDt`와 같아야 한다. 모델은 FSM 단계를 모른다.
+- 기본 하강 = `baseDecayPerSec × simDt`, 달리기 감소 = `runDecayPerSec × activity × worldDt`.
+- 메뉴 일시정지와 앱 백그라운드 전환에서는 셋 다 0이다.
+- 모든 도메인 이벤트와 기록에 `T`와 `SimT`를 남긴다. 판단 시간은 `T`의 차이로 계산한다.
 
 ### 2.2 구간별 동작
-| 구간 | 실제 혈당 | 표시 혈당 시계 | 주행 |
+| 구간 | worldDt | simDt | decisionDt |
 |---|---|---|---|
-| 발동 ~ 1단계(위험 인지) | 정지 (발동 시점 값 고정) | 계속 진행 | 계속 |
-| 2단계(대응 선택) ~ 3단계(처치량) | 정지 | 정지 | 멈춤 |
-| 4단계(재확인) 진입 | 재측정 간격만큼 빨리 감기(fast-forward) | 함께 진행 | 멈춤 |
+| 일반 주행, 1단계(위험 인지) | 흐름 | 흐름 | 흐름 |
+| 2~4단계, 오류 후 알리기 대기, 재개 카운트다운 | 0 (세계 정지) | 흐름 | 흐름 |
+| 4단계 재측정 빨리 감기 | 0 | 재측정 간격만큼 진행 | 0 |
+| 재개 후 유예 시간 | 흐름 | 흐름 | 흐름 |
 
-- 1단계에서 표시 시계가 흘러야 게이지 경고가 발동 후 늦어도 `delaySec` 뒤에 뜬다(`warningThreshold = hypoThreshold`이면 정확히 `delaySec` 뒤). 그래야 "경고 후 눌러도 정답, 단 측정 선행은 아님" 판정이 성립한다.
-- 4단계 빨리 감기에서는 달리기 항을 0으로 두고 간식 흡수와 기본 하강만 적용한다. 실시간 대기는 없다. 재측정 결과는 결정적(deterministic)이다.
+- 1단계에서는 실제 혈당도 계속 내려간다(달리기 감소 포함). 표시 시계도 흐르므로 게이지 경고는 발동 후 늦어도 `delaySec` 뒤에 뜬다(`warningThreshold = hypoThreshold`이면 정확히 `delaySec` 뒤). 그래서 "경고 후 눌러도 정답, 단 측정 선행은 아님" 판정이 성립한다.
+- 2~4단계에도 기본 하강과 흡수는 simDt로 계속된다. 증상 연출 강도는 이 값을 따른다. 그래서 2~4단계에도 제한 시간을 둔다(혈당이 끝없이 내려가지 않게).
+- 재측정 빨리 감기는 재측정 간격(`RecheckIntervalGameSec`)을 `time.fastForwardTickSimSec` 간격으로 나눠 여러 번 Tick한다. 큰 값 하나로 넘기지 않는 것은 표시 혈당 지연 버퍼를 채워 재개 시점에 혈당바가 오른 값을 보여 주기 위해서다. 실시간 대기는 없고 결과는 결정적이다.
+- 화면 문구 "15분 뒤"와 재측정 간격(게임 초)은 다른 숫자다.
+
+### 2.3 재개와 유예 시간
+- 대처를 마치면 `hypo.resumeCountdownSec` 동안 카운트다운(세계 정지), 이어서 `hypo.graceSec`(simDt) 동안 유예 시간이다.
+- 유예 시간에는 저혈당 발동과 급하강 판정을 하지 않고 장애물을 만들지 않는다. 측정기를 누르면 `inGrace: true`로 기록한다.
+- cooldown은 대처를 마친 시점에 시작하며 유예 시간과 별개다. 유예 중에도 해제 수준 도달은 기록하고, 유예가 끝난 뒤 4절 규칙으로 판정한다.
+
+### 2.4 게이지 경고
+- 표시 혈당 < `display.warningThreshold`이면 경고가 켜져 있고, 경고선 이상으로 올라오면 꺼진다. 히스테리시스는 두지 않는다. 판정은 EventDirector가 한다.
+- 측정 선행은 누른 순간 경고가 꺼져 있었는지로 판정한다. 재발 이벤트처럼 발동 시점에 이미 경고가 켜져 있으면 측정 선행이 아니다.
 
 ## 3. 처치 반영 정책: 아동이 고른 양을 그대로 반영
 
 - 혈당에는 아동이 **실제로 고른** 간식과 양을 반영한다. "어른에게 알리기 → 정답 상태로 보정"은 서사와 채점(단계 진행)에만 적용하고, 혈당 값에는 적용하지 않는다.
+- 아동이 고른 것이 없을 때만 어른이 정답을 대신한다. 2단계에서 계속 달리기·당 없음·시간 초과·선택 대신 알리기면 어른이 빠른 당(`hypo.guardianSnackId`)을 건네고, 3단계에서 시간 초과·선택 대신 알리기면 어른이 적정량(`hypo.doses.proper`)을 넣는다.
 - 결과:
   - 과소 처치 또는 느린 당 선택 → 회복이 부족 → 재발생 조건(4장)에 따라 재발 이벤트가 발동할 수 있다.
   - 과잉 처치 → 고혈당 쪽으로 간다. 고혈당 이벤트("어른에게 알리기" 한 단계)가 **1순위 범위로 들어온다.**
@@ -78,7 +97,7 @@ dBG/dt = − baseDecay                      (시간 경과)
 
 - **순수 시간 지연(pure time delay)**: `display(t) = actual(t − delaySec)`.
 - 1차 저역통과 필터(low-pass filter)는 쓰지 않는다. 급하강 시 경고 시점이 `delaySec`를 넘을 수 있어 "1단계 제한 시간 > 지연" 불변식을 보장하지 못한다.
-- 구현: `(simTime, value)` 샘플을 링 버퍼(ring buffer)에 쌓고 `t − delaySec` 시점 값을 선형 보간(linear interpolation)으로 구한다. 시작 시 버퍼를 초기값으로 채운다. 단, 표시 시계는 2.2의 표를 따른다.
+- 구현: `(simTime, value)` 샘플을 쌓고 `t − delaySec` 시점 값을 선형 보간(linear interpolation)으로 구한다. 시작 시 버퍼를 초기값으로 채운다. 표시 시계는 simTime이다(2.2절).
 - 1순위 범위에서는 노이즈를 넣지 않는다(경고 깜빡임과 판정 시점 흔들림 방지).
 
 ## 6. 지표 정의 변경
@@ -102,7 +121,8 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
   "time": {
     "timeScale": null,
     "recheckIntervalRealMin": 15,
-    "recheckIntervalSource": "ISPAD 2022 Ch.12, doi:10.1111/pedi.13443"
+    "recheckIntervalSource": "ISPAD 2022 Ch.12, doi:10.1111/pedi.13443",
+    "fastForwardTickSimSec": null
   },
   "glucose": {
     "initial": null,
@@ -112,11 +132,22 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     "hypoReleaseMargin": null,
     "hyperThreshold": null,
     "baseDecayPerSec": null,
-    "runDecayPerSec": null
+    "runDecayPerSec": null,
+    "normalRangeMin": null
   },
   "recurrence": { "cooldownSec": null },
   "display": { "delaySec": null, "warningThreshold": null },
-  "hypo": { "step1TimeLimitSec": null },
+  "hypo": {
+    "step1TimeLimitSec": null,
+    "step2TimeLimitSec": null,
+    "step3TimeLimitSec": null,
+    "step4TimeLimitSec": null,
+    "guardianPromptTimeLimitSec": null,
+    "resumeCountdownSec": null,
+    "graceSec": null,
+    "guardianSnackId": "juice",
+    "doses": { "under": null, "proper": null, "over": null }
+  },
   "suddenDrop": { "chancePerSec": null, "amount": null, "durationSec": null },
   "snacks": [
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
@@ -126,6 +157,11 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 ```
 
 간식 id와 종류는 예시다. 실제 목록은 2·3단계 선택지와 함께 정한다.
+
+- `hypo.step1~4TimeLimitSec`, `guardianPromptTimeLimitSec`, `resumeCountdownSec`는 decisionDt 기준 초, `graceSec`는 simDt 기준 게임 초다. 4단계 제한 시간은 선택 하나당 적용한다.
+- `hypo.doses`는 간식 1회분에 곱하는 배수(과소·적정·과잉)다.
+- `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
+- `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
 
 ## 8. 불변식
 
@@ -144,17 +180,32 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 
 ### 8.2 교차 검증 (모든 설정 로드 후)
 12. `hypo.step1TimeLimitSec > display.delaySec` ← 핵심. 1단계 제한 시간은 HypoEventFsm 설정에 속한다.
+13. `hypoThreshold ≤ normalRangeMin < hyperThreshold`
+14. 재측정 간격(게임 초) `> display.delaySec`, `0 < fastForwardTickSimSec < display.delaySec`
+15. `step2~4TimeLimitSec`, `guardianPromptTimeLimitSec`, `resumeCountdownSec`, `graceSec` 모두 `> 0`
+16. `0 < doses.under < doses.proper < doses.over`
+17. `guardianSnackId`는 `snacks`에 있는 `fast` 간식이어야 한다.
+18. **적정 처치 회복 보장**. 최악의 경우에서 적정량을 먹고 재측정 빨리 감기를 마친 혈당이 정상 범위여야 한다.
+    - 최악의 투입 시점 혈당 `G0 = hypoThreshold − suddenDrop.amount − (baseDecay + runDecay) × step1Limit − baseDecay × (3 × guardianLimit + step2Limit + step3Limit)` (발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우)
+    - `G0 < min`이면 위반이다.
+    - 모든 `fast` 간식 각각에 대해 `G0 + A(w) − D ≥ normalRangeMin`이어야 한다.
+      - `A(w) = totalRise × doses.proper × clamp((w − onsetSec) / absorbSec, 0, 1)`
+      - `D = baseDecay × (step4Limit + guardianLimit + W)`, `W` = 재측정 간격(게임 초)
+      - 실제 혈당은 `w = W`, 표시 혈당은 `w = W − delaySec`로 두 번 확인한다.
+    - `W`가 양의 유한수가 아니면 14·18번은 건너뛴다(9번이 이미 보고).
+
+구간별 1단계 제한 시간 배율이 생기면(2순위) "모든 구간에서 `step1TimeLimitSec × 배율 > delaySec`"를 추가한다.
 
 ## 9. 영향받는 모듈
 
 | 모듈 | 영향 |
 |---|---|
-| HypoEventFsm | 단계별 혈당 정지·빨리 감기 호출, 재발 이벤트 구분, 정책 A |
+| HypoEventFsm | 4단계 판정, 오류 공통 처리, 탈락, 재측정 빨리 감기, 재개·유예, `IsWorldFrozen`, 정책 A |
 | 고혈당 처리 | 정책 A로 1순위 범위 편입, `hyperThreshold` 사용 |
-| MetricsCalculator | 불필요 측정 정의 변경, 재발 이벤트의 정확 대응률 포함 여부 |
-| EventDirector | 급하강 판정(`IRandomSource`), 저혈당 발동·cooldown·재무장·재발 판정 |
-| RunController | 1단계 중 주행 유지, 2~4단계 주행 정지 |
-| LogRepository | simTime·realElapsed 모두 기록, `isRecurrence`, 실제 선택한 간식과 양 |
+| MetricsCalculator | 불필요 측정 정의 변경, 재발 이벤트의 정확 대응률 포함 여부, 4단계는 재측정·알리기 두 기록을 묶어 계산 |
+| EventDirector | 급하강 판정(`IRandomSource`), 저혈당 발동·cooldown·재무장·재발 판정, EventId, 게이지 경고, 유예 중 억제 |
+| RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 Tick → Evaluate → Update 순서 호출 |
+| LogRepository | `SimT`·`T` 모두 기록, `isRecurrence`, `inGrace`, `helpInstead`, 실제 선택한 간식과 양(`DoseApplied`), 빨리 감기 전후 혈당 |
 | 설정 로더 | null 수집 실패, 교차 검증 단계 |
 
 ## 10. 남은 결정 사항

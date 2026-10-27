@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -98,7 +99,102 @@ namespace SugarDash.Domain.Config
                 errors.Add($"hypo.step1TimeLimitSec > display.delaySec 이어야 한다 " +
                            $"({config.Hypo.Step1TimeLimitSec} ≤ {g.Display.DelaySec})");
 
+            ValidateHypo(errors, config);
+
             return errors;
+        }
+
+        // 13~18. 저혈당 이벤트(HypoEventFsm) 설정.
+        private static void ValidateHypo(List<string> errors, GameConfig config)
+        {
+            var g = config.Glucose;
+            var levels = g.Levels;
+            var hypo = config.Hypo;
+            var doses = hypo.Doses;
+
+            // 13
+            if (!(levels.HypoThreshold <= levels.NormalRangeMin && levels.NormalRangeMin < levels.HyperThreshold))
+                errors.Add($"glucose: hypoThreshold ≤ normalRangeMin < hyperThreshold 이어야 한다 " +
+                           $"(hypoThreshold={levels.HypoThreshold}, normalRangeMin={levels.NormalRangeMin}, " +
+                           $"hyperThreshold={levels.HyperThreshold})");
+
+            // W가 유효하지 않으면 9번이 이미 보고하므로 W에서 나온 14·18번은 건너뛴다.
+            double recheck = g.Time.RecheckIntervalGameSec;
+            bool recheckValid = recheck > 0 && !double.IsInfinity(recheck);
+
+            // 14
+            if (recheckValid && !(recheck > g.Display.DelaySec))
+                errors.Add($"재측정 간격(게임 초) > display.delaySec 이어야 한다 ({recheck} ≤ {g.Display.DelaySec})");
+            double tick = g.Time.FastForwardTickSimSec;
+            if (!(tick > 0 && tick < g.Display.DelaySec))
+                errors.Add($"0 < time.fastForwardTickSimSec < display.delaySec 이어야 한다 " +
+                           $"(tick={tick}, delaySec={g.Display.DelaySec})");
+
+            // 15
+            Positive(errors, "hypo.step2TimeLimitSec", hypo.Step2TimeLimitSec);
+            Positive(errors, "hypo.step3TimeLimitSec", hypo.Step3TimeLimitSec);
+            Positive(errors, "hypo.step4TimeLimitSec", hypo.Step4TimeLimitSec);
+            Positive(errors, "hypo.guardianPromptTimeLimitSec", hypo.GuardianPromptTimeLimitSec);
+            Positive(errors, "hypo.resumeCountdownSec", hypo.ResumeCountdownSec);
+            Positive(errors, "hypo.graceSec", hypo.GraceSec);
+
+            // 16
+            if (!(0 < doses.Under && doses.Under < doses.Proper && doses.Proper < doses.Over))
+                errors.Add($"hypo.doses: 0 < under < proper < over 이어야 한다 " +
+                           $"(under={doses.Under}, proper={doses.Proper}, over={doses.Over})");
+
+            // 17
+            var guardianSnack = g.Snacks.FirstOrDefault(s => s.Id == hypo.GuardianSnackId);
+            if (guardianSnack == null || guardianSnack.Kind != SnackKind.Fast)
+                errors.Add($"hypo.guardianSnackId는 snacks에 있는 fast 간식이어야 한다 ({hypo.GuardianSnackId})");
+
+            // 18. 최악의 경우에서 적정량을 먹고 재측정 빨리 감기를 마치면 실제·표시 혈당 모두 정상 범위여야 한다.
+            if (!recheckValid) return;
+            double worstAtDose = WorstGlucoseAtDose(config);
+            if (!(worstAtDose >= levels.Min))
+                errors.Add($"최악의 경우 처치 시점 혈당이 glucose.min 아래로 내려간다 ({worstAtDose} < {levels.Min})");
+            foreach (var snack in g.Snacks.Where(s => s.Kind == SnackKind.Fast))
+            {
+                double actual = RecoveredGlucose(config, snack, recheck);
+                double displayed = RecoveredGlucose(config, snack, recheck - g.Display.DelaySec);
+                if (actual >= levels.NormalRangeMin && displayed >= levels.NormalRangeMin) continue;
+
+                errors.Add($"적정 처치 후 재측정 혈당이 normalRangeMin({levels.NormalRangeMin}) 미만이다 " +
+                           $"(간식 {snack.Id}: 실제 {actual}, 표시 {displayed})");
+            }
+        }
+
+        /// <summary>
+        /// 불변식 18의 보수적 하한. 처치 시점 혈당이 min 아래로 가는 설정은 따로 위반으로 본다.
+        /// </summary>
+        /// <param name="absorbWindow">투입부터 흡수가 진행된 simTime.</param>
+        private static double RecoveredGlucose(GameConfig config, SnackConfig snack, double absorbWindow)
+        {
+            var g = config.Glucose;
+            var hypo = config.Hypo;
+            double baseDecay = g.Levels.BaseDecayPerSec;
+            double guardian = hypo.GuardianPromptTimeLimitSec;
+            double recheck = g.Time.RecheckIntervalGameSec;
+
+            double worstAtDose = WorstGlucoseAtDose(config);
+            double absorbedRatio = Math.Max(0, Math.Min(1, (absorbWindow - snack.OnsetSec) / snack.AbsorbSec));
+            double absorbed = snack.TotalRise * hypo.Doses.Proper * absorbedRatio;
+            double decayAfterDose = baseDecay * (hypo.Step4TimeLimitSec + guardian + recheck);
+            return worstAtDose + absorbed - decayAfterDose;
+        }
+
+        /// <summary>
+        /// 발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우의 처치 시점 혈당.
+        /// </summary>
+        private static double WorstGlucoseAtDose(GameConfig config)
+        {
+            var g = config.Glucose;
+            var levels = g.Levels;
+            var hypo = config.Hypo;
+            double baseDecay = levels.BaseDecayPerSec;
+            return levels.HypoThreshold - g.SuddenDrop.Amount
+                   - (baseDecay + levels.RunDecayPerSec) * hypo.Step1TimeLimitSec
+                   - baseDecay * (3 * hypo.GuardianPromptTimeLimitSec + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec);
         }
 
         // NaN도 위반으로 잡도록 부정형으로 비교한다.

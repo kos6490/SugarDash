@@ -14,14 +14,19 @@ namespace SugarDash.Infrastructure.Tests
         private const string ValidJson = @"{
   ""configVersion"": ""test"",
   ""unit"": ""mg/dL"",
-  ""time"": { ""timeScale"": 150, ""recheckIntervalRealMin"": 15, ""recheckIntervalSource"": ""test"" },
+  ""time"": { ""timeScale"": 150, ""recheckIntervalRealMin"": 15, ""recheckIntervalSource"": ""test"",
+    ""fastForwardTickSimSec"": 0.5 },
   ""glucose"": {
     ""initial"": 120, ""min"": 20, ""max"": 400, ""hypoThreshold"": 70, ""hypoReleaseMargin"": 10,
-    ""hyperThreshold"": 250, ""baseDecayPerSec"": 0.5, ""runDecayPerSec"": 1
+    ""hyperThreshold"": 250, ""baseDecayPerSec"": 0.5, ""runDecayPerSec"": 1, ""normalRangeMin"": 72
   },
   ""recurrence"": { ""cooldownSec"": 10 },
   ""display"": { ""delaySec"": 3, ""warningThreshold"": 80 },
-  ""hypo"": { ""step1TimeLimitSec"": 5 },
+  ""hypo"": {
+    ""step1TimeLimitSec"": 5, ""step2TimeLimitSec"": 5, ""step3TimeLimitSec"": 5, ""step4TimeLimitSec"": 5,
+    ""guardianPromptTimeLimitSec"": 5, ""resumeCountdownSec"": 1, ""graceSec"": 3,
+    ""guardianSnackId"": ""juice"", ""doses"": { ""under"": 1, ""proper"": 2, ""over"": 3 }
+  },
   ""suddenDrop"": { ""chancePerSec"": 0.01, ""amount"": 30, ""durationSec"": 5 },
   ""snacks"": [
     { ""id"": ""juice"", ""kind"": ""fast"", ""totalRise"": 30, ""onsetSec"": 1, ""absorbSec"": 2, ""source"": ""test"" },
@@ -55,6 +60,11 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Glucose.Snacks, Has.Count.EqualTo(2));
             Assert.That(config.Glucose.Snacks[0].Kind, Is.EqualTo(SnackKind.Fast));
             Assert.That(config.Glucose.Snacks[1].Kind, Is.EqualTo(SnackKind.Slow));
+            Assert.That(config.Hypo.Step3TimeLimitSec, Is.EqualTo(5));
+            Assert.That(config.Hypo.GuardianSnackId, Is.EqualTo("juice"));
+            Assert.That(config.Hypo.Doses.Proper, Is.EqualTo(2));
+            Assert.That(config.Glucose.Time.FastForwardTickSimSec, Is.EqualTo(0.5));
+            Assert.That(config.Glucose.Levels.NormalRangeMin, Is.EqualTo(72));
         }
 
         [Test]
@@ -85,11 +95,36 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void MissingSection_IsReportedOnce()
         {
-            var json = With(ValidJson, "\"hypo\": { \"step1TimeLimitSec\": 5 },", "");
+            int start = ValidJson.IndexOf("\"hypo\"", System.StringComparison.Ordinal);
+            int end = ValidJson.IndexOf("\"suddenDrop\"", System.StringComparison.Ordinal);
+            var json = ValidJson.Remove(start, end - start);
 
             var e = LoadFails(json);
 
             Assert.That(e.MissingPaths, Is.EqualTo(new[] { "hypo" }));
+        }
+
+        [Test]
+        public void NewHypoFields_NullAreReportedByPath()
+        {
+            var json = With(ValidJson, "\"graceSec\": 3", "\"graceSec\": null");
+            json = With(json, "\"proper\": 2", "\"proper\": null");
+            json = With(json, "\"guardianSnackId\": \"juice\"", "\"guardianSnackId\": null");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths,
+                Is.EquivalentTo(new[] { "hypo.graceSec", "hypo.doses.proper", "hypo.guardianSnackId" }));
+        }
+
+        [Test]
+        public void MissingDosesSection_IsReportedOnce()
+        {
+            var json = With(ValidJson, ", \"doses\": { \"under\": 1, \"proper\": 2, \"over\": 3 }", "");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths, Is.EqualTo(new[] { "hypo.doses" }));
         }
 
         [Test]
