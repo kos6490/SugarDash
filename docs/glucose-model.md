@@ -69,6 +69,15 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 - 표시 혈당 < `display.warningThreshold`이면 경고가 켜져 있고, 경고선 이상으로 올라오면 꺼진다. 히스테리시스는 두지 않는다. 판정은 EventDirector가 한다.
 - 측정 선행은 누른 순간 경고가 꺼져 있었는지로 판정한다. 재발 이벤트처럼 발동 시점에 이미 경고가 켜져 있으면 측정 선행이 아니다.
 
+### 2.5 프레임 순서와 주행 종료 (RunController)
+- 화면 명령(측정기, 선택지, 알리기, 트랙 간식)은 큐에 쌓았다가 다음 프레임 맨 앞에서 처리한 뒤 Tick → Evaluate → Update 순서로 진행한다.
+- 명령은 지난 프레임의 Update가 끝난 시각에 처리되므로 마감이 지난 답은 정상 답으로 받지 않는다. 대신 판단 시간은 최대 한 프레임 짧게 잡힌다.
+- 달리기 강도(`activity`)는 달리는 동안 항상 1이다. 점프·슬라이드에 따른 차등은 두지 않는다.
+- 트랙 간식을 주우면 `runner.trackSnackServings`배만큼 혈당에 반영한다. 1단계(위험 인지) 중에도 반영하며 대처 단계 판정과는 무관하다. 세계가 멈춘 동안에는 주울 수 없다.
+- 장애물 충돌은 혈당과 무관하다. 감속 연출은 PlayerController가 맡는다.
+- 주행은 worldDt 누적이 `runner.runDurationSec`에 닿으면 끝난다(`RunCompleted`). 대처 중(1~4단계, 알리기 대기, 재개 카운트다운)에는 끝내지 않고 대처를 마친 뒤 끝낸다.
+- 탈락하면 주행이 멈추고 더 진행하지 않는다.
+
 ## 3. 처치 반영 정책: 아동이 고른 양을 그대로 반영
 
 - 혈당에는 아동이 **실제로 고른** 간식과 양을 반영한다. "어른에게 알리기 → 정답 상태로 보정"은 서사와 채점(단계 진행)에만 적용하고, 혈당 값에는 적용하지 않는다.
@@ -152,7 +161,8 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
   "snacks": [
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
-  ]
+  ],
+  "runner": { "trackSnackServings": null, "runDurationSec": null }
 }
 ```
 
@@ -162,6 +172,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 - `hypo.doses`는 간식 1회분에 곱하는 배수(과소·적정·과잉)다.
 - `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
 - `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
+- `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.runDurationSec`는 worldDt 기준 주행 길이다(2.5절).
 
 ## 8. 불변식
 
@@ -194,6 +205,9 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
       - 실제 혈당은 `w = W`, 표시 혈당은 `w = W − delaySec`로 두 번 확인한다.
     - `W`가 양의 유한수가 아니면 14·18번은 건너뛴다(9번이 이미 보고).
 
+### 8.3 주행 설정
+19. `0 < runner.trackSnackServings < hypo.doses.under`, `runner.runDurationSec > 0`
+
 구간별 1단계 제한 시간 배율이 생기면(2순위) "모든 구간에서 `step1TimeLimitSec × 배율 > delaySec`"를 추가한다.
 
 ## 9. 영향받는 모듈
@@ -204,7 +218,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 | 고혈당 처리 | 정책 A로 1순위 범위 편입, `hyperThreshold` 사용 |
 | MetricsCalculator | 불필요 측정 정의 변경, 재발 이벤트의 정확 대응률 포함 여부, 4단계는 재측정·알리기 두 기록을 묶어 계산 |
 | EventDirector | 급하강 판정(`IRandomSource`), 저혈당 발동·cooldown·재무장·재발 판정, EventId, 게이지 경고, 유예 중 억제 |
-| RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 Tick → Evaluate → Update 순서 호출 |
+| RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 쌓인 명령 처리 → Tick → Evaluate → Update 순서 호출(2.5절) |
 | LogRepository | `SimT`·`T` 모두 기록, `isRecurrence`, `inGrace`, `helpInstead`, 실제 선택한 간식과 양(`DoseApplied`), 빨리 감기 전후 혈당 |
 | 설정 로더 | null 수집 실패, 교차 검증 단계 |
 

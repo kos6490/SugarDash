@@ -7,7 +7,7 @@
 - 위치: Bootstrap이 넘기는 폴더(`Application.persistentDataPath` 아래). 주행 하나에 파일 하나, `{runId}.jsonl`.
 - `runId`: `yyyyMMddTHHmmssZ-xxxxxxxx` (주행 시작 UTC 시각 + GUID 앞 8자리). 이름순 정렬이 시작 순서다.
 - 한 줄에 레코드 하나(JSON Lines), UTF-8(BOM 없음), 줄 끝 `\n`. 추가만 하고 기존 내용을 읽거나 다시 쓰지 않는다.
-- `RunEnded`가 없는 파일은 중간 종료된 주행이다. 마지막 줄이 깨져 있을 수 있으므로 조회 시 형식이 깨진 줄은 건너뛴다.
+- `RunEnded`가 없는 파일은 중간 종료된 주행이다. 끝까지 달렸으면 `RunEnded` 앞에 `RunCompleted`, 탈락했으면 `RunEliminated`가 있다. 마지막 줄이 깨져 있을 수 있으므로 조회 시 형식이 깨진 줄은 건너뛴다.
 - 디스크 오류로 한 줄을 못 쓰면 로그만 남기고 게임은 계속한다(`seq`에 빈 번호가 생긴다).
 
 ## 2. 공통 필드
@@ -19,7 +19,7 @@
 | `runId` | 파일 이름과 같다 |
 | `seq` | 주행 안에서 1부터 1씩 늘어나는 줄 번호 |
 | `type` | 레코드 종류(아래 표) |
-| `simT`, `t` | simDt 누적 시각, decisionDt 누적 시각(`docs/glucose-model.md` 2.1절). 주행 시작·종료 레코드에는 없다 |
+| `simT`, `t` | simDt 누적 시각, decisionDt 누적 시각(`docs/glucose-model.md` 2.1절). `RunStarted`·`RunEnded`에는 없다 |
 | `eventId` | 저혈당 이벤트 번호. 이벤트에 속하지 않는 레코드에는 없다(`MeterPressed`는 이벤트 밖이면 0) |
 
 값이 null인 필드는 쓰지 않는다. 예: 시간 초과한 `StepAnswered`에는 `choiceId`가 없고, 정답이면 `errorCode`가 없다.
@@ -42,6 +42,8 @@
 | `HypoResolved` | `allCorrect` |
 | `RunEliminated` | `step`, `errorCode`(탈락으로 이어진 오류), `cause` |
 | `GraceStarted`, `GraceEnded` | - |
+| `TrackSnackEaten` | `snackId`, `servings` |
+| `RunCompleted` | `worldT`(worldDt 누적, 주행 길이) |
 
 - `atUtc`: `yyyy-MM-ddTHH:mm:ss.fffZ`
 - `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계)
