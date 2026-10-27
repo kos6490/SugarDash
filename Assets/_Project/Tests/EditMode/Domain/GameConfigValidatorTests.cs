@@ -26,7 +26,7 @@ namespace SugarDash.Domain.Tests
             TestCaseData Case(string name, Action<ConfigBuilder> mutate, int expectedCount = 1) =>
                 new TestCaseData(mutate, expectedCount).SetName("Violation_" + name);
 
-            yield return Case("MinNotBelowHypo", b => b.Min = 70);
+            yield return Case("MinNotBelowHypo", b => b.Min = 70, 2); // 1 + 18(G0 = 40 < min)
             yield return Case("InitialNotAboveHypo", b => b.Initial = 60);
             yield return Case("InitialNotBelowHyper", b => b.Initial = 250);
             yield return Case("HyperAboveMax", b => b.Max = 200);
@@ -90,6 +90,18 @@ namespace SugarDash.Domain.Tests
 
             builder.NormalRangeMin = 72.001;
             Assert.That(GameConfigValidator.Validate(builder.Build()), Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void WorstCaseBelowMin_IsReported()
+        {
+            // G0 = 70 − 30 = 40 < min 45. 흡수량이 커서 회복 조건은 통과한다.
+            var builder = new ConfigBuilder { Min = 45 };
+
+            var errors = GameConfigValidator.Validate(builder.Build());
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("min"));
         }
 
         [Test]

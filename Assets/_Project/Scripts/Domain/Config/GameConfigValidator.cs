@@ -150,6 +150,9 @@ namespace SugarDash.Domain.Config
 
             // 18. 최악의 경우에서 적정량을 먹고 재측정 빨리 감기를 마치면 실제·표시 혈당 모두 정상 범위여야 한다.
             if (!recheckValid) return;
+            double worstAtDose = WorstGlucoseAtDose(config);
+            if (!(worstAtDose >= levels.Min))
+                errors.Add($"최악의 경우 처치 시점 혈당이 glucose.min 아래로 내려간다 ({worstAtDose} < {levels.Min})");
             foreach (var snack in g.Snacks.Where(s => s.Kind == SnackKind.Fast))
             {
                 double actual = RecoveredGlucose(config, snack, recheck);
@@ -162,26 +165,36 @@ namespace SugarDash.Domain.Config
         }
 
         /// <summary>
-        /// 불변식 18의 보수적 하한. 모델은 min에서 잘리므로 실제 값은 이보다 높거나 같다.
+        /// 불변식 18의 보수적 하한. 처치 시점 혈당이 min 아래로 가는 설정은 따로 위반으로 본다.
         /// </summary>
         /// <param name="absorbWindow">투입부터 흡수가 진행된 simTime.</param>
         private static double RecoveredGlucose(GameConfig config, SnackConfig snack, double absorbWindow)
         {
             var g = config.Glucose;
-            var levels = g.Levels;
             var hypo = config.Hypo;
-            double baseDecay = levels.BaseDecayPerSec;
+            double baseDecay = g.Levels.BaseDecayPerSec;
             double guardian = hypo.GuardianPromptTimeLimitSec;
             double recheck = g.Time.RecheckIntervalGameSec;
 
-            // 발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우
-            double worstAtDose = levels.HypoThreshold - g.SuddenDrop.Amount
-                                 - (baseDecay + levels.RunDecayPerSec) * hypo.Step1TimeLimitSec
-                                 - baseDecay * (3 * guardian + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec);
+            double worstAtDose = WorstGlucoseAtDose(config);
             double absorbedRatio = Math.Max(0, Math.Min(1, (absorbWindow - snack.OnsetSec) / snack.AbsorbSec));
             double absorbed = snack.TotalRise * hypo.Doses.Proper * absorbedRatio;
             double decayAfterDose = baseDecay * (hypo.Step4TimeLimitSec + guardian + recheck);
             return worstAtDose + absorbed - decayAfterDose;
+        }
+
+        /// <summary>
+        /// 발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우의 처치 시점 혈당.
+        /// </summary>
+        private static double WorstGlucoseAtDose(GameConfig config)
+        {
+            var g = config.Glucose;
+            var levels = g.Levels;
+            var hypo = config.Hypo;
+            double baseDecay = levels.BaseDecayPerSec;
+            return levels.HypoThreshold - g.SuddenDrop.Amount
+                   - (baseDecay + levels.RunDecayPerSec) * hypo.Step1TimeLimitSec
+                   - baseDecay * (3 * hypo.GuardianPromptTimeLimitSec + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec);
         }
 
         // NaN도 위반으로 잡도록 부정형으로 비교한다.
