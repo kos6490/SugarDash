@@ -9,6 +9,7 @@ namespace SugarDash.Infrastructure.Tests
     public class ConfigProviderTests
     {
         private const string BuildConfigPath = "_Project/Config/game-config.json";
+        private const string DevConfigPath = "_Project/Config/Dev/game-config.dev.json";
 
         // 테스트 전용 픽스처. 실제 게임 수치가 아니다.
         private const string ValidJson = @"{
@@ -193,6 +194,17 @@ namespace SugarDash.Infrastructure.Tests
             }
 
             Assert.That(config.Hypo.Step1TimeLimitSec, Is.GreaterThan(config.Glucose.Display.DelaySec));
+        }
+
+        /// <summary>에디터 전용 개발 설정은 빈 값 없이 불변식을 지켜야 하고, 실제 수치가 아님이 기록에 남아야 한다.</summary>
+        [Test]
+        public void DevConfig_LoadsAndIsMarkedNotReal()
+        {
+            string json = File.ReadAllText(Path.Combine(Application.dataPath, DevConfigPath));
+
+            var config = new ConfigProvider(json).Load();
+
+            Assert.That(config.ConfigVersion, Is.EqualTo("dev-not-real"));
         }
     }
 }
