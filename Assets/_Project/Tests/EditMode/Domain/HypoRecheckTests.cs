@@ -24,9 +24,9 @@ namespace SugarDash.Domain.Tests
             h.RunUntilTriggered();
             h.Fsm.PressMeter();
             h.Fsm.ChooseSnack(snack);
-            if (h.Fsm.Phase == HypoPhase.GuardianPrompt) h.Fsm.PressHelp();
+            if (h.Fsm.Phase == HypoPhase.GuardianPrompt) h.Fsm.PressHelp(h.Fsm.Phase);
             h.Fsm.ChooseDose(dose);
-            if (h.Fsm.Phase == HypoPhase.GuardianPrompt) h.Fsm.PressHelp();
+            if (h.Fsm.Phase == HypoPhase.GuardianPrompt) h.Fsm.PressHelp(h.Fsm.Phase);
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Remeasure));
             return h;
         }
@@ -35,7 +35,7 @@ namespace SugarDash.Domain.Tests
         {
             var h = ReachRemeasure(configure, dose);
             h.Fsm.ChooseRecheck();
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.ResumeCountdown));
             return h;
         }
@@ -112,12 +112,12 @@ namespace SugarDash.Domain.Tests
         {
             var h = ReachRemeasure();
 
-            Assert.That(h.Fsm.ChooseRunAgain(), Is.True);
+            Assert.That(h.Fsm.ChooseRunAgain(h.Fsm.Phase), Is.True);
             Assert.That(Answer(h, HypoStep.Remeasure).ErrorCode, Is.EqualTo(HypoErrorCode.RcNoRecheck));
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.GuardianPrompt));
             Assert.That(h.All<RecheckFastForward>(), Is.Empty);
 
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             Assert.That(h.All<RecheckFastForward>(), Has.Count.EqualTo(1));
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Notify));
@@ -140,7 +140,7 @@ namespace SugarDash.Domain.Tests
             var h = ReachRemeasure();
             int prompts = h.All<GuardianPromptStarted>().Count;
 
-            Assert.That(h.Fsm.PressHelp(), Is.True);
+            Assert.That(h.Fsm.PressHelp(h.Fsm.Phase), Is.True);
 
             var answer = Answer(h, HypoStep.Remeasure);
             Assert.That(answer.ErrorCode, Is.EqualTo(HypoErrorCode.RcNoRecheck));
@@ -156,7 +156,7 @@ namespace SugarDash.Domain.Tests
             var h = ReachRemeasure();
             h.Fsm.ChooseRecheck();
 
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             Assert.That(Answer(h, HypoStep.Notify).IsCorrect, Is.True);
             Assert.That(h.Last<HypoResolved>().EventId, Is.EqualTo(1));
@@ -169,10 +169,10 @@ namespace SugarDash.Domain.Tests
             var h = ReachRemeasure();
             h.Fsm.ChooseRecheck();
 
-            h.Fsm.ChooseRunAgain();
+            h.Fsm.ChooseRunAgain(h.Fsm.Phase);
             Assert.That(Answer(h, HypoStep.Notify).ErrorCode, Is.EqualTo(HypoErrorCode.RcNoNotify));
             Assert.That(h.All<HypoResolved>(), Is.Empty);
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             Assert.That(h.All<HypoResolved>(), Has.Count.EqualTo(1));
         }
@@ -198,9 +198,9 @@ namespace SugarDash.Domain.Tests
             h.RunUntilTriggered();
             h.Fsm.PressMeter();
             h.Fsm.ChooseSnack("juice");
-            h.Fsm.PressHelp(); // Dose HELP_INSTEAD
+            h.Fsm.PressHelp(h.Fsm.Phase); // Dose HELP_INSTEAD
             h.Fsm.ChooseRecheck();
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             Assert.That(h.Last<HypoResolved>().AllCorrect, Is.False);
         }

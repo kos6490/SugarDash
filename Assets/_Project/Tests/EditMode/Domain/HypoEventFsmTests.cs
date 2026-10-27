@@ -110,7 +110,7 @@ namespace SugarDash.Domain.Tests
             var h = Triggered();
             h.Frames(5);
 
-            Assert.That(h.Fsm.PressHelp(), Is.True);
+            Assert.That(h.Fsm.PressHelp(h.Fsm.Phase), Is.True);
 
             Assert.That(h.Last<GuardianNotified>().Step, Is.EqualTo(HypoStep.Recognize));
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Respond));
@@ -126,7 +126,7 @@ namespace SugarDash.Domain.Tests
             if (!correct)
             {
                 Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.GuardianPrompt));
-                h.Fsm.PressHelp();
+                h.Fsm.PressHelp(h.Fsm.Phase);
             }
 
             var answer = Answer(h, HypoStep.Respond);
@@ -143,7 +143,7 @@ namespace SugarDash.Domain.Tests
             var h = AtRespond();
 
             h.Fsm.ChooseKeepRunning();
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             var answer = Answer(h, HypoStep.Respond);
             Assert.That(answer.ErrorCode, Is.EqualTo(HypoErrorCode.RsKeepRunning));
@@ -158,7 +158,7 @@ namespace SugarDash.Domain.Tests
             var h = AtRespond();
 
             h.Fsm.ChooseNoSugar();
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             Assert.That(Answer(h, HypoStep.Respond).ErrorCode, Is.EqualTo(HypoErrorCode.RsNone));
             Assert.That(h.Fsm.DoseSnackId, Is.EqualTo("juice"));
@@ -171,7 +171,7 @@ namespace SugarDash.Domain.Tests
 
             h.Frames(5);
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.GuardianPrompt));
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             Assert.That(Answer(h, HypoStep.Respond).ErrorCode, Is.EqualTo(HypoErrorCode.RsTimeout));
             Assert.That(h.Fsm.DoseSnackId, Is.EqualTo("juice"));
@@ -183,7 +183,7 @@ namespace SugarDash.Domain.Tests
         {
             var h = AtRespond();
 
-            Assert.That(h.Fsm.PressHelp(), Is.True);
+            Assert.That(h.Fsm.PressHelp(h.Fsm.Phase), Is.True);
 
             var answer = Answer(h, HypoStep.Respond);
             Assert.That(answer.IsCorrect, Is.False);
@@ -236,7 +236,7 @@ namespace SugarDash.Domain.Tests
 
             h.Fsm.ChooseDose(level);
             Assert.That(h.All<DoseApplied>(), Is.Empty, "알리기 전에는 투입하지 않는다");
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             var dose = h.Last<DoseApplied>();
             Assert.That(dose.Servings, Is.EqualTo(servings));
@@ -250,7 +250,7 @@ namespace SugarDash.Domain.Tests
         {
             var h = AtRespond();
             h.Fsm.ChooseSnack("cracker");
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             h.Fsm.ChooseDose(DoseLevel.Proper);
 
@@ -265,7 +265,7 @@ namespace SugarDash.Domain.Tests
             h.Frames(5);
             Assert.That(Answer(h, HypoStep.Dose).ErrorCode, Is.EqualTo(HypoErrorCode.DsTimeout));
             Assert.That(h.All<DoseApplied>(), Is.Empty);
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             var dose = h.Last<DoseApplied>();
             Assert.That(dose.Servings, Is.EqualTo(2));
@@ -277,7 +277,7 @@ namespace SugarDash.Domain.Tests
         {
             var h = AtDose();
 
-            h.Fsm.PressHelp();
+            h.Fsm.PressHelp(h.Fsm.Phase);
 
             Assert.That(Answer(h, HypoStep.Dose).ErrorCode, Is.EqualTo(HypoErrorCode.HelpInstead));
             var dose = h.Last<DoseApplied>();
@@ -292,7 +292,7 @@ namespace SugarDash.Domain.Tests
             var h = Triggered();
             h.Frames(5);
 
-            Assert.That(h.Fsm.ChooseRunAgain(), Is.True);
+            Assert.That(h.Fsm.ChooseRunAgain(h.Fsm.Phase), Is.True);
 
             var eliminated = h.Last<RunEliminated>();
             Assert.That(eliminated.Step, Is.EqualTo(HypoStep.Recognize));
@@ -325,13 +325,45 @@ namespace SugarDash.Domain.Tests
 
             Assert.That(h.Fsm.ChooseDose(DoseLevel.Proper), Is.False);
             Assert.That(h.Fsm.ChooseSnack("juice"), Is.False);
-            Assert.That(h.Fsm.PressHelp(), Is.False, "1단계에는 알리기 버튼이 없다");
+            Assert.That(h.Fsm.PressHelp(h.Fsm.Phase), Is.False, "1단계에는 알리기 버튼이 없다");
+            Assert.That(h.Fsm.PressHelp(HypoPhase.Respond), Is.False);
             Assert.That(h.All<StepAnswered>(), Is.Empty);
 
             h.Fsm.PressMeter();
             Assert.That(h.Fsm.ChooseSnack("juice"), Is.True);
             Assert.That(h.Fsm.ChooseSnack("juice"), Is.False);
             Assert.That(h.All<StepAnswered>().Count(a => a.Step == HypoStep.Respond), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void DoubleTapRunAgain_AfterError_DoesNotEliminate()
+        {
+            var h = new HypoHarness();
+            h.RunUntilTriggered();
+            h.Fsm.PressMeter();
+            h.Fsm.ChooseSnack("juice");
+            h.Fsm.ChooseDose(DoseLevel.Proper);
+            h.Fsm.ChooseRecheck();
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Notify));
+
+            Assert.That(h.Fsm.ChooseRunAgain(HypoPhase.Notify), Is.True);
+            Assert.That(h.Fsm.ChooseRunAgain(HypoPhase.Notify), Is.False, "두 번째 탭은 알리기 대기 화면이 아니다");
+
+            Assert.That(h.All<RunEliminated>(), Is.Empty);
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.GuardianPrompt));
+        }
+
+        [Test]
+        public void DoubleTapHelp_OnPrompt_DoesNotRecordHelpInstead()
+        {
+            var h = AtRespond();
+            h.Fsm.ChooseSnack("cracker");
+
+            Assert.That(h.Fsm.PressHelp(HypoPhase.GuardianPrompt), Is.True);
+            Assert.That(h.Fsm.PressHelp(HypoPhase.GuardianPrompt), Is.False);
+
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Dose));
+            Assert.That(h.All<StepAnswered>().Any(a => a.ErrorCode == HypoErrorCode.HelpInstead), Is.False);
         }
 
         [Test]

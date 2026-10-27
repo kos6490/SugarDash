@@ -216,8 +216,11 @@ namespace SugarDash.Domain.Hypo
         /// <summary>
         /// "다시 달리기". 4단계에서는 재측정·알림 누락 오류이고, 알리기 대기에서 고르면 탈락한다.
         /// </summary>
-        public bool ChooseRunAgain()
+        /// <param name="shownPhase">버튼을 누를 때 화면이 보여 주던 단계. 연타로 다음 단계에 잘못 들어가지 않게 한다.</param>
+        public bool ChooseRunAgain(HypoPhase shownPhase)
         {
+            if (shownPhase != Phase) return false;
+
             switch (Phase)
             {
                 case HypoPhase.Remeasure:
@@ -239,8 +242,11 @@ namespace SugarDash.Domain.Hypo
         /// 2·3단계에서 선택 대신 누르면 HELP_INSTEAD, 4단계 ①에서 누르면 재측정을 건너뛴 RC_NO_RECHECK 오답이지만,
         /// 이미 알렸으므로 알리기 대기 없이 어른이 보정한다.
         /// </summary>
-        public bool PressHelp()
+        /// <param name="shownPhase">버튼을 누를 때 화면이 보여 주던 단계. 연타로 다음 단계에 잘못 들어가지 않게 한다.</param>
+        public bool PressHelp(HypoPhase shownPhase)
         {
+            if (shownPhase != Phase) return false;
+
             switch (Phase)
             {
                 case HypoPhase.GuardianPrompt:
