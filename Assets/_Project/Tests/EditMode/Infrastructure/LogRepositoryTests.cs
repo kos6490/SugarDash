@@ -128,6 +128,8 @@ namespace SugarDash.Infrastructure.Tests
             _bus.Publish(new SuddenDropStarted(60, 49));
             _bus.Publish(new RunEliminated(2, HypoStep.Recognize, HypoErrorCode.SMissed,
                 EliminationCause.PromptTimeout, 90, 79));
+            _bus.Publish(new TrackSnackEaten("juice", 0.5, 95, 84));
+            _bus.Publish(new RunCompleted(80, 120, 110));
 
             var lines = Lines();
             Assert.That(lines[1].ErrorCode, Is.EqualTo("DS_OVER"));
@@ -149,6 +151,13 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(lines[10].Step, Is.EqualTo("recognize"));
             Assert.That(lines[10].ErrorCode, Is.EqualTo("S_MISSED"));
             Assert.That(lines[10].Cause, Is.EqualTo("prompt_timeout"));
+            Assert.That(lines[11].Type, Is.EqualTo("TrackSnackEaten"));
+            Assert.That(lines[11].SnackId, Is.EqualTo("juice"));
+            Assert.That(lines[11].Servings, Is.EqualTo(0.5));
+            Assert.That(RawLines()[11], Does.Not.Contain("\"eventId\""));
+            Assert.That(lines[12].Type, Is.EqualTo("RunCompleted"));
+            Assert.That(lines[12].WorldT, Is.EqualTo(80));
+            Assert.That(lines[12].SimT, Is.EqualTo(120));
         }
 
         [Test]
