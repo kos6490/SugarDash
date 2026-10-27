@@ -1,0 +1,23 @@
+{
+  "configVersion": "dev-not-real",
+  "unit": "mg/dL",
+  "time": { "timeScale": 150, "recheckIntervalRealMin": 15, "recheckIntervalSource": "dev-not-real",
+    "fastForwardTickSimSec": 0.5 },
+  "glucose": {
+    "initial": 120, "min": 20, "max": 400, "hypoThreshold": 70, "hypoReleaseMargin": 10,
+    "hyperThreshold": 250, "baseDecayPerSec": 0.5, "runDecayPerSec": 1, "normalRangeMin": 72
+  },
+  "recurrence": { "cooldownSec": 10 },
+  "display": { "delaySec": 3, "warningThreshold": 80 },
+  "hypo": {
+    "step1TimeLimitSec": 5, "step2TimeLimitSec": 5, "step3TimeLimitSec": 5, "step4TimeLimitSec": 5,
+    "guardianPromptTimeLimitSec": 5, "resumeCountdownSec": 1, "graceSec": 3,
+    "guardianSnackId": "juice", "doses": { "under": 1, "proper": 2, "over": 3 }
+  },
+  "suddenDrop": { "chancePerSec": 0.01, "amount": 30, "durationSec": 5 },
+  "snacks": [
+    { "id": "juice", "kind": "fast", "totalRise": 30, "onsetSec": 1, "absorbSec": 2, "source": "dev-not-real" },
+    { "id": "cracker", "kind": "slow", "totalRise": 30, "onsetSec": 4, "absorbSec": 8, "source": "dev-not-real" }
+  ],
+  "runner": { "trackSnackServings": 0.5, "runDurationSec": 40 }
+}

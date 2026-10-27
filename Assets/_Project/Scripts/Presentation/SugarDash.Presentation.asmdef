@@ -5,7 +5,8 @@
         "SugarDash.App",
         "SugarDash.Domain",
         "XCharts.Runtime",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
