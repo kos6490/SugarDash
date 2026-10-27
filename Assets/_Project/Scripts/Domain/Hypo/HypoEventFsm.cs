@@ -19,6 +19,8 @@ namespace SugarDash.Domain.Hypo
         private const string ChoiceKeepRunning = "keep_running";
         private const string ChoiceNoSugar = "no_sugar";
         private const string ChoiceHelp = "help";
+        private const string ChoiceRecheck = "recheck";
+        private const string ChoiceRunAgain = "run_again";
 
         private readonly GameConfig _config;
         private readonly HypoConfig _hypo;
@@ -89,7 +91,8 @@ namespace SugarDash.Domain.Hypo
         public void Update()
         {
             if (Phase == HypoPhase.Idle || Phase == HypoPhase.Eliminated) return;
-            if (_model.DecisionTime < _deadline) return;
+            double now = Phase == HypoPhase.Grace ? _model.SimTime : _model.DecisionTime;
+            if (now < _deadline) return;
 
             switch (Phase)
             {
@@ -107,8 +110,25 @@ namespace SugarDash.Domain.Hypo
                         EnterRemeasure();
                     });
                     break;
+                case HypoPhase.Remeasure:
+                    Error(HypoStep.Remeasure, null, HypoErrorCode.RcNoRecheck, RemeasureAndNotify);
+                    break;
+                case HypoPhase.Notify:
+                    Error(HypoStep.Notify, null, HypoErrorCode.RcNoNotify, Resolve);
+                    break;
                 case HypoPhase.GuardianPrompt:
                     Eliminate();
+                    break;
+                case HypoPhase.ResumeCountdown:
+                    Publish(new GraceStarted(EventId, _model.SimTime, _model.DecisionTime));
+                    Phase = HypoPhase.Grace;
+                    _deadline = _model.SimTime + _hypo.GraceSec;
+                    break;
+                case HypoPhase.Grace:
+                    Publish(new GraceEnded(EventId, _model.SimTime, _model.DecisionTime));
+                    _director.NotifyGraceEnded();
+                    Phase = HypoPhase.Idle;
+                    EventId = 0;
                     break;
             }
         }
@@ -119,6 +139,9 @@ namespace SugarDash.Domain.Hypo
             {
                 case HypoPhase.Idle:
                     PublishMeter(0, false);
+                    break;
+                case HypoPhase.Grace:
+                    PublishMeter(0, true);
                     break;
                 case HypoPhase.Recognize:
                     PublishMeter(EventId, false);
@@ -177,20 +200,44 @@ namespace SugarDash.Domain.Hypo
             return true;
         }
 
-        public bool ChooseRecheck() => false;
-
-        /// <summary>알리기 대기에서 "다시 달리기"를 고르면 탈락한다.</summary>
-        public bool ChooseRunAgain()
+        /// <summary>
+        /// 4단계 ① 재측정. 이 단계는 결과로 판정하지 않는다. 재측정하고 어른에게 알리는 습관을 익히는 단계라서
+        /// 재측정 값이 낮거나 높아도 정답이다.
+        /// </summary>
+        public bool ChooseRecheck()
         {
-            if (Phase != HypoPhase.GuardianPrompt) return false;
+            if (Phase != HypoPhase.Remeasure) return false;
 
-            Eliminate();
+            Correct(HypoStep.Remeasure, ChoiceRecheck);
+            RemeasureAndNotify();
             return true;
         }
 
         /// <summary>
-        /// "어른에게 알리기" 버튼. 알리기 대기에서는 정답 행동이고,
-        /// 2·3단계에서 선택 대신 누르면 HELP_INSTEAD 오답이지만 알리기 대기 없이 어른이 보정한다.
+        /// "다시 달리기". 4단계에서는 재측정·알림 누락 오류이고, 알리기 대기에서 고르면 탈락한다.
+        /// </summary>
+        public bool ChooseRunAgain()
+        {
+            switch (Phase)
+            {
+                case HypoPhase.Remeasure:
+                    Error(HypoStep.Remeasure, ChoiceRunAgain, HypoErrorCode.RcNoRecheck, RemeasureAndNotify);
+                    return true;
+                case HypoPhase.Notify:
+                    Error(HypoStep.Notify, ChoiceRunAgain, HypoErrorCode.RcNoNotify, Resolve);
+                    return true;
+                case HypoPhase.GuardianPrompt:
+                    Eliminate();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// "어른에게 알리기" 버튼. 알리기 대기와 4단계 ②에서는 정답 행동이다.
+        /// 2·3단계에서 선택 대신 누르면 HELP_INSTEAD, 4단계 ①에서 누르면 재측정을 건너뛴 RC_NO_RECHECK 오답이지만,
+        /// 이미 알렸으므로 알리기 대기 없이 어른이 보정한다.
         /// </summary>
         public bool PressHelp()
         {
@@ -204,14 +251,21 @@ namespace SugarDash.Domain.Hypo
                     return true;
                 case HypoPhase.Respond:
                     DoseSnackId = _hypo.GuardianSnackId;
-                    HelpInstead(HypoStep.Respond, EnterDose);
+                    HelpInstead(HypoStep.Respond, HypoErrorCode.HelpInstead, EnterDose);
                     return true;
                 case HypoPhase.Dose:
-                    HelpInstead(HypoStep.Dose, () =>
+                    HelpInstead(HypoStep.Dose, HypoErrorCode.HelpInstead, () =>
                     {
                         ApplyDose(_hypo.Doses.Proper, false);
                         EnterRemeasure();
                     });
+                    return true;
+                case HypoPhase.Remeasure:
+                    HelpInstead(HypoStep.Remeasure, HypoErrorCode.RcNoRecheck, RemeasureAndNotify);
+                    return true;
+                case HypoPhase.Notify:
+                    Correct(HypoStep.Notify, ChoiceHelp);
+                    Resolve();
                     return true;
                 default:
                     return false;
@@ -232,6 +286,42 @@ namespace SugarDash.Domain.Hypo
         private void EnterDose() => Enter(HypoPhase.Dose, _hypo.Step3TimeLimitSec);
 
         private void EnterRemeasure() => Enter(HypoPhase.Remeasure, _hypo.Step4TimeLimitSec);
+
+        /// <summary>재측정(아동 또는 어른) 뒤 ② 알리기로 간다.</summary>
+        private void RemeasureAndNotify()
+        {
+            FastForwardRecheckInterval();
+            Enter(HypoPhase.Notify, _hypo.Step4TimeLimitSec);
+        }
+
+        /// <summary>
+        /// 재측정 간격만큼 혈당 시간만 진행한다. 표시 혈당 지연 버퍼가 채워지도록 작은 간격으로 나눠 Tick한다.
+        /// 세계와 판단 시계는 멈춰 있다(실제로 기다리지 않음).
+        /// </summary>
+        private void FastForwardRecheckInterval()
+        {
+            double total = _config.Glucose.Time.RecheckIntervalGameSec;
+            double tick = _config.Glucose.Time.FastForwardTickSimSec;
+            double before = _model.Actual;
+
+            double remaining = total;
+            while (remaining > 0)
+            {
+                double piece = Math.Min(tick, remaining);
+                _model.Tick(piece, 0, 0, 0);
+                remaining -= piece;
+            }
+
+            Publish(new RecheckFastForward(EventId, total, before, _model.Actual, _model.SimTime,
+                _model.DecisionTime));
+        }
+
+        private void Resolve()
+        {
+            Publish(new HypoResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
+            _director.NotifyHypoEventEnded();
+            Enter(HypoPhase.ResumeCountdown, _hypo.ResumeCountdownSec);
+        }
 
         private void Enter(HypoPhase phase, double limitSec)
         {
@@ -256,10 +346,10 @@ namespace SugarDash.Domain.Hypo
             Enter(HypoPhase.GuardianPrompt, _hypo.GuardianPromptTimeLimitSec);
         }
 
-        private void HelpInstead(HypoStep step, Action afterNotify)
+        private void HelpInstead(HypoStep step, HypoErrorCode code, Action afterNotify)
         {
             _anyError = true;
-            PublishAnswer(step, ChoiceHelp, false, HypoErrorCode.HelpInstead, true, false);
+            PublishAnswer(step, ChoiceHelp, false, code, true, false);
             Publish(new GuardianNotified(EventId, step, _model.SimTime, _model.DecisionTime));
             afterNotify();
         }

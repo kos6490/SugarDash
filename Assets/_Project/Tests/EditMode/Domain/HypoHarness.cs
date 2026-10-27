@@ -45,6 +45,10 @@ namespace SugarDash.Domain.Tests
             Collect<GuardianNotified>(bus);
             Collect<DoseApplied>(bus);
             Collect<RunEliminated>(bus);
+            Collect<RecheckFastForward>(bus);
+            Collect<HypoResolved>(bus);
+            Collect<GraceStarted>(bus);
+            Collect<GraceEnded>(bus);
 
             Model = new GlucoseModel(config.Glucose);
             Director = new EventDirector(config.Glucose, Model, new NoRandom(), bus);
