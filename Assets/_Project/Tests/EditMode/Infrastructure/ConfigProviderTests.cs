@@ -31,7 +31,8 @@ namespace SugarDash.Infrastructure.Tests
   ""snacks"": [
     { ""id"": ""juice"", ""kind"": ""fast"", ""totalRise"": 30, ""onsetSec"": 1, ""absorbSec"": 2, ""source"": ""test"" },
     { ""id"": ""cracker"", ""kind"": ""slow"", ""totalRise"": 30, ""onsetSec"": 4, ""absorbSec"": 8, ""source"": ""test"" }
-  ]
+  ],
+  ""runner"": { ""trackSnackServings"": 0.5, ""runDurationSec"": 120 }
 }";
 
         /// <summary>픽스처에서 정확히 한 곳을 바꾼다.</summary>
@@ -65,6 +66,8 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Hypo.Doses.Proper, Is.EqualTo(2));
             Assert.That(config.Glucose.Time.FastForwardTickSimSec, Is.EqualTo(0.5));
             Assert.That(config.Glucose.Levels.NormalRangeMin, Is.EqualTo(72));
+            Assert.That(config.Runner.TrackSnackServings, Is.EqualTo(0.5));
+            Assert.That(config.Runner.RunDurationSec, Is.EqualTo(120));
         }
 
         [Test]
@@ -115,6 +118,18 @@ namespace SugarDash.Infrastructure.Tests
 
             Assert.That(e.MissingPaths,
                 Is.EquivalentTo(new[] { "hypo.graceSec", "hypo.doses.proper", "hypo.guardianSnackId" }));
+        }
+
+        [Test]
+        public void RunnerFields_NullAreReportedByPath()
+        {
+            var json = With(ValidJson, "\"trackSnackServings\": 0.5", "\"trackSnackServings\": null");
+            json = With(json, "\"runDurationSec\": 120", "\"runDurationSec\": null");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths,
+                Is.EquivalentTo(new[] { "runner.trackSnackServings", "runner.runDurationSec" }));
         }
 
         [Test]

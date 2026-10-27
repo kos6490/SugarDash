@@ -127,9 +127,14 @@ namespace SugarDash.Infrastructure.Config
                         Text(snack?.Source, path + ".source", snack)));
                 }
 
+                var runner = Section(dto.Runner, "runner");
+                var runnerConfig = new RunnerConfig(
+                    Number(runner?.TrackSnackServings, "runner.trackSnackServings", runner),
+                    Number(runner?.RunDurationSec, "runner.runDurationSec", runner));
+
                 var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
                     snacks);
-                return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig);
+                return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, runnerConfig);
             }
 
             private T Section<T>(T section, string path) where T : class

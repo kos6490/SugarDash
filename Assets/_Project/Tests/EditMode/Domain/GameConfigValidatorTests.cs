@@ -62,7 +62,7 @@ namespace SugarDash.Domain.Tests
             yield return Case("GuardianPromptZero", b => b.GuardianPromptTimeLimitSec = 0);
             yield return Case("ResumeCountdownZero", b => b.ResumeCountdownSec = 0);
             yield return Case("GraceZero", b => b.GraceSec = 0);
-            yield return Case("DoseUnderZero", b => b.DoseUnder = 0);
+            yield return Case("DoseUnderZero", b => b.DoseUnder = 0, 2); // 16 + 19(trackSnack 0.5 ≥ under)
             yield return Case("DoseProperNotAboveUnder", b => b.DoseUnder = 2);
             yield return Case("DoseOverNotAboveProper", b => b.DoseOver = 2);
             yield return Case("GuardianSnackMissing", b => b.GuardianSnackId = "candy");
@@ -70,6 +70,9 @@ namespace SugarDash.Domain.Tests
             yield return Case("RecoveryActualInsufficient", b => b.NormalRangeMin = 101);
             // W = 6에서는 전량 흡수되지만 W − delay = 3에서는 절반만 흡수된다.
             yield return Case("RecoveryDisplayInsufficient", b => b.SnackById("juice").AbsorbSec = 4);
+            yield return Case("TrackSnackZero", b => b.TrackSnackServings = 0);
+            yield return Case("TrackSnackNotBelowDoseUnder", b => b.TrackSnackServings = 1);
+            yield return Case("RunDurationZero", b => b.RunDurationSec = 0);
         }
 
         [TestCaseSource(nameof(SingleViolations))]

@@ -18,6 +18,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public HypoDto Hypo { get; set; }
         public SuddenDropDto SuddenDrop { get; set; }
         public List<SnackDto> Snacks { get; set; }
+        public RunnerDto Runner { get; set; }
     }
 
     [Preserve]
@@ -84,6 +85,13 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? ChancePerSec { get; set; }
         public double? Amount { get; set; }
         public double? DurationSec { get; set; }
+    }
+
+    [Preserve]
+    public sealed class RunnerDto
+    {
+        public double? TrackSnackServings { get; set; }
+        public double? RunDurationSec { get; set; }
     }
 
     [Preserve]
