@@ -7,6 +7,7 @@
 ```
 Assets/_Project/
 ├── Config/              game-config.json (빌드에 포함되는 설정, PLACEHOLDER는 null)
+│   └── Dev/             game-config.dev.json (에디터 전용 개발 설정, 실제 수치 아님)
 ├── Scripts/
 │   ├── Domain/          SugarDash.Domain
 │   ├── App/             SugarDash.App
@@ -52,7 +53,7 @@ Assets/_Project/
 | Domain | 없음 |
 | App | Domain |
 | Infrastructure | Domain, Newtonsoft Json |
-| Presentation | App, Domain, XCharts, Input System |
+| Presentation | App, Domain, XCharts, Input System, uGUI(`UnityEngine.UI`) |
 | Bootstrap | Domain, App, Infrastructure, Presentation |
 | 테스트 | 테스트 대상 계층 (예: Infrastructure.Tests → Infrastructure, Domain) |
 
@@ -71,12 +72,19 @@ Assets/_Project/
 - Newtonsoft 패키지 DLL은 기본적으로 모든 어셈블리에 자동 참조된다. 그래서 `overrideReferences: true`로 막는다.
 - 테스트 어셈블리는 Newtonsoft가 자동 참조되지만, 빌드에 포함되지 않으므로 허용한다.
 
-## 5. 입력
+## 5. 설정 읽기
+
+- 빌드 설정 `game-config.json`은 GameBootstrapper의 `buildConfig`(TextAsset) 필드로 참조해 빌드에 포함한다.
+- 에디터에서 GameBootstrapper의 `useDevConfigInEditor`를 켜면 `Config/Dev/game-config.dev.json`을 경로로 직접 읽는다. 이 파일은 테스트 픽스처 값이며 실제 게임 수치가 아니다. 어떤 에셋도 참조하지 않으므로 빌드에 들어가지 않는다.
+- 개발 설정의 `configVersion`은 `dev-not-real`이다. 기록 레코드마다 남으므로 개발 중 기록을 걸러낼 수 있다.
+- 설정 로드가 실패하면 GameBootstrapper가 빈 경로와 위반을 에러 로그로 남기고 멈춘다.
+
+## 6. 입력
 
 - 프로젝트 설정의 Active Input Handling이 Input System 전용이다.
 - 입력은 Input System(`UnityEngine.InputSystem`)으로만 처리한다. 구 입력 API(`UnityEngine.Input`)를 호출하면 런타임 예외가 난다.
 
-## 6. 저장
+## 7. 저장
 
 - 저장은 JSON 파일로 한다. SQLite는 사용하지 않는다.
 - 파일은 `Application.persistentDataPath` 아래에 둔다.
@@ -85,7 +93,7 @@ Assets/_Project/
 - 진행도·설정처럼 덮어쓰는 파일은 임시 파일에 쓴 뒤 교체한다.
 - JSON 직렬화는 Infrastructure에서만 한다. 역직렬화용 DTO는 Infrastructure에 두고 `[Preserve]`를 붙인 뒤, 도메인 객체로 변환해 넘긴다.
 
-## 7. 테스트
+## 8. 테스트
 
 ### 에디터에서 실행
 
