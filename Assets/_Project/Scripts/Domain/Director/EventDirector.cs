@@ -62,14 +62,14 @@ namespace SugarDash.Domain.Director
 
         private void EvaluateSuddenDrop(double simDt)
         {
-            if (_model.Mode != GlucoseClockMode.Running || simDt <= 0 || _model.IsSuddenDropActive) return;
+            if (_hypoState == HypoState.Active || simDt <= 0 || _model.IsSuddenDropActive) return;
 
             // 1초당 확률을 simDt에 맞춰 환산해 프레임 길이와 무관하게 한다.
             double p = 1 - Math.Pow(1 - _config.SuddenDrop.ChancePerSec, simDt);
             if (p <= 0 || _random.NextDouble() >= p) return;
 
             _model.StartSuddenDrop();
-            _bus.Publish(new SuddenDropStarted(_model.SimTime, _model.RealElapsed));
+            _bus.Publish(new SuddenDropStarted(_model.SimTime, _model.DecisionTime));
         }
 
         private void EvaluateHypo()
@@ -117,7 +117,7 @@ namespace SugarDash.Domain.Director
         private void Trigger(bool isRecurrence)
         {
             _hypoState = HypoState.Active;
-            _bus.Publish(new HypoEventTriggered(isRecurrence, _model.SimTime, _model.RealElapsed, _model.Actual));
+            _bus.Publish(new HypoEventTriggered(isRecurrence, _model.SimTime, _model.DecisionTime, _model.Actual));
         }
     }
 }

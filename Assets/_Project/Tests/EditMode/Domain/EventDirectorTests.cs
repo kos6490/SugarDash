@@ -42,7 +42,7 @@ namespace SugarDash.Domain.Tests
         {
             for (int i = 0; i < seconds; i++)
             {
-                _model.Tick(1, 0);
+                _model.Tick(1, 1, 1, 0);
                 _director.Evaluate(1);
             }
         }
@@ -76,7 +76,7 @@ namespace SugarDash.Domain.Tests
             Assert.That(_hypos, Has.Count.EqualTo(1));
             Assert.That(_hypos[0].IsRecurrence, Is.False);
             Assert.That(_hypos[0].Actual, Is.EqualTo(69).Within(1e-9));
-            Assert.That(_hypos[0].SimTime, Is.EqualTo(3).Within(1e-9));
+            Assert.That(_hypos[0].SimT, Is.EqualTo(3).Within(1e-9));
             Assert.That(_director.IsHypoEventActive, Is.True);
         }
 
@@ -143,13 +143,13 @@ namespace SugarDash.Domain.Tests
         {
             Setup(b => b.SuddenDropChancePerSec = 0.5, 0.1);
 
-            _model.Tick(1, 0);
+            _model.Tick(1, 1, 1, 0);
             _director.Evaluate(1);
 
             Assert.That(_drops, Has.Count.EqualTo(1));
             Assert.That(_model.IsSuddenDropActive, Is.True);
 
-            _model.Tick(1, 0);
+            _model.Tick(1, 1, 1, 0);
             _director.Evaluate(1); // 진행 중이면 난수를 읽지 않는다
             Assert.That(_drops, Has.Count.EqualTo(1));
         }
@@ -159,7 +159,7 @@ namespace SugarDash.Domain.Tests
         {
             Setup(b => b.SuddenDropChancePerSec = 0.5, 0.6);
 
-            _model.Tick(1, 0);
+            _model.Tick(1, 1, 1, 0);
             _director.Evaluate(1);
 
             Assert.That(_drops, Is.Empty);
@@ -171,7 +171,7 @@ namespace SugarDash.Domain.Tests
             // p = 1 − (1 − 0.5)^2 = 0.75
             Setup(b => b.SuddenDropChancePerSec = 0.5, 0.7);
 
-            _model.Tick(2, 0);
+            _model.Tick(2, 2, 2, 0);
             _director.Evaluate(2);
 
             Assert.That(_drops, Has.Count.EqualTo(1));
@@ -183,9 +183,8 @@ namespace SugarDash.Domain.Tests
             Setup(b => b.SuddenDropChancePerSec = 1); // 난수 없음: 읽으면 예외
 
             _director.Evaluate(0);
-            _model.SetMode(GlucoseClockMode.ActualFrozen);
-            _model.Tick(1, 0);
-            _director.Evaluate(1);
+            _model.Tick(0, 0, 1, 0);
+            _director.Evaluate(0);
 
             Assert.That(_drops, Is.Empty);
         }
