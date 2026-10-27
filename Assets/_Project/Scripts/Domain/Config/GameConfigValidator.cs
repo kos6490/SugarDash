@@ -101,6 +101,13 @@ namespace SugarDash.Domain.Config
 
             ValidateHypo(errors, config);
 
+            // 19. 트랙 간식은 처치량보다 작아야 한다(주행 중 혈당을 조금만 올린다).
+            var runner = config.Runner;
+            if (!(0 < runner.TrackSnackServings && runner.TrackSnackServings < config.Hypo.Doses.Under))
+                errors.Add($"0 < runner.trackSnackServings < hypo.doses.under 이어야 한다 " +
+                           $"(trackSnackServings={runner.TrackSnackServings}, under={config.Hypo.Doses.Under})");
+            Positive(errors, "runner.runDurationSec", runner.RunDurationSec);
+
             return errors;
         }
 

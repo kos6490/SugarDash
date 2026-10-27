@@ -20,6 +20,7 @@ namespace SugarDash.Infrastructure.Logging.Dto
         public int? EventId { get; set; }
         public double? SimT { get; set; }
         public double? T { get; set; }
+        public double? WorldT { get; set; }
 
         public bool? IsRecurrence { get; set; }
         public double? Actual { get; set; }

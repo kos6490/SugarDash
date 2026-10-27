@@ -5,12 +5,14 @@ namespace SugarDash.Domain.Config
     {
         public const string RequiredUnit = "mg/dL";
 
-        public GameConfig(string configVersion, string unit, GlucoseConfig glucose, HypoConfig hypo)
+        public GameConfig(string configVersion, string unit, GlucoseConfig glucose, HypoConfig hypo,
+            RunnerConfig runner)
         {
             ConfigVersion = configVersion;
             Unit = unit;
             Glucose = glucose;
             Hypo = hypo;
+            Runner = runner;
         }
 
         /// <summary>로그 레코드마다 함께 저장한다.</summary>
@@ -18,5 +20,6 @@ namespace SugarDash.Domain.Config
         public string Unit { get; }
         public GlucoseConfig Glucose { get; }
         public HypoConfig Hypo { get; }
+        public RunnerConfig Runner { get; }
     }
 }

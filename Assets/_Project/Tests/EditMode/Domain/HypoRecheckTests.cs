@@ -14,6 +14,7 @@ namespace SugarDash.Domain.Tests
         private static void UnderDoseConfig(ConfigBuilder b)
         {
             b.DoseUnder = 0.2;
+            b.TrackSnackServings = 0.1;
             b.BaseDecayPerSec = 0.1;
         }
 

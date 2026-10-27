@@ -113,6 +113,13 @@ namespace SugarDash.Infrastructure.Logging
                 }))),
                 bus.Subscribe<GraceStarted>(e => Append(Event("GraceStarted", e.EventId, e.SimT, e.T))),
                 bus.Subscribe<GraceEnded>(e => Append(Event("GraceEnded", e.EventId, e.SimT, e.T))),
+                bus.Subscribe<TrackSnackEaten>(e => Append(Event("TrackSnackEaten", null, e.SimT, e.T, r =>
+                {
+                    r.SnackId = e.SnackId;
+                    r.Servings = e.Servings;
+                }))),
+                bus.Subscribe<RunCompleted>(e => Append(Event("RunCompleted", null, e.SimT, e.T,
+                    r => r.WorldT = e.WorldT))),
             });
         }
 
