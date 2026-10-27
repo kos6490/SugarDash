@@ -297,6 +297,7 @@ namespace SugarDash.Domain.Tests
             var eliminated = h.Last<RunEliminated>();
             Assert.That(eliminated.Step, Is.EqualTo(HypoStep.Recognize));
             Assert.That(eliminated.Reason, Is.EqualTo(HypoErrorCode.SMissed));
+            Assert.That(eliminated.Cause, Is.EqualTo(EliminationCause.Declined));
             Assert.That(eliminated.EventId, Is.EqualTo(1));
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
 
@@ -314,8 +315,21 @@ namespace SugarDash.Domain.Tests
             h.Frames(5);
 
             Assert.That(h.Last<RunEliminated>().Reason, Is.EqualTo(HypoErrorCode.DsOver));
+            Assert.That(h.Last<RunEliminated>().Cause, Is.EqualTo(EliminationCause.PromptTimeout));
             Assert.That(h.All<DoseApplied>(), Is.Empty, "탈락하면 투입하지 않는다");
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
+        }
+
+        [Test]
+        public void Timeout_AfterHugeFrame_DecisionSecIsCappedAtLimit()
+        {
+            var h = Triggered();
+
+            h.Frame(12);
+
+            var answer = Answer(h, HypoStep.Recognize);
+            Assert.That(answer.ErrorCode, Is.EqualTo(HypoErrorCode.SMissed));
+            Assert.That(answer.DecisionSec, Is.EqualTo(5).Within(Eps));
         }
 
         [Test]

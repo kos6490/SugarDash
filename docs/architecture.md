@@ -79,7 +79,8 @@ Assets/_Project/
 
 - 저장은 JSON 파일로 한다. SQLite는 사용하지 않는다.
 - 파일은 `Application.persistentDataPath` 아래에 둔다.
-- 이벤트 로그는 주행 단위 파일에 JSON Lines(`.jsonl`) 형식으로 한 줄씩 추가만 한다.
+- 이벤트 로그는 주행 단위 파일에 JSON Lines(`.jsonl`) 형식으로 한 줄씩 추가만 한다. 레코드 형식은 [log-format.md](log-format.md)에 있다.
+- `LogRepository`는 `Subscribe(DomainEventBus)`로 도메인 이벤트를 구독한다. GameBootstrapper가 연결하고 씬 전환·파괴 시 반환값을 Dispose한다. 주행 파일의 시작과 끝은 `ILogRepository.BeginRun`/`EndRun`으로 정한다.
 - 진행도·설정처럼 덮어쓰는 파일은 임시 파일에 쓴 뒤 교체한다.
 - JSON 직렬화는 Infrastructure에서만 한다. 역직렬화용 DTO는 Infrastructure에 두고 `[Preserve]`를 붙인 뒤, 도메인 객체로 변환해 넘긴다.
 
