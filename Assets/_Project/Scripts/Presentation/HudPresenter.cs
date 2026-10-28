@@ -23,11 +23,6 @@ namespace SugarDash.Presentation
         [SerializeField] private Text statusText;
         [SerializeField] private Button retryButton;
 
-        // 러너(트랙 간식 충돌)가 생기기 전까지 쓰는 개발용 버튼. 비워 두면 쓰지 않는다. 러너 작업 때 지운다.
-        [Header("개발용 (러너 전까지)")]
-        [SerializeField] private Button devSnackButton;
-        [SerializeField] private string devSnackId = "juice";
-
         private RunController _run;
         private GameFlowController _flow;
 
@@ -44,7 +39,6 @@ namespace SugarDash.Presentation
             meterText.text = "";
             meterButton.onClick.AddListener(OnMeter);
             retryButton.onClick.AddListener(OnRetry);
-            if (devSnackButton != null) devSnackButton.onClick.AddListener(OnDevSnack);
 
             var subscriptions = new List<IDisposable>
             {
@@ -56,7 +50,6 @@ namespace SugarDash.Presentation
                 foreach (var subscription in subscriptions) subscription.Dispose();
                 meterButton.onClick.RemoveListener(OnMeter);
                 retryButton.onClick.RemoveListener(OnRetry);
-                if (devSnackButton != null) devSnackButton.onClick.RemoveListener(OnDevSnack);
                 _run = null;
                 _flow = null;
             });
@@ -93,13 +86,9 @@ namespace SugarDash.Presentation
                     break;
             }
             retryButton.gameObject.SetActive(_flow.CanRetry);
-            if (devSnackButton != null)
-                devSnackButton.interactable = _run.State == RunState.Running && !_run.IsWorldFrozen;
         }
 
         private void OnMeter() => _run?.PressMeter();
-
-        private void OnDevSnack() => _run?.PickUpSnack(devSnackId);
 
         private void OnRetry()
         {
