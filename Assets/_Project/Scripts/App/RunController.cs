@@ -41,6 +41,15 @@ namespace SugarDash.App
         /// <summary>worldDt 누적. 주행 길이를 잰다.</summary>
         public double WorldTime { get; private set; }
 
+        /// <summary>
+        /// 마지막 <see cref="Tick"/>에서 흐른 worldDt. 러너 화면(캐릭터, 트랙)은 이 값으로만 움직인다.
+        /// 세계 정지·일시정지·주행 종료 중에는 0.
+        /// </summary>
+        public double LastWorldDt { get; private set; }
+
+        /// <summary><see cref="StartRun"/>을 부를 때마다 1씩 는다. 화면이 새 주행을 알아채 초기화하는 데 쓴다.</summary>
+        public int RunCount { get; private set; }
+
         // HUD·패널이 읽는 값. 주행이 없으면 기본값.
         public double Displayed => _session?.Model.Displayed ?? 0;
         public double Actual => _session?.Model.Actual ?? 0;
@@ -58,6 +67,8 @@ namespace SugarDash.App
             _log.BeginRun();
             _commands.Clear();
             WorldTime = 0;
+            LastWorldDt = 0;
+            RunCount++;
             State = RunState.Running;
         }
 
@@ -91,6 +102,7 @@ namespace SugarDash.App
         {
             if (!(dt >= 0) || double.IsInfinity(dt))
                 throw new ArgumentOutOfRangeException(nameof(dt), dt, "0 이상의 유한수여야 한다");
+            LastWorldDt = 0;
             if (State != RunState.Running) return;
 
             var s = _session;
@@ -103,6 +115,7 @@ namespace SugarDash.App
             double worldDt = s.Fsm.IsWorldFrozen ? 0 : dt;
             s.Model.Tick(dt, worldDt, dt, RunningActivity);
             WorldTime += worldDt;
+            LastWorldDt = worldDt;
             s.Director.Evaluate(dt);
             s.Fsm.Update();
 

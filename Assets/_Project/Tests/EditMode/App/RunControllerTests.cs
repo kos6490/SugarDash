@@ -131,6 +131,34 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
+        public void LastWorldDt_FollowsWorldClock()
+        {
+            var rig = new Rig().Triggered();
+            Assert.That(rig.Run.LastWorldDt, Is.EqualTo(1), "1단계에서는 세계가 흐른다");
+
+            rig.Run.PressMeter();
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.LastWorldDt, Is.EqualTo(0), "2단계부터 세계가 멈춘다");
+
+            rig.Run.Pause();
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.LastWorldDt, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void RunCount_IncreasesOnEachStart()
+        {
+            var rig = new Rig();
+            Assert.That(rig.Run.RunCount, Is.EqualTo(0));
+
+            rig.Run.StartRun();
+            rig.Run.EndRun();
+            rig.Run.StartRun();
+
+            Assert.That(rig.Run.RunCount, Is.EqualTo(2));
+        }
+
+        [Test]
         public void InvalidDt_Throws()
         {
             var rig = new Rig();
