@@ -73,6 +73,7 @@ namespace SugarDash.Domain.Tests
             yield return Case("TrackSnackZero", b => b.TrackSnackServings = 0);
             yield return Case("TrackSnackNotBelowDoseUnder", b => b.TrackSnackServings = 1);
             yield return Case("RunDurationZero", b => b.RunDurationSec = 0);
+            yield return Case("TrackSnackIntervalZero", b => b.TrackSnackIntervalSec = 0);
         }
 
         [TestCaseSource(nameof(SingleViolations))]

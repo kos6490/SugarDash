@@ -19,5 +19,5 @@
     { "id": "juice", "kind": "fast", "totalRise": 30, "onsetSec": 1, "absorbSec": 2, "source": "dev-not-real" },
     { "id": "cracker", "kind": "slow", "totalRise": 30, "onsetSec": 4, "absorbSec": 8, "source": "dev-not-real" }
   ],
-  "runner": { "trackSnackServings": 0.5, "runDurationSec": 40 }
+  "runner": { "trackSnackServings": 0.5, "runDurationSec": 40, "trackSnackIntervalSec": 8 }
 }

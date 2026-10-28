@@ -107,6 +107,7 @@ namespace SugarDash.Domain.Config
                 errors.Add($"0 < runner.trackSnackServings < hypo.doses.under 이어야 한다 " +
                            $"(trackSnackServings={runner.TrackSnackServings}, under={config.Hypo.Doses.Under})");
             Positive(errors, "runner.runDurationSec", runner.RunDurationSec);
+            Positive(errors, "runner.trackSnackIntervalSec", runner.TrackSnackIntervalSec);
 
             return errors;
         }

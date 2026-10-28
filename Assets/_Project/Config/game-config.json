@@ -36,5 +36,5 @@
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
   ],
-  "runner": { "trackSnackServings": null, "runDurationSec": null }
+  "runner": { "trackSnackServings": null, "runDurationSec": null, "trackSnackIntervalSec": null }
 }
