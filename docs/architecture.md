@@ -18,7 +18,8 @@ Assets/_Project/
     └── EditMode/
         ├── Domain/          SugarDash.Domain.Tests
         ├── Infrastructure/  SugarDash.Infrastructure.Tests
-        └── App/             SugarDash.App.Tests (테스트 설정 픽스처를 쓰려고 Domain.Tests도 참조)
+        ├── App/             SugarDash.App.Tests (테스트 설정 픽스처를 쓰려고 Domain.Tests도 참조)
+        └── Presentation/    SugarDash.Presentation.Tests (같은 이유로 Domain.Tests도 참조)
 ```
 
 - 어셈블리 이름과 루트 네임스페이스는 같다. 예: `SugarDash.Domain`
