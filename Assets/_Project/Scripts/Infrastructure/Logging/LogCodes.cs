@@ -51,5 +51,29 @@ namespace SugarDash.Infrastructure.Logging
                 default: throw new ArgumentOutOfRangeException(nameof(cause), cause, null);
             }
         }
+
+        // 조회(ReportQueryService)용 역변환. 모르는 코드면 FormatException.
+
+        public static HypoStep ParseStep(string code) => Parse(code, StepValues, Step, "step");
+
+        /// <summary>null이면 오류 없음.</summary>
+        public static HypoErrorCode ParseError(string code) =>
+            code == null ? HypoErrorCode.None : Parse(code, ErrorValues, Error, "errorCode");
+
+        public static EliminationCause ParseCause(string code) => Parse(code, CauseValues, Cause, "cause");
+
+        private static readonly HypoStep[] StepValues = (HypoStep[])Enum.GetValues(typeof(HypoStep));
+        private static readonly HypoErrorCode[] ErrorValues = (HypoErrorCode[])Enum.GetValues(typeof(HypoErrorCode));
+        private static readonly EliminationCause[] CauseValues =
+            (EliminationCause[])Enum.GetValues(typeof(EliminationCause));
+
+        private static T Parse<T>(string code, T[] values, Func<T, string> toCode, string field)
+        {
+            foreach (var value in values)
+            {
+                if (toCode(value) == code) return value;
+            }
+            throw new FormatException($"{field}에 모르는 코드가 있다: {code}");
+        }
     }
 }
