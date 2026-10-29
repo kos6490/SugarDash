@@ -52,6 +52,13 @@
 - `decisionSec`: 단계 진입부터 답할 때까지의 `t` 차이. 단계 제한 시간을 넘지 않는다(큰 프레임 뒤 시간 초과도 제한 시간으로 기록).
 - 문자열 코드는 도메인 enum 이름과 따로 `LogCodes`에 고정한다. enum 이름을 바꿔도 과거 기록과 어긋나지 않게 하기 위해서다.
 
-## 4. 아직 기록하지 않는 것
+## 4. 조회
+
+- `ReportQueryService`(Infrastructure, `ILogQuery` 구현)가 주행 파일을 읽어 레코드를 도메인 이벤트 객체로 되돌리고 `RunRecord`(Domain)로 넘긴다. 계산은 하지 않는다.
+- 형식이 깨진 줄, `schemaVersion`이 다른 줄, 모르는 `type`, 필수 필드가 빠진 줄은 건너뛰고 `RunRecord.SkippedLineCount`에 센다.
+- 지표는 `MetricsCalculator`(Domain)가 계산한다(`docs/glucose-model.md` 6.1절).
+- 주행이 끝나면(완주·탈락) GameFlowController가 기록 파일을 닫은 뒤 다시 읽어 결과 화면용 요약을 만든다. 화면과 기록이 같은 출처를 쓴다.
+
+## 5. 아직 기록하지 않는 것
 
 - 구간(신호 인식 / 조건별 판단 / 복합 상황)과 주행 종류(일반 / 평가). 구간 개념이 코드에 생기면 `RunStarted`에 추가하고 `schemaVersion`을 올린다.
