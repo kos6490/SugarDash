@@ -51,11 +51,12 @@ namespace SugarDash.Bootstrap
             }
 
             _bus = new DomainEventBus();
-            var log = new LogRepository(Path.Combine(Application.persistentDataPath, "logs"), _config.ConfigVersion);
+            string logDirectory = Path.Combine(Application.persistentDataPath, "logs");
+            var log = new LogRepository(logDirectory, _config.ConfigVersion);
             _subscriptions.Add(log.Subscribe(_bus));
 
             _run = new RunController(_config.Runner, CreateSession, log, _bus);
-            _flow = new GameFlowController(_run);
+            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory));
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks));
@@ -63,7 +64,11 @@ namespace SugarDash.Bootstrap
 
         private void Start() => _flow.Begin();
 
-        private void Update() => _run.Tick(Time.deltaTime);
+        private void Update()
+        {
+            _run.Tick(Time.deltaTime);
+            _flow.Tick();
+        }
 
         private void OnApplicationPause(bool paused)
         {
