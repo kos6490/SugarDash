@@ -38,6 +38,9 @@ namespace SugarDash.App
 
         public RunState State { get; private set; } = RunState.Idle;
 
+        /// <summary>열린 주행의 runId(기록 파일 이름). 열린 주행이 없으면 null.</summary>
+        public string CurrentRunId { get; private set; }
+
         /// <summary>worldDt 누적. 주행 길이를 잰다.</summary>
         public double WorldTime { get; private set; }
 
@@ -55,7 +58,7 @@ namespace SugarDash.App
             if (State != RunState.Idle) throw new InvalidOperationException($"이미 주행 중이다 ({State})");
 
             _session = _sessionFactory() ?? throw new InvalidOperationException("세션 팩토리가 null을 반환했다");
-            _log.BeginRun();
+            CurrentRunId = _log.BeginRun();
             _commands.Clear();
             WorldTime = 0;
             State = RunState.Running;
@@ -73,6 +76,7 @@ namespace SugarDash.App
             _session = null;
             _commands.Clear();
             _log.EndRun();
+            CurrentRunId = null;
             State = RunState.Idle;
         }
 
