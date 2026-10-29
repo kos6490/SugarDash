@@ -56,11 +56,12 @@ namespace SugarDash.Bootstrap
             }
 
             _bus = new DomainEventBus();
-            var log = new LogRepository(Path.Combine(Application.persistentDataPath, "logs"), _config.ConfigVersion);
+            string logDirectory = Path.Combine(Application.persistentDataPath, "logs");
+            var log = new LogRepository(logDirectory, _config.ConfigVersion);
             _subscriptions.Add(log.Subscribe(_bus));
 
             _run = new RunController(_config.Runner, CreateSession, log, _bus);
-            _flow = new GameFlowController(_run);
+            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory));
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks));
@@ -74,12 +75,13 @@ namespace SugarDash.Bootstrap
         private void Start() => _flow.Begin();
 
         /// <summary>
-        /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 캐릭터 → 트랙 → 충돌 판정.
+        /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 주행 종료 확인(결과 화면) → 캐릭터 → 트랙 → 충돌 판정.
         /// 러너 화면은 RunController가 정한 worldDt로만 움직인다.
         /// </summary>
         private void Update()
         {
             _run.Tick(Time.deltaTime);
+            _flow.Tick();
 
             if (_run.RunCount != _shownRunCount)
             {

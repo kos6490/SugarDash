@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SugarDash.App;
 using SugarDash.Domain.Config;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
+using SugarDash.Domain.Metrics;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -59,6 +61,17 @@ namespace SugarDash.Presentation
         {
             if (_run == null) return;
 
+            retryButton.gameObject.SetActive(_flow.CanRetry);
+            if (_flow.IsShowingResult)
+            {
+                // 주행이 닫혀 혈당 값이 없으므로 마지막 화면을 그대로 두고 결과만 보여 준다.
+                var result = _flow.LastResult;
+                statusText.text = Title(result);
+                meterText.text = EventSummary(result);
+                meterButton.interactable = false;
+                return;
+            }
+
             double displayed = _run.Displayed;
             glucoseBar.value = (float)displayed;
             glucoseText.text = $"{displayed:0} mg/dL";
@@ -70,22 +83,22 @@ namespace SugarDash.Presentation
                                        (phase == HypoPhase.Idle || phase == HypoPhase.Recognize ||
                                         phase == HypoPhase.Grace);
 
-            switch (_run.State)
-            {
-                case RunState.Eliminated:
-                    statusText.text = "어른이 도와주러 왔어요";
-                    break;
-                case RunState.Completed:
-                    statusText.text = "끝까지 달렸어요!";
-                    break;
-                case RunState.Paused:
-                    statusText.text = "잠시 멈춤";
-                    break;
-                default:
-                    statusText.text = "";
-                    break;
-            }
-            retryButton.gameObject.SetActive(_flow.CanRetry);
+            statusText.text = _run.State == RunState.Paused ? "잠시 멈춤" : "";
+        }
+
+        // 결과 화면(ResultScreenView)이 생기기 전까지 HUD 글자 칸에 결과를 짧게 보여 준다.
+
+        private static string Title(RunSummary result)
+        {
+            if (result == null) return "";
+            return result.Outcome == RunOutcome.Eliminated ? "어른이 도와주러 왔어요" : "끝까지 달렸어요!";
+        }
+
+        private static string EventSummary(RunSummary result)
+        {
+            if (result == null || result.Events.Count == 0) return "";
+            int good = result.Events.Count(e => e.AllCorrect);
+            return $"저혈당 {result.Events.Count}번 중 {good}번 모두 잘 해냈어요";
         }
 
         private void OnMeter() => _run?.PressMeter();
