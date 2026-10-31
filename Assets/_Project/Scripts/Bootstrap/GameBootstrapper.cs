@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SugarDash.App;
 using SugarDash.Domain.Config;
 using SugarDash.Domain.Director;
@@ -29,12 +30,16 @@ namespace SugarDash.Bootstrap
         [SerializeField] private bool useDevConfigInEditor = true;
         [SerializeField] private HudPresenter hud;
         [SerializeField] private HypoChoicePanel choicePanel;
+        [SerializeField] private PlayerController player;
+        [SerializeField] private TrackSpawner track;
+        [SerializeField] private InputAdapter input;
 
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private GameConfig _config;
         private DomainEventBus _bus;
         private RunController _run;
         private GameFlowController _flow;
+        private int _shownRunCount;
 
         private void Awake()
         {
@@ -60,14 +65,39 @@ namespace SugarDash.Bootstrap
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks));
+
+            player.Init(_run, true);
+            track.Init(_config.Runner.TrackSnackIntervalSec, _config.Glucose.Snacks.Select(s => s.Id).ToList(),
+                Environment.TickCount, true);
+            input.Init(_run, player);
         }
 
         private void Start() => _flow.Begin();
 
+        /// <summary>
+        /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 주행 종료 확인(결과 화면) → 캐릭터 → 트랙 → 충돌 판정.
+        /// 러너 화면은 RunController가 정한 worldDt로만 움직인다.
+        /// </summary>
         private void Update()
         {
             _run.Tick(Time.deltaTime);
             _flow.Tick();
+
+            if (_run.RunCount != _shownRunCount)
+            {
+                _shownRunCount = _run.RunCount;
+                player.ResetRun();
+                track.ResetRun(Environment.TickCount);
+            }
+
+            double worldDt = _run.LastWorldDt;
+            player.Advance(worldDt);
+            var phase = _run.Phase;
+            bool obstaclesAllowed = phase != HypoPhase.ResumeCountdown && phase != HypoPhase.Grace;
+            foreach (var item in track.Advance(worldDt, player.CurrentSpeed, obstaclesAllowed))
+            {
+                if (player.Resolve(item) != PlayerController.Outcome.Passed) track.Remove(item);
+            }
         }
 
         private void OnApplicationPause(bool paused)

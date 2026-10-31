@@ -74,7 +74,10 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 - 명령은 지난 프레임의 Update가 끝난 시각에 처리되므로 마감이 지난 답은 정상 답으로 받지 않는다. 대신 판단 시간은 최대 한 프레임 짧게 잡힌다.
 - 달리기 강도(`activity`)는 달리는 동안 항상 1이다. 점프·슬라이드에 따른 차등은 두지 않는다.
 - 트랙 간식을 주우면 `runner.trackSnackServings`배만큼 혈당에 반영한다. 1단계(위험 인지) 중에도 반영하며 대처 단계 판정과는 무관하다. 세계가 멈춘 동안에는 주울 수 없다.
-- 장애물 충돌은 혈당과 무관하다. 감속 연출은 PlayerController가 맡는다.
+- 트랙 간식은 `runner.trackSnackIntervalSec`(worldDt 기준 초)마다 하나씩 놓인다. 간식 종류는 `snacks` 목록에서 무작위로 고른다. 이 간격이 주행 중 혈당 균형을 직접 좌우하므로 담당자가 정할 값이다.
+- 장애물 충돌은 혈당과 무관하다. 부딪히면 잠깐 느려질 뿐이고(PlayerController) 탈락하지 않는다.
+- 러너 화면(캐릭터, 트랙)은 `RunController.LastWorldDt`로만 움직인다. 그래서 2~4단계·알리기 대기·재개 카운트다운·일시정지 중에는 멈추고, 1단계와 유예 시간에는 달린다.
+- 재개 카운트다운과 유예 시간에는 트랙의 장애물을 모두 치우고 새로 놓지 않는다. 간식은 계속 놓는다.
 - 주행은 worldDt 누적이 `runner.runDurationSec`에 닿으면 끝난다(`RunCompleted`). 대처 중(1~4단계, 알리기 대기, 재개 카운트다운)에는 끝내지 않고 대처를 마친 뒤 끝낸다.
 - 탈락하면 주행이 멈추고 더 진행하지 않는다.
 
@@ -176,7 +179,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
   ],
-  "runner": { "trackSnackServings": null, "runDurationSec": null }
+  "runner": { "trackSnackServings": null, "runDurationSec": null, "trackSnackIntervalSec": null }
 }
 ```
 
@@ -186,7 +189,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 - `hypo.doses`는 간식 1회분에 곱하는 배수(과소·적정·과잉)다.
 - `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
 - `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
-- `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.runDurationSec`는 worldDt 기준 주행 길이다(2.5절).
+- `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.runDurationSec`는 worldDt 기준 주행 길이, `runner.trackSnackIntervalSec`는 트랙 간식 간격(worldDt 기준 초)이다(2.5절). 달리기 속도, 레인 폭, 점프·슬라이드 시간, 장애물 간격, 충돌 감속 같은 러너 감각 수치는 혈당과 무관하므로 JSON이 아니라 각 컴포넌트의 Inspector 값으로 둔다.
 
 ## 8. 불변식
 
@@ -220,7 +223,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     - `W`가 양의 유한수가 아니면 14·18번은 건너뛴다(9번이 이미 보고).
 
 ### 8.3 주행 설정
-19. `0 < runner.trackSnackServings < hypo.doses.under`, `runner.runDurationSec > 0`
+19. `0 < runner.trackSnackServings < hypo.doses.under`, `runner.runDurationSec > 0`, `runner.trackSnackIntervalSec > 0`
 
 구간별 1단계 제한 시간 배율이 생기면(2순위) "모든 구간에서 `step1TimeLimitSec × 배율 > delaySec`"를 추가한다.
 

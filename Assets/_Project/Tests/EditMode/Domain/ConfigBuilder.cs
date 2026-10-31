@@ -60,6 +60,7 @@ namespace SugarDash.Domain.Tests
 
         public double TrackSnackServings = 0.5;
         public double RunDurationSec = 120;
+        public double TrackSnackIntervalSec = 8;
 
         public List<Snack> Snacks = new List<Snack>
         {
@@ -82,6 +83,6 @@ namespace SugarDash.Domain.Tests
         public GameConfig Build() => new GameConfig(ConfigVersion, Unit, BuildGlucose(), new HypoConfig(
             Step1TimeLimitSec, Step2TimeLimitSec, Step3TimeLimitSec, Step4TimeLimitSec, GuardianPromptTimeLimitSec,
             ResumeCountdownSec, GraceSec, GuardianSnackId, new DoseConfig(DoseUnder, DoseProper, DoseOver)),
-            new RunnerConfig(TrackSnackServings, RunDurationSec));
+            new RunnerConfig(TrackSnackServings, RunDurationSec, TrackSnackIntervalSec));
     }
 }

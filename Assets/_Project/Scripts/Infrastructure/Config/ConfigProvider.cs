@@ -130,7 +130,8 @@ namespace SugarDash.Infrastructure.Config
                 var runner = Section(dto.Runner, "runner");
                 var runnerConfig = new RunnerConfig(
                     Number(runner?.TrackSnackServings, "runner.trackSnackServings", runner),
-                    Number(runner?.RunDurationSec, "runner.runDurationSec", runner));
+                    Number(runner?.RunDurationSec, "runner.runDurationSec", runner),
+                    Number(runner?.TrackSnackIntervalSec, "runner.trackSnackIntervalSec", runner));
 
                 var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
                     snacks);

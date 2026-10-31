@@ -33,7 +33,7 @@ namespace SugarDash.Infrastructure.Tests
     { ""id"": ""juice"", ""kind"": ""fast"", ""totalRise"": 30, ""onsetSec"": 1, ""absorbSec"": 2, ""source"": ""test"" },
     { ""id"": ""cracker"", ""kind"": ""slow"", ""totalRise"": 30, ""onsetSec"": 4, ""absorbSec"": 8, ""source"": ""test"" }
   ],
-  ""runner"": { ""trackSnackServings"": 0.5, ""runDurationSec"": 120 }
+  ""runner"": { ""trackSnackServings"": 0.5, ""runDurationSec"": 120, ""trackSnackIntervalSec"": 8 }
 }";
 
         /// <summary>픽스처에서 정확히 한 곳을 바꾼다.</summary>
@@ -69,6 +69,7 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Glucose.Levels.NormalRangeMin, Is.EqualTo(72));
             Assert.That(config.Runner.TrackSnackServings, Is.EqualTo(0.5));
             Assert.That(config.Runner.RunDurationSec, Is.EqualTo(120));
+            Assert.That(config.Runner.TrackSnackIntervalSec, Is.EqualTo(8));
         }
 
         [Test]
@@ -126,11 +127,12 @@ namespace SugarDash.Infrastructure.Tests
         {
             var json = With(ValidJson, "\"trackSnackServings\": 0.5", "\"trackSnackServings\": null");
             json = With(json, "\"runDurationSec\": 120", "\"runDurationSec\": null");
+            json = With(json, "\"trackSnackIntervalSec\": 8", "\"trackSnackIntervalSec\": null");
 
             var e = LoadFails(json);
 
             Assert.That(e.MissingPaths,
-                Is.EquivalentTo(new[] { "runner.trackSnackServings", "runner.runDurationSec" }));
+                Is.EquivalentTo(new[] { "runner.trackSnackServings", "runner.runDurationSec", "runner.trackSnackIntervalSec" }));
         }
 
         [Test]
