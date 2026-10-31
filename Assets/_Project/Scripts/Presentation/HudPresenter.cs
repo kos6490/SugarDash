@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using SugarDash.App;
 using SugarDash.Domain.Config;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
-using SugarDash.Domain.Metrics;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,10 +21,10 @@ namespace SugarDash.Presentation
         [SerializeField] private Button meterButton;
         [SerializeField] private Text meterText;
         [SerializeField] private Text statusText;
-        [SerializeField] private Button retryButton;
 
         private RunController _run;
         private GameFlowController _flow;
+        private int _shownRunCount;
 
         /// <summary>GameBootstrapper가 연결한다. 반환값을 Dispose하면 구독과 버튼 연결을 해제한다.</summary>
         public IDisposable Bind(RunController run, GameFlowController flow, DomainEventBus bus,
@@ -40,7 +38,6 @@ namespace SugarDash.Presentation
             glucoseBar.interactable = false;
             meterText.text = "";
             meterButton.onClick.AddListener(OnMeter);
-            retryButton.onClick.AddListener(OnRetry);
 
             var subscriptions = new List<IDisposable>
             {
@@ -51,7 +48,6 @@ namespace SugarDash.Presentation
             {
                 foreach (var subscription in subscriptions) subscription.Dispose();
                 meterButton.onClick.RemoveListener(OnMeter);
-                retryButton.onClick.RemoveListener(OnRetry);
                 _run = null;
                 _flow = null;
             });
@@ -61,15 +57,17 @@ namespace SugarDash.Presentation
         {
             if (_run == null) return;
 
-            retryButton.gameObject.SetActive(_flow.CanRetry);
             if (_flow.IsShowingResult)
             {
-                // 주행이 닫혀 혈당 값이 없으므로 마지막 화면을 그대로 두고 결과만 보여 준다.
-                var result = _flow.LastResult;
-                statusText.text = Title(result);
-                meterText.text = EventSummary(result);
+                // 주행이 닫혀 혈당 값이 없으므로 마지막 화면을 그대로 둔다. 결과는 ResultScreenView가 보여 준다.
                 meterButton.interactable = false;
                 return;
+            }
+
+            if (_run.RunCount != _shownRunCount)
+            {
+                _shownRunCount = _run.RunCount;
+                meterText.text = "";
             }
 
             double displayed = _run.Displayed;
@@ -86,29 +84,6 @@ namespace SugarDash.Presentation
             statusText.text = _run.State == RunState.Paused ? "잠시 멈춤" : "";
         }
 
-        // 결과 화면(ResultScreenView)이 생기기 전까지 HUD 글자 칸에 결과를 짧게 보여 준다.
-
-        private static string Title(RunSummary result)
-        {
-            if (result == null) return "";
-            return result.Outcome == RunOutcome.Eliminated ? "어른이 도와주러 왔어요" : "끝까지 달렸어요!";
-        }
-
-        private static string EventSummary(RunSummary result)
-        {
-            if (result == null || result.Events.Count == 0) return "";
-            int good = result.Events.Count(e => e.AllCorrect);
-            return $"저혈당 {result.Events.Count}번 중 {good}번 모두 잘 해냈어요";
-        }
-
         private void OnMeter() => _run?.PressMeter();
-
-        private void OnRetry()
-        {
-            if (_flow == null) return;
-
-            meterText.text = "";
-            _flow.Retry();
-        }
     }
 }

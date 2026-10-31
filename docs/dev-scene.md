@@ -4,9 +4,12 @@
 
 > **이미 `DevRun` 씬을 만들어 둔 경우**: 처음부터 다시 만들 필요 없다. 아래 순서만 하면 된다.
 > 1. 0절을 다시 훑어본다.
-> 2. Hierarchy에서 `Canvas > Hud > DevSnackButton`을 선택해 Delete 키로 지운다(러너의 트랙 간식이 대신한다).
-> 3. 7절(러너)을 따라 만들고, 8절 3번 표의 `Player`, `Track`, `Input` 칸을 연결한다.
-> 4. Cmd+S로 저장하고 9절 순서로 확인한다.
+> 2. Hierarchy에서 `Canvas > Hud > DevSnackButton`이 남아 있으면 선택해 Delete 키로 지운다(러너의 트랙 간식이 대신한다).
+> 3. `Player`, `Track`, `Input`이 없으면 7절(러너)을 따라 만들고, 8절 3번 표의 `Player`, `Track`, `Input` 칸을 연결한다.
+> 4. Hierarchy에서 `Canvas > Hud > RetryButton`을 선택해 Delete 키로 지운다(`다시 하기`는 결과 화면이 맡는다).
+> 5. 6.5절(결과 화면)을 따라 만들고, 8절 3번 표의 `Result Screen` 칸에 `ResultScreen`을 끌어다 놓는다.
+> 6. 결과 화면을 이미 만들었으면 6.5.3절만 따라 한다.
+> 7. Cmd+S로 저장하고 9절 순서로 확인한다.
 
 ## 0. 화면 구성과 기본 조작
 
@@ -89,7 +92,6 @@ Unity 에디터 기본 배치:
 | `MeterText` | `UI > Legacy > Text` | 0, 580 | 900 × 80 | Text 비움, Font Size 44, 가운데 정렬 |
 | `StatusText` | `UI > Legacy > Text` | 0, 0 | 900 × 120 | Text 비움, Font Size 60, 가운데 정렬 |
 | `MeterButton` | `UI > Legacy > Button` | 0, -800 | 600 × 150 | 자식 글자: Text `측정기`, Font Size 48 |
-| `RetryButton` | `UI > Legacy > Button` | 0, -620 | 600 × 150 | 자식 글자: Text `다시 하기`, Font Size 48 |
 
 ### 5.3 HudPresenter 필드 연결
 `Hud`를 선택하고 Inspector의 `Hud Presenter` 칸에 Hierarchy에서 끌어다 놓는다.
@@ -102,7 +104,6 @@ Unity 에디터 기본 배치:
 | Meter Button | `MeterButton` |
 | Meter Text | `MeterText` |
 | Status Text | `StatusText` |
-| Retry Button | `RetryButton` |
 
 ## 6. 선택 패널 (2~4단계 선택지)
 
@@ -144,6 +145,46 @@ Unity 에디터 기본 배치:
 | Button Container | `Buttons` |
 | Button Template | `ButtonTemplate` |
 
+## 6.5 결과 화면
+
+주행이 끝나면(완주·탈락) 제목, 요약 한 줄, `다시 하기` 버튼을 화면 가운데 흰 박스에 보여 준다. 선택 패널과 같이, 컴포넌트가 붙은 오브젝트는 항상 켜 두고 그 아래 `Root`만 껐다 켠다.
+
+### 6.5.1 오브젝트 만들기
+1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `ResultScreen`. `Add Component` → `ResultScreenView`.
+   - Hierarchy에서 `ResultScreen`이 `HypoChoice`보다 **아래**에 있어야 한다(아래에 있을수록 화면 앞에 그려진다). 위에 있으면 끌어서 `HypoChoice` 아래로 옮긴다.
+2. `ResultScreen` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Root`. 화면 전체를 덮는 그대로 둔다.
+   - `Root`의 `Image` 컴포넌트에서 `Color` 칸을 눌러 R `0`, G `0`, B `0`, A `150`으로 바꾼다. 뒤의 게임 화면이 어둡게 보인다. 더 어둡게 하려면 A를 올린다(255면 완전히 가려진다).
+3. `Root` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Box`. 이것이 결과를 담는 흰 박스다.
+   - `Rect Transform` 왼쪽 위 과녁 모양 네모(Anchor Presets)를 누르고, 4×4 격자의 한가운데(`middle` / `center`) 칸을 누른다(Alt·Shift는 누르지 않는다). 또는 `Anchors`를 펼쳐 `Min`, `Max`의 X, Y 네 칸을 모두 `0.5`로 적는다.
+   - 칸 이름이 `Left`, `Top`, `Right`, `Bottom`에서 `Pos X`, `Pos Y`, `Width`, `Height`로 바뀌었는지 **꼭 확인한다**. 안 바뀐 채 숫자를 넣으면 박스가 화면 구석에 작게 생기고 `다시 하기`가 잘린다.
+   - Pos X `0`, Pos Y `0`, Width `880`, Height `500`
+   - `Image`의 `Color`: R `255`, G `255`, B `255`, A `255`(불투명). 뒤의 혈당 숫자가 비쳐 보이지 않는다.
+4. `Box` 아래에 다음을 만든다(`Box` 위에서 오른쪽 클릭). 위치는 박스 가운데 기준이다.
+
+| 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
+| --- | --- | --- | --- | --- |
+| `TitleText` | `UI > Legacy > Text` | 0, 130 | 800 × 90 | Text 비움, Font Size 52, 가운데 정렬 |
+| `SummaryText` | `UI > Legacy > Text` | 0, 25 | 800 × 110 | Text 비움, Font Size 34, 가운데 정렬 |
+| `RetryButton` | `UI > Legacy > Button` | 0, -140 | 440 × 110 | 자식 글자: Text `다시 하기`, Font Size 40 |
+
+### 6.5.2 ResultScreenView 필드 연결
+`ResultScreen`을 선택하고:
+
+| 필드 | 끌어다 놓을 것 |
+| --- | --- |
+| Root | `ResultScreen` 아래의 `Root` |
+| Title Text | `ResultScreen > Root > Box` 아래의 `TitleText` |
+| Summary Text | `SummaryText` |
+| Retry Button | `ResultScreen > Root > Box` 아래의 `RetryButton` |
+
+`HypoChoice`에도 `Root`, `TitleText`가 있으므로 같은 이름을 끌어다 놓을 때 `ResultScreen` 아래의 것인지 확인한다. `Root` 칸에는 `Box`가 아니라 `Root`를 넣는다(어두운 배경과 박스가 함께 껐다 켜진다).
+
+### 6.5.3 이미 만든 결과 화면 고치기
+저혈당 칸(`Events`, `EventTemplate`)이 있는 옛 결과 화면을 만들었으면 이렇게 고친다. 남은 필드 연결은 그대로 두면 된다.
+1. Hierarchy에서 `ResultScreen > Root > Box > Events`를 선택하고 Delete 키로 지운다(자식 `EventTemplate`도 함께 지워진다).
+2. `Box`, `TitleText`, `SummaryText`, `RetryButton`의 위치·크기·글자 크기를 6.5.1절 3, 4번 값으로 고친다.
+3. Cmd+S로 저장한다.
+
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
 캐릭터와 트랙의 모양(캡슐, 상자, 구)은 실행하면 코드가 만든다. 여기서는 빈 오브젝트 3개에 컴포넌트를 붙이고 카메라만 연결한다.
@@ -166,6 +207,7 @@ Unity 에디터 기본 배치:
 | Use Dev Config In Editor | 체크 |
 | Hud | Hierarchy의 `Hud` |
 | Choice Panel | Hierarchy의 `HypoChoice` |
+| Result Screen | Hierarchy의 `ResultScreen` |
 | Player | Hierarchy의 `Player` |
 | Track | Hierarchy의 `Track` |
 | Input | Hierarchy의 `Input` |
@@ -186,14 +228,19 @@ DevRun
 │   │   ├── WarningText
 │   │   ├── MeterText
 │   │   ├── StatusText
-│   │   ├── MeterButton
-│   │   └── RetryButton
-│   └── HypoChoice
+│   │   └── MeterButton
+│   ├── HypoChoice
+│   │   └── Root
+│   │       ├── TitleText
+│   │       ├── RecheckText
+│   │       └── Buttons
+│   │           └── ButtonTemplate
+│   └── ResultScreen
 │       └── Root
-│           ├── TitleText
-│           ├── RecheckText
-│           └── Buttons
-│               └── ButtonTemplate
+│           └── Box
+│               ├── TitleText
+│               ├── SummaryText
+│               └── RetryButton
 ├── EventSystem
 ├── Player
 ├── Track
@@ -225,8 +272,8 @@ DevRun
 | 5 | `알맞게` | 제목 `이제 무엇을 할까요?`, 버튼 `다시 재기`, `다시 달리기`, `어른에게 알리기` |
 | 6 | `다시 재기` | `다시 잰 혈당: 약 120 mg/dL`. 버튼 `다시 달리기`, `어른에게 알리기`. 화면 숫자도 약 120으로 올라간다 |
 | 7 | `어른에게 알리기` | `곧 다시 달려요`가 1초 보이고 패널이 닫힌다. 숫자가 다시 내려간다 |
-| 8 | 기다린다(약 5초) | 가운데 `끝까지 달렸어요!`, 위쪽(측정값 자리)에 `저혈당 1번 중 1번 모두 잘 해냈어요`, `다시 하기` 버튼이 보인다 |
-| 9 | `다시 하기` | 숫자가 120으로 돌아가고 글자가 지워진 채 새로 시작한다 |
+| 8 | 기다린다(약 5초) | 어두워진 게임 화면 위에 흰 리포트 박스가 뜬다. 제목 `끝까지 달렸어요!`, 그 아래 `저혈당 1번 중 1번 모두 잘 해냈어요`, 아래에 `다시 하기` 버튼 |
+| 9 | `다시 하기` | 결과 화면이 닫히고, 숫자가 120으로 돌아가고 측정값 글자가 지워진 채 새로 시작한다 |
 
 3번에서 측정값이 70 이상이고 패널이 안 열리면 너무 일찍 누른 것이다(불필요 측정으로 기록만 되고 불이익은 없다). 1초 뒤 다시 누른다.
 
@@ -235,14 +282,14 @@ DevRun
 | --- | --- | --- |
 | 1 | Play 후 아무것도 누르지 않는다 | 약 30초에 `혈당 경고!` |
 | 2 | 계속 기다린다 | 저혈당 발동 5초 뒤(시작 후 약 38초) 패널 제목 `도움이 필요해요!`, 버튼 `어른에게 알리기`, `다시 달리기` |
-| 3 | 5초 더 기다린다 | 패널이 닫히고 `어른이 도와주러 왔어요`, 위쪽에 `저혈당 1번 중 0번 모두 잘 해냈어요`, `다시 하기`. 숫자가 더 이상 바뀌지 않는다 |
+| 3 | 5초 더 기다린다 | 패널이 닫히고 결과 화면이 뜬다. 제목 `어른이 도와주러 왔어요`, 그 아래 `저혈당이 1번 왔어요. 다음에는 꼭 해낼 수 있어요!` |
 
 ### 9.4 시나리오 C: 놓쳤지만 어른에게 알려서 이어 가기
 | 순서 | 할 일 | 결과 |
 | --- | --- | --- |
 | 1 | B의 2번까지 진행 | `도움이 필요해요!` |
 | 2 | `어른에게 알리기` | 탈락하지 않고 `무엇을 먹을까요?` 패널로 넘어간다 |
-| 3 | A의 4번부터 진행 | A와 같다 |
+| 3 | A의 4번부터 진행 | A와 같다. 단 결과 화면 요약은 `저혈당이 1번 왔어요. 다음에는 꼭 해낼 수 있어요!`(놓친 단계가 있으므로) |
 
 ### 9.5 시나리오 D: 잘못 고른 경우
 A의 3번까지 진행한 뒤 아래 중 하나를 해 본다. 오류가 나면 `도움이 필요해요!`가 뜨고, `어른에게 알리기`를 누르면 다음 단계로 넘어간다. 거기서 5초 동안 아무것도 안 누르면 B처럼 탈락한다.
@@ -267,7 +314,7 @@ A의 3번까지 진행한 뒤 아래 중 하나를 해 본다. 오류가 나면 
 | 6 | 장애물에 일부러 부딪힌다 | 장애물이 사라지고 1초 동안 느려진다(줄무늬가 천천히 온다). 혈당 숫자에는 변화가 없다 |
 | 7 | 마우스로 화면을 누른 채 끌었다 놓는다 | 끈 방향(좌/우/위/아래)으로 키보드와 같은 동작을 한다. 짧게 클릭만 하면 움직이지 않는다 |
 | 8 | 노란 공과 같은 레인에서 지나간다 | 공이 사라지고 3~4초 뒤 혈당 숫자가 약 15 오른다 |
-| 9 | 노란 공을 계속 먹는다 | 혈당이 크게 떨어지지 않고 40초 뒤 `끝까지 달렸어요!`. 저혈당이 한 번도 없었으면 위쪽 요약 줄은 비어 있다 |
+| 9 | 노란 공을 계속 먹는다 | 혈당이 크게 떨어지지 않고 40초 뒤 결과 화면에 `끝까지 달렸어요!`. 저혈당이 한 번도 없었으면 그 아래 `이번에는 저혈당이 없었어요`가 나온다 |
 | 10 | 간식을 피하다가 저혈당 → `측정기` | 패널이 열리면 캐릭터와 트랙이 멈추고 방향키가 듣지 않는다 |
 | 11 | 시나리오 A의 4~7번으로 대처를 마친다 | `곧 다시 달려요` 동안 트랙의 장애물이 모두 사라진다. 다시 달린 뒤 약 3초 동안 장애물이 없다 |
 | 12 | 끝난 뒤 `다시 하기` | 캐릭터가 가운데로 돌아가고 트랙이 처음부터 다시 나온다 |
@@ -282,6 +329,9 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | Console에 `NullReferenceException`이 뜬다 | 5.3, 6.3, 7, 8절의 필드 중 비어 있는(`None`) 칸이 있다 |
 | 버튼을 눌러도 반응이 없다 | `EventSystem`에 `Input System UI Input Module`이 붙어 있는지(3단계 2번) |
 | 선택 패널이 전혀 안 나온다 | `HypoChoice` 오브젝트가 켜져 있는지(Inspector 이름 왼쪽 체크박스). 끄고 켜는 것은 `Root`만 한다 |
+| 주행이 끝나도 결과 화면이 안 나온다 | `ResultScreen` 오브젝트가 켜져 있는지, `Bootstrapper`의 `Result Screen` 칸이 연결됐는지(6.5.2, 8절) |
+| 결과 화면이 한쪽으로 치우치거나 `다시 하기`가 잘린다 | `Box`의 Anchor가 가운데로 바뀌지 않았다(6.5.1절 3번). 칸 이름이 `Pos X`, `Width`인지 확인한다 |
+| Console에 `Can't Generate Mesh, No Font Asset has been assigned.` 노란 경고 | Unity 에디터 자체 화면의 경고다. 게임과 관계없으니 무시한다 |
 | 캐릭터나 트랙이 안 보인다 | `Player`, `Track`의 Position이 0, 0, 0인지(7절 3번), `Bootstrapper`의 `Player`, `Track` 칸이 연결됐는지 |
 | 방향키를 눌러도 안 움직인다 | `Bootstrapper`의 `Input` 칸이 연결됐는지. Game 창을 한 번 클릭해 키 입력을 받게 한다 |
 | 한글이 네모로 보인다 | Legacy Text가 아니라 TextMeshPro로 만든 것이다. Legacy로 다시 만든다 |
