@@ -30,6 +30,7 @@ namespace SugarDash.Bootstrap
         [SerializeField] private bool useDevConfigInEditor = true;
         [SerializeField] private HudPresenter hud;
         [SerializeField] private HypoChoicePanel choicePanel;
+        [SerializeField] private ResultScreenView resultScreen;
         [SerializeField] private PlayerController player;
         [SerializeField] private TrackSpawner track;
         [SerializeField] private InputAdapter input;
@@ -65,6 +66,7 @@ namespace SugarDash.Bootstrap
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks));
+            _subscriptions.Add(resultScreen.Bind(_flow));
 
             player.Init(_run, true);
             track.Init(_config.Runner.TrackSnackIntervalSec, _config.Glucose.Snacks.Select(s => s.Id).ToList(),
