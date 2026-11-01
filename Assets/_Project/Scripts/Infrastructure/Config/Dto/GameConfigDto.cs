@@ -16,6 +16,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public RecurrenceDto Recurrence { get; set; }
         public DisplayDto Display { get; set; }
         public HypoDto Hypo { get; set; }
+        public HyperDto Hyper { get; set; }
         public SuddenDropDto SuddenDrop { get; set; }
         public List<SnackDto> Snacks { get; set; }
         public RunnerDto Runner { get; set; }
@@ -39,6 +40,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? HypoThreshold { get; set; }
         public double? HypoReleaseMargin { get; set; }
         public double? HyperThreshold { get; set; }
+        public double? HyperReleaseMargin { get; set; }
         public double? BaseDecayPerSec { get; set; }
         public double? RunDecayPerSec { get; set; }
         public double? NormalRangeMin { get; set; }
@@ -69,6 +71,12 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? GraceSec { get; set; }
         public string GuardianSnackId { get; set; }
         public DosesDto Doses { get; set; }
+    }
+
+    [Preserve]
+    public sealed class HyperDto
+    {
+        public double? NotifyTimeLimitSec { get; set; }
     }
 
     [Preserve]

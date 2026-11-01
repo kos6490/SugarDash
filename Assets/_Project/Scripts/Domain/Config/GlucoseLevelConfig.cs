@@ -4,7 +4,7 @@ namespace SugarDash.Domain.Config
     public sealed class GlucoseLevelConfig
     {
         public GlucoseLevelConfig(double initial, double min, double max, double hypoThreshold,
-            double hypoReleaseMargin, double hyperThreshold, double baseDecayPerSec, double runDecayPerSec,
+            double hypoReleaseMargin, double hyperThreshold, double hyperReleaseMargin, double baseDecayPerSec, double runDecayPerSec,
             double normalRangeMin)
         {
             Initial = initial;
@@ -13,6 +13,7 @@ namespace SugarDash.Domain.Config
             HypoThreshold = hypoThreshold;
             HypoReleaseMargin = hypoReleaseMargin;
             HyperThreshold = hyperThreshold;
+            HyperReleaseMargin = hyperReleaseMargin;
             BaseDecayPerSec = baseDecayPerSec;
             RunDecayPerSec = runDecayPerSec;
             NormalRangeMin = normalRangeMin;
@@ -24,6 +25,8 @@ namespace SugarDash.Domain.Config
         public double HypoThreshold { get; }
         public double HypoReleaseMargin { get; }
         public double HyperThreshold { get; }
+        /// <summary>고혈당 이벤트 뒤 HyperThreshold − 이 값 아래로 내려와야 다시 발동할 수 있다.</summary>
+        public double HyperReleaseMargin { get; }
         public double BaseDecayPerSec { get; }
         /// <summary>달리기 감소율. activity와 worldDt에 비례한다.</summary>
         public double RunDecayPerSec { get; }
@@ -31,5 +34,6 @@ namespace SugarDash.Domain.Config
         public double NormalRangeMin { get; }
 
         public double HypoReleaseLevel => HypoThreshold + HypoReleaseMargin;
+        public double HyperReleaseLevel => HyperThreshold - HyperReleaseMargin;
     }
 }

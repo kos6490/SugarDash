@@ -32,6 +32,9 @@ namespace SugarDash.Domain.Tests
             yield return Case("HyperAboveMax", b => b.Max = 200);
             yield return Case("ReleaseMarginZero", b => b.HypoReleaseMargin = 0);
             yield return Case("ReleaseLevelNotBelowHyper", b => b.HypoReleaseMargin = 200);
+            yield return Case("HyperReleaseMarginZero", b => b.HyperReleaseMargin = 0);
+            yield return Case("ReleaseBandsOverlap", b => b.HyperReleaseMargin = 175); // 80 ≥ 250 − 175
+            yield return Case("HyperNotifyLimitZero", b => b.HyperNotifyTimeLimitSec = 0);
             yield return Case("BaseDecayNegative", b => b.BaseDecayPerSec = -1);
             yield return Case("RunDecayNegative", b => b.RunDecayPerSec = -1);
             yield return Case("SnackRiseNegative", b => b.SnackById("cracker").TotalRise = -1);

@@ -33,6 +33,7 @@ namespace SugarDash.Domain.Tests
         public double HypoThreshold = 70;
         public double HypoReleaseMargin = 10;
         public double HyperThreshold = 250;
+        public double HyperReleaseMargin = 20;
         public double BaseDecayPerSec = 0;
         public double RunDecayPerSec = 0;
         public double NormalRangeMin = 80;
@@ -58,6 +59,8 @@ namespace SugarDash.Domain.Tests
         public double DoseProper = 2;
         public double DoseOver = 3;
 
+        public double HyperNotifyTimeLimitSec = 5;
+
         public double TrackSnackServings = 0.5;
         public double RunDurationSec = 120;
         public double TrackSnackIntervalSec = 8;
@@ -73,7 +76,7 @@ namespace SugarDash.Domain.Tests
         public GlucoseConfig BuildGlucose() => new GlucoseConfig(
             new TimeConfig(TimeScale, RecheckIntervalRealMin, RecheckIntervalSource, FastForwardTickSimSec),
             new GlucoseLevelConfig(Initial, Min, Max, HypoThreshold, HypoReleaseMargin, HyperThreshold,
-                BaseDecayPerSec, RunDecayPerSec, NormalRangeMin),
+                HyperReleaseMargin, BaseDecayPerSec, RunDecayPerSec, NormalRangeMin),
             new RecurrenceConfig(CooldownSec),
             new DisplayConfig(DelaySec, WarningThreshold),
             new SuddenDropConfig(SuddenDropChancePerSec, SuddenDropAmount, SuddenDropDurationSec),
@@ -83,6 +86,7 @@ namespace SugarDash.Domain.Tests
         public GameConfig Build() => new GameConfig(ConfigVersion, Unit, BuildGlucose(), new HypoConfig(
             Step1TimeLimitSec, Step2TimeLimitSec, Step3TimeLimitSec, Step4TimeLimitSec, GuardianPromptTimeLimitSec,
             ResumeCountdownSec, GraceSec, GuardianSnackId, new DoseConfig(DoseUnder, DoseProper, DoseOver)),
+            new HyperConfig(HyperNotifyTimeLimitSec),
             new RunnerConfig(TrackSnackServings, RunDurationSec, TrackSnackIntervalSec));
     }
 }

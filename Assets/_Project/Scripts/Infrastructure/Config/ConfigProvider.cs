@@ -77,6 +77,7 @@ namespace SugarDash.Infrastructure.Config
                     Number(glucose?.HypoThreshold, "glucose.hypoThreshold", glucose),
                     Number(glucose?.HypoReleaseMargin, "glucose.hypoReleaseMargin", glucose),
                     Number(glucose?.HyperThreshold, "glucose.hyperThreshold", glucose),
+                    Number(glucose?.HyperReleaseMargin, "glucose.hyperReleaseMargin", glucose),
                     Number(glucose?.BaseDecayPerSec, "glucose.baseDecayPerSec", glucose),
                     Number(glucose?.RunDecayPerSec, "glucose.runDecayPerSec", glucose),
                     Number(glucose?.NormalRangeMin, "glucose.normalRangeMin", glucose));
@@ -105,6 +106,10 @@ namespace SugarDash.Infrastructure.Config
                         Number(doses?.Under, "hypo.doses.under", doses),
                         Number(doses?.Proper, "hypo.doses.proper", doses),
                         Number(doses?.Over, "hypo.doses.over", doses)));
+
+                var hyper = Section(dto.Hyper, "hyper");
+                var hyperConfig = new HyperConfig(
+                    Number(hyper?.NotifyTimeLimitSec, "hyper.notifyTimeLimitSec", hyper));
 
                 var drop = Section(dto.SuddenDrop, "suddenDrop");
                 var dropConfig = new SuddenDropConfig(
@@ -135,7 +140,8 @@ namespace SugarDash.Infrastructure.Config
 
                 var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
                     snacks);
-                return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, runnerConfig);
+                return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, hyperConfig,
+                    runnerConfig);
             }
 
             private T Section<T>(T section, string path) where T : class
