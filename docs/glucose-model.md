@@ -78,7 +78,7 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 - 장애물 충돌은 혈당과 무관하다. 부딪히면 잠깐 느려질 뿐이고(PlayerController) 탈락하지 않는다.
 - 러너 화면(캐릭터, 트랙)은 `RunController.LastWorldDt`로만 움직인다. 그래서 2~4단계·알리기 대기·재개 카운트다운·일시정지 중에는 멈추고, 1단계와 유예 시간에는 달린다.
 - 재개 카운트다운과 유예 시간에는 트랙의 장애물을 모두 치우고 새로 놓지 않는다. 간식은 계속 놓는다.
-- 주행은 worldDt 누적이 `runner.runDurationSec`에 닿으면 끝난다(`RunCompleted`). 대처 중(1~4단계, 알리기 대기, 재개 카운트다운)에는 끝내지 않고 대처를 마친 뒤 끝낸다.
+- 주행은 worldDt 누적이 `runner.runDurationSec`에 닿으면 끝난다(`RunCompleted`). 대처 중(1~4단계, 고혈당 알리기, 알리기 대기, 재개 카운트다운)과 유예 시간에는 끝내지 않고 마친 뒤 끝낸다. 유예가 끝나 다음 판정에서 고혈당이 발동할 차례(`EventDirector.IsHyperTriggerPending`)여도 끝내지 않는다. 그래서 과잉 처치 뒤 고혈당 알리기를 건너뛰지 않는다(`docs/hyper-event.md` 2절).
 - 탈락하면 주행이 멈추고 더 진행하지 않는다.
 
 ## 3. 처치 반영 정책: 아동이 고른 양을 그대로 반영
@@ -157,6 +157,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     "hypoThreshold": null,
     "hypoReleaseMargin": null,
     "hyperThreshold": null,
+    "hyperReleaseMargin": null,
     "baseDecayPerSec": null,
     "runDecayPerSec": null,
     "normalRangeMin": null
@@ -174,6 +175,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     "guardianSnackId": "juice",
     "doses": { "under": null, "proper": null, "over": null }
   },
+  "hyper": { "notifyTimeLimitSec": null },
   "suddenDrop": { "chancePerSec": null, "amount": null, "durationSec": null },
   "snacks": [
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
@@ -195,7 +197,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 
 ### 8.1 GlucoseConfig 단독
 1. `min < hypoThreshold < initial < hyperThreshold ≤ max`
-2. `hypoReleaseMargin > 0`, `hypoThreshold + hypoReleaseMargin < hyperThreshold`
+2. `hypoReleaseMargin > 0`, `hyperReleaseMargin > 0`, `hypoThreshold + hypoReleaseMargin < hyperThreshold − hyperReleaseMargin`
 3. 하강률, 상승량, `onsetSec`, `absorbSec`는 모두 `≥ 0`, `absorbSec > 0`
 4. `display.delaySec ≥ 0`
 5. `display.warningThreshold ≥ hypoThreshold` (경고가 발동 후 늦어도 `delaySec` 뒤에 뜨기 위한 조건)
@@ -225,6 +227,9 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 ### 8.3 주행 설정
 19. `0 < runner.trackSnackServings < hypo.doses.under`, `runner.runDurationSec > 0`, `runner.trackSnackIntervalSec > 0`
 
+### 8.4 고혈당 설정
+20. `hyper.notifyTimeLimitSec > 0` (`docs/hyper-event.md`)
+
 구간별 1단계 제한 시간 배율이 생기면(2순위) "모든 구간에서 `step1TimeLimitSec × 배율 > delaySec`"를 추가한다.
 
 ## 9. 영향받는 모듈
@@ -232,7 +237,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 | 모듈 | 영향 |
 |---|---|
 | HypoEventFsm | 4단계 판정, 오류 공통 처리, 탈락, 재측정 빨리 감기, 재개·유예, `IsWorldFrozen`, 정책 A |
-| 고혈당 처리 | 정책 A로 1순위 범위 편입, `hyperThreshold` 사용 |
+| 고혈당 처리 | 정책 A로 1순위 범위 편입, `hyperThreshold` 사용. 설계는 `docs/hyper-event.md` |
 | MetricsCalculator | 불필요 측정 정의 변경, 재발 이벤트의 정확 대응률 포함 여부, 4단계는 재측정·알리기 두 기록을 묶어 계산 |
 | EventDirector | 급하강 판정(`IRandomSource`), 저혈당 발동·cooldown·재무장·재발 판정, EventId, 게이지 경고, 유예 중 억제 |
 | RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 쌓인 명령 처리 → Tick → Evaluate → Update 순서 호출(2.5절) |
@@ -241,7 +246,5 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 
 ## 10. 남은 결정 사항
 
-- 고혈당 이벤트 중 혈당 정지 여부(저혈당과 같은 규칙을 쓸지)
-- 고혈당 이벤트 발동 후 재무장 규칙(해제 여유분, cooldown). 정해지기 전까지 `hyperThreshold`는 설정과 불변식에만 쓰고 발동 판정은 구현하지 않는다.
 - 흡수 곡선 모양(1순위는 균등 흡수로 시작)
 - 모든 수치(PLACEHOLDER)
