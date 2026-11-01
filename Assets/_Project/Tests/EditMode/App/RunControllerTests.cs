@@ -71,6 +71,7 @@ namespace SugarDash.App.Tests
                 Collect<HypoEventTriggered>();
                 Collect<StepAnswered>();
                 Collect<HypoResolved>();
+                Collect<HyperResolved>();
                 Collect<RunEliminated>();
                 Collect<TrackSnackEaten>();
                 Collect<RunCompleted>();
@@ -82,7 +83,8 @@ namespace SugarDash.App.Tests
                     var fsm = new HypoEventFsm(config, model, director, Bus);
                     var flag = new Flag(Bus.Subscribe<HypoEventTriggered>(fsm.Begin));
                     Sessions.Add(flag);
-                    return new RunSession(model, director, fsm, flag);
+                    return new RunSession(model, director, fsm, flag,
+                        Bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
                 }, Log, Bus);
             }
 
@@ -381,12 +383,85 @@ namespace SugarDash.App.Tests
             rig.Run.Tick(1);
             rig.Run.PressHelp(HypoPhase.Notify);
             rig.Run.Tick(1); // 재개 카운트다운 1초 → 유예 시간
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Grace));
+
+            rig.Ticks(2);
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running), "유예 중에는 끝내지 않는다");
+            rig.Run.Tick(1); // 유예 3초 끝
 
             Assert.That(rig.Run.State, Is.EqualTo(RunState.Completed));
             Assert.That(rig.All<HypoResolved>().Single().AllCorrect, Is.True);
             int resolved = rig.Events.FindIndex(e => e is HypoResolved);
             int completed = rig.Events.FindIndex(e => e is RunCompleted);
             Assert.That(completed, Is.GreaterThan(resolved));
+        }
+
+        /// <summary>과잉 처치로 높아진 혈당은 유예가 끝난 뒤 고혈당으로 이어진다. 주행 길이가 다 차도 알리기를 마친 뒤 끝낸다.</summary>
+        [Test]
+        public void RunDuration_WaitsForHyperEventAfterGrace()
+        {
+            var rig = new Rig(b =>
+            {
+                b.RunDurationSec = 27;
+                b.HyperThreshold = 150;
+                b.DoseOver = 4;
+            }).Triggered();
+            rig.Run.Tick(1); // 주행 길이 27초 도달, 66
+            rig.Run.PressMeter();
+            rig.Run.Tick(1);
+            rig.Run.ChooseSnack("juice");
+            rig.Run.Tick(1);
+            rig.Run.ChooseDose(DoseLevel.Over);
+            rig.Run.Tick(1);
+            rig.Run.PressHelp(HypoPhase.GuardianPrompt); // 4인분(+120)
+            rig.Run.Tick(1);
+            rig.Run.ChooseRecheck(); // 186
+            rig.Run.Tick(1);
+            rig.Run.PressHelp(HypoPhase.Notify);
+            rig.Run.Tick(1); // 카운트다운 → 유예
+            rig.Ticks(3); // 유예 끝, 180
+
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running), "다음 판정에서 고혈당이 발동하므로 끝내지 않는다");
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.HyperNotify));
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running));
+
+            rig.Run.PressHelp(HypoPhase.HyperNotify);
+            rig.Run.Tick(1); // 카운트다운 → 유예
+            rig.Ticks(3);
+
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Completed));
+            Assert.That(rig.All<HyperResolved>().Single().AllCorrect, Is.True);
+            Assert.That(rig.Events.FindIndex(e => e is RunCompleted),
+                Is.GreaterThan(rig.Events.FindIndex(e => e is HyperResolved)));
+        }
+    
+
+        [Test]
+        public void HyperEvent_FreezesWorld_AndCommandsReachHyperStep()
+        {
+            var rig = new Rig(b => b.HyperThreshold = 125); // 해제 수준 105
+            rig.Run.StartRun();
+            rig.Run.PickUpSnack("juice");
+            rig.Run.PickUpSnack("juice"); // 0.5 × 2 = 1인분(+30)
+
+            rig.Ticks(2); // 118 → 131
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.HyperNotify));
+            Assert.That(rig.Run.IsWorldFrozen, Is.True);
+
+            rig.Ticks(1);
+            Assert.That(rig.Run.WorldTime, Is.EqualTo(2).Within(Eps));
+            Assert.That(rig.Run.LastWorldDt, Is.EqualTo(0));
+
+            rig.Run.ChooseKeepRunning();
+            rig.Ticks(1);
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.GuardianPrompt));
+
+            rig.Run.PressHelp(HypoPhase.GuardianPrompt);
+            rig.Ticks(1); // 같은 Tick에서 카운트다운(1초)도 끝난다
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Grace));
+            Assert.That(rig.All<HyperResolved>().Single().AllCorrect, Is.False);
+            Assert.That(rig.All<StepAnswered>().Single().ErrorCode, Is.EqualTo(HypoErrorCode.HyKeepRunning));
         }
     }
 }

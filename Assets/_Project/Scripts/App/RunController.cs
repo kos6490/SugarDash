@@ -174,12 +174,14 @@ namespace SugarDash.App
             return true;
         }
 
-        /// <summary>대처 중에는 끝내지 않는다. 진행 중인 이벤트의 기록이 잘리지 않게 대처를 마친 뒤 끝낸다.</summary>
+        /// <summary>
+        /// 대처 중과 유예 중에는 끝내지 않는다. 진행 중인 이벤트의 기록이 잘리지 않게 대처를 마친 뒤 끝내고,
+        /// 유예가 끝나 고혈당이 발동할 차례면 그 알리기까지 마친 뒤 끝낸다(docs/hyper-event.md 2절).
+        /// </summary>
         private void CheckCompleted()
         {
             if (WorldTime < _runner.RunDurationSec) return;
-            var phase = _session.Fsm.Phase;
-            if (phase != HypoPhase.Idle && phase != HypoPhase.Grace) return;
+            if (_session.Fsm.Phase != HypoPhase.Idle || _session.Director.IsHyperTriggerPending) return;
 
             var model = _session.Model;
             _bus.Publish(new RunCompleted(WorldTime, model.SimTime, model.DecisionTime));

@@ -17,6 +17,7 @@ namespace SugarDash.Infrastructure.Logging
                 case HypoStep.Dose: return "dose";
                 case HypoStep.Remeasure: return "remeasure";
                 case HypoStep.Notify: return "notify";
+                case HypoStep.HyperNotify: return "hyper_notify";
                 default: throw new ArgumentOutOfRangeException(nameof(step), step, null);
             }
         }
@@ -38,6 +39,8 @@ namespace SugarDash.Infrastructure.Logging
                 case HypoErrorCode.RcNoRecheck: return "RC_NO_RECHECK";
                 case HypoErrorCode.RcNoNotify: return "RC_NO_NOTIFY";
                 case HypoErrorCode.HelpInstead: return "HELP_INSTEAD";
+                case HypoErrorCode.HyKeepRunning: return "HY_KEEP_RUNNING";
+                case HypoErrorCode.HyTimeout: return "HY_TIMEOUT";
                 default: throw new ArgumentOutOfRangeException(nameof(code), code, null);
             }
         }

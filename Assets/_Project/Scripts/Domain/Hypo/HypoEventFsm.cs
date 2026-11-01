@@ -10,6 +10,7 @@ namespace SugarDash.Domain.Hypo
 {
     /// <summary>
     /// 저혈당 4단계 대처 상태 기계(docs/superpowers/specs/2026-10-20-hypo-event-fsm-design.md).
+    /// 고혈당 "어른에게 알리기" 한 단계(docs/hyper-event.md)도 여기서 처리하고, 오류 공통 처리·탈락·재개·유예를 함께 쓴다.
     /// 마감은 GlucoseModel의 DecisionTime(유예 시간만 SimTime) 기준 절대 시각으로 두고 <see cref="Update"/>에서 판정한다.
     /// 혈당에는 아동이 실제로 고른 간식과 양을 반영하고, 아동이 고른 것이 없을 때만 어른이 정답을 대신한다.
     /// </summary>
@@ -32,6 +33,7 @@ namespace SugarDash.Domain.Hypo
         private double _phaseStart;
         private double _deadline;
         private bool _anyError;
+        private bool _isHyper;
 
         // 알리기 대기 중 상태
         private HypoStep _promptStep;
@@ -81,7 +83,21 @@ namespace SugarDash.Domain.Hypo
             EventId = e.EventId;
             DoseSnackId = null;
             _anyError = false;
+            _isHyper = false;
             Enter(HypoPhase.Recognize, _hypo.Step1TimeLimitSec);
+        }
+
+        /// <summary>고혈당 이벤트를 시작한다. 세계를 멈추고 "어른에게 알리기"를 기다린다.</summary>
+        public void BeginHyper(HyperEventTriggered e)
+        {
+            if (e == null) throw new ArgumentNullException(nameof(e));
+            if (Phase != HypoPhase.Idle) throw new InvalidOperationException($"이미 진행 중이다 ({Phase})");
+
+            EventId = e.EventId;
+            DoseSnackId = null;
+            _anyError = false;
+            _isHyper = true;
+            Enter(HypoPhase.HyperNotify, _config.Hyper.NotifyTimeLimitSec);
         }
 
         /// <summary>
@@ -116,6 +132,9 @@ namespace SugarDash.Domain.Hypo
                 case HypoPhase.Notify:
                     Error(HypoStep.Notify, null, HypoErrorCode.RcNoNotify, Resolve);
                     break;
+                case HypoPhase.HyperNotify:
+                    Error(HypoStep.HyperNotify, null, HypoErrorCode.HyTimeout, Resolve);
+                    break;
                 case HypoPhase.GuardianPrompt:
                     Eliminate(EliminationCause.PromptTimeout);
                     break;
@@ -149,7 +168,7 @@ namespace SugarDash.Domain.Hypo
                     Correct(HypoStep.Recognize, ChoiceMeter, measuredBeforeWarning);
                     EnterRespond();
                     break;
-                // 2~4단계와 알리기 대기 중에는 패널 UI가 측정기를 막는다.
+                // 2~4단계, 고혈당 알리기, 알리기 대기 중에는 패널 UI가 측정기를 막는다.
             }
         }
 
@@ -172,7 +191,14 @@ namespace SugarDash.Domain.Hypo
             return true;
         }
 
-        public bool ChooseKeepRunning() => ChooseNoSnack(ChoiceKeepRunning, HypoErrorCode.RsKeepRunning);
+        /// <summary>"계속 달리기". 2단계에서는 RS_KEEP_RUNNING, 고혈당 알리기에서는 HY_KEEP_RUNNING 오류다.</summary>
+        public bool ChooseKeepRunning()
+        {
+            if (Phase != HypoPhase.HyperNotify) return ChooseNoSnack(ChoiceKeepRunning, HypoErrorCode.RsKeepRunning);
+
+            Error(HypoStep.HyperNotify, ChoiceKeepRunning, HypoErrorCode.HyKeepRunning, Resolve);
+            return true;
+        }
 
         public bool ChooseNoSugar() => ChooseNoSnack(ChoiceNoSugar, HypoErrorCode.RsNone);
 
@@ -238,7 +264,7 @@ namespace SugarDash.Domain.Hypo
         }
 
         /// <summary>
-        /// "어른에게 알리기" 버튼. 알리기 대기와 4단계 ②에서는 정답 행동이다.
+        /// "어른에게 알리기" 버튼. 알리기 대기, 4단계 ②, 고혈당 알리기에서는 정답 행동이다.
         /// 2·3단계에서 선택 대신 누르면 HELP_INSTEAD, 4단계 ①에서 누르면 재측정을 건너뛴 RC_NO_RECHECK 오답이지만,
         /// 이미 알렸으므로 알리기 대기 없이 어른이 보정한다.
         /// </summary>
@@ -271,6 +297,10 @@ namespace SugarDash.Domain.Hypo
                     return true;
                 case HypoPhase.Notify:
                     Correct(HypoStep.Notify, ChoiceHelp);
+                    Resolve();
+                    return true;
+                case HypoPhase.HyperNotify:
+                    Correct(HypoStep.HyperNotify, ChoiceHelp);
                     Resolve();
                     return true;
                 default:
@@ -324,8 +354,16 @@ namespace SugarDash.Domain.Hypo
 
         private void Resolve()
         {
-            Publish(new HypoResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
-            _director.NotifyHypoEventEnded();
+            if (_isHyper)
+            {
+                Publish(new HyperResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
+                _director.NotifyHyperEventEnded();
+            }
+            else
+            {
+                Publish(new HypoResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
+                _director.NotifyHypoEventEnded();
+            }
             Enter(HypoPhase.ResumeCountdown, _hypo.ResumeCountdownSec);
         }
 

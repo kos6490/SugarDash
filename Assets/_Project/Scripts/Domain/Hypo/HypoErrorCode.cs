@@ -26,5 +26,9 @@ namespace SugarDash.Domain.Hypo
         RcNoNotify,
         /// <summary>HELP_INSTEAD: 2·3단계에서 선택 대신 알리기 버튼을 눌렀다.</summary>
         HelpInstead,
+        /// <summary>HY_KEEP_RUNNING: 고혈당에서 알리지 않고 계속 달리기를 골랐다.</summary>
+        HyKeepRunning,
+        /// <summary>HY_TIMEOUT: 고혈당 알리기 제한 시간 초과.</summary>
+        HyTimeout,
     }
 }

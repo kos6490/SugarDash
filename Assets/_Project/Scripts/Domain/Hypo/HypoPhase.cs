@@ -14,6 +14,8 @@ namespace SugarDash.Domain.Hypo
         Remeasure,
         /// <summary>4단계 재확인 ② 어른에게 알리기.</summary>
         Notify,
+        /// <summary>고혈당 "어른에게 알리기". 세계가 멈춘다.</summary>
+        HyperNotify,
         /// <summary>오류 뒤 "어른에게 알리기"를 기다린다.</summary>
         GuardianPrompt,
         /// <summary>다시 달리기 전 카운트다운.</summary>
