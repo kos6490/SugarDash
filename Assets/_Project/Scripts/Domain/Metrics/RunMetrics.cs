@@ -22,7 +22,7 @@ namespace SugarDash.Domain.Metrics
         public Ratio AccurateResponse { get; }
         /// <summary>단계별 정답률: 맞힌 수 ÷ 그 단계까지 간 수.</summary>
         public IReadOnlyDictionary<MetricStep, Ratio> StepAccuracy { get; }
-        /// <summary>오류 코드별 횟수. 없는 코드는 들어 있지 않다.</summary>
+        /// <summary>오류 코드별 횟수. 고혈당 오류 코드도 들어간다. 없는 코드는 들어 있지 않다.</summary>
         public IReadOnlyDictionary<HypoErrorCode, int> ErrorCounts { get; }
         /// <summary>단계별 판단 시간 중앙값(초). 시간 초과는 판단이 아니므로 뺀다. 답이 없으면 null.</summary>
         public IReadOnlyDictionary<HypoStep, double?> MedianDecisionSec { get; }

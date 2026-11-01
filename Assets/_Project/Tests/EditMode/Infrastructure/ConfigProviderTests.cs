@@ -19,7 +19,7 @@ namespace SugarDash.Infrastructure.Tests
     ""fastForwardTickSimSec"": 0.5 },
   ""glucose"": {
     ""initial"": 120, ""min"": 20, ""max"": 400, ""hypoThreshold"": 70, ""hypoReleaseMargin"": 10,
-    ""hyperThreshold"": 250, ""baseDecayPerSec"": 0.5, ""runDecayPerSec"": 1, ""normalRangeMin"": 72
+    ""hyperThreshold"": 250, ""hyperReleaseMargin"": 20, ""baseDecayPerSec"": 0.5, ""runDecayPerSec"": 1, ""normalRangeMin"": 72
   },
   ""recurrence"": { ""cooldownSec"": 10 },
   ""display"": { ""delaySec"": 3, ""warningThreshold"": 80 },
@@ -28,6 +28,7 @@ namespace SugarDash.Infrastructure.Tests
     ""guardianPromptTimeLimitSec"": 5, ""resumeCountdownSec"": 1, ""graceSec"": 3,
     ""guardianSnackId"": ""juice"", ""doses"": { ""under"": 1, ""proper"": 2, ""over"": 3 }
   },
+  ""hyper"": { ""notifyTimeLimitSec"": 5 },
   ""suddenDrop"": { ""chancePerSec"": 0.01, ""amount"": 30, ""durationSec"": 5 },
   ""snacks"": [
     { ""id"": ""juice"", ""kind"": ""fast"", ""totalRise"": 30, ""onsetSec"": 1, ""absorbSec"": 2, ""source"": ""test"" },
@@ -70,6 +71,8 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Runner.TrackSnackServings, Is.EqualTo(0.5));
             Assert.That(config.Runner.RunDurationSec, Is.EqualTo(120));
             Assert.That(config.Runner.TrackSnackIntervalSec, Is.EqualTo(8));
+            Assert.That(config.Glucose.Levels.HyperReleaseMargin, Is.EqualTo(20));
+            Assert.That(config.Hyper.NotifyTimeLimitSec, Is.EqualTo(5));
         }
 
         [Test]
@@ -101,7 +104,7 @@ namespace SugarDash.Infrastructure.Tests
         public void MissingSection_IsReportedOnce()
         {
             int start = ValidJson.IndexOf("\"hypo\"", System.StringComparison.Ordinal);
-            int end = ValidJson.IndexOf("\"suddenDrop\"", System.StringComparison.Ordinal);
+            int end = ValidJson.IndexOf("\"hyper\"", System.StringComparison.Ordinal);
             var json = ValidJson.Remove(start, end - start);
 
             var e = LoadFails(json);
@@ -133,6 +136,28 @@ namespace SugarDash.Infrastructure.Tests
 
             Assert.That(e.MissingPaths,
                 Is.EquivalentTo(new[] { "runner.trackSnackServings", "runner.runDurationSec", "runner.trackSnackIntervalSec" }));
+        }
+
+        [Test]
+        public void HyperFields_NullAreReportedByPath()
+        {
+            var json = With(ValidJson, "\"hyperReleaseMargin\": 20", "\"hyperReleaseMargin\": null");
+            json = With(json, "\"notifyTimeLimitSec\": 5", "\"notifyTimeLimitSec\": null");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths,
+                Is.EquivalentTo(new[] { "glucose.hyperReleaseMargin", "hyper.notifyTimeLimitSec" }));
+        }
+
+        [Test]
+        public void MissingHyperSection_IsReportedOnce()
+        {
+            var json = With(ValidJson, "\"hyper\": { \"notifyTimeLimitSec\": 5 },", "");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths, Is.EqualTo(new[] { "hyper" }));
         }
 
         [Test]

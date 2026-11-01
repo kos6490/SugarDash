@@ -161,6 +161,28 @@ namespace SugarDash.Infrastructure.Tests
         }
 
         [Test]
+        public void HyperEventRecords_KeepRawFieldsAndCodes()
+        {
+            _repo.BeginRun();
+            _bus.Publish(new HyperEventTriggered(2, 60, 50, 255));
+            _bus.Publish(new StepAnswered(2, HypoStep.HyperNotify, null, false, HypoErrorCode.HyTimeout, false, 5, false,
+                61, 55));
+            _bus.Publish(new GuardianPromptStarted(2, HypoStep.HyperNotify, HypoErrorCode.HyTimeout, 61, 55));
+            _bus.Publish(new HyperResolved(2, false, 62, 56));
+
+            var lines = Lines().Skip(1).ToArray();
+            Assert.That(lines.Select(l => l.Type),
+                Is.EqualTo(new[] { "HyperEventTriggered", "StepAnswered", "GuardianPromptStarted", "HyperResolved" }));
+            Assert.That(lines[0].EventId, Is.EqualTo(2));
+            Assert.That(lines[0].Actual, Is.EqualTo(255));
+            Assert.That(lines[0].IsRecurrence, Is.Null);
+            Assert.That(lines[1].Step, Is.EqualTo("hyper_notify"));
+            Assert.That(lines[1].ErrorCode, Is.EqualTo("HY_TIMEOUT"));
+            Assert.That(lines[2].Step, Is.EqualTo("hyper_notify"));
+            Assert.That(lines[3].AllCorrect, Is.False);
+        }
+
+        [Test]
         public void Append_KeepsExistingBytes()
         {
             _repo.BeginRun();

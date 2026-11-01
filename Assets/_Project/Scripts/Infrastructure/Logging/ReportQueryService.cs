@@ -108,6 +108,8 @@ namespace SugarDash.Infrastructure.Logging
                 case "HypoEventTriggered":
                     return new HypoEventTriggered(Req(r.EventId), Req(r.IsRecurrence), Req(r.SimT), Req(r.T),
                         Req(r.Actual));
+                case "HyperEventTriggered":
+                    return new HyperEventTriggered(Req(r.EventId), Req(r.SimT), Req(r.T), Req(r.Actual));
                 case "SuddenDropStarted":
                     return new SuddenDropStarted(Req(r.SimT), Req(r.T));
                 case "GaugeWarningRaised":
@@ -132,6 +134,8 @@ namespace SugarDash.Infrastructure.Logging
                         Req(r.GlucoseAfter), Req(r.SimT), Req(r.T));
                 case "HypoResolved":
                     return new HypoResolved(Req(r.EventId), Req(r.AllCorrect), Req(r.SimT), Req(r.T));
+                case "HyperResolved":
+                    return new HyperResolved(Req(r.EventId), Req(r.AllCorrect), Req(r.SimT), Req(r.T));
                 case "RunEliminated":
                     return new RunEliminated(Req(r.EventId), LogCodes.ParseStep(r.Step),
                         LogCodes.ParseError(r.ErrorCode), LogCodes.ParseCause(r.Cause), Req(r.SimT), Req(r.T));

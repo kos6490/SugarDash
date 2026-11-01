@@ -54,6 +54,10 @@ namespace SugarDash.Infrastructure.Tests
             new GraceStarted(1, 49, 39),
             new GraceEnded(1, 52, 42),
             new TrackSnackEaten("cracker", 0.5, 53, 43),
+            new HyperEventTriggered(3, 60, 50, 255.5),
+            new StepAnswered(3, HypoStep.HyperNotify, "keep_running", false, HypoErrorCode.HyKeepRunning, false, 1.5,
+                false, 61, 51.5),
+            new HyperResolved(3, false, 62, 52),
             new RunEliminated(2, HypoStep.Dose, HypoErrorCode.DsOver, EliminationCause.Declined, 90, 80),
             new RunCompleted(40, 120, 110),
         };

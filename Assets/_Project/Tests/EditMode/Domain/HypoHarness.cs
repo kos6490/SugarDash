@@ -47,6 +47,8 @@ namespace SugarDash.Domain.Tests
             Collect<RunEliminated>(bus);
             Collect<RecheckFastForward>(bus);
             Collect<HypoResolved>(bus);
+            Collect<HyperEventTriggered>(bus);
+            Collect<HyperResolved>(bus);
             Collect<GraceStarted>(bus);
             Collect<GraceEnded>(bus);
 
@@ -54,6 +56,7 @@ namespace SugarDash.Domain.Tests
             Director = new EventDirector(config.Glucose, Model, new NoRandom(), bus);
             Fsm = new HypoEventFsm(config, Model, Director, bus);
             bus.Subscribe<HypoEventTriggered>(Fsm.Begin);
+            bus.Subscribe<HyperEventTriggered>(Fsm.BeginHyper);
         }
 
         private void Collect<T>(DomainEventBus bus) => bus.Subscribe<T>(e => Events.Add(e));

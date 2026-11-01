@@ -117,14 +117,15 @@ namespace SugarDash.Bootstrap
             _subscriptions.Clear();
         }
 
-        /// <summary>주행마다 새 도메인 객체를 만들고 저혈당 발동을 상태 기계에 연결한다.</summary>
+        /// <summary>주행마다 새 도메인 객체를 만들고 저혈당·고혈당 발동을 상태 기계에 연결한다.</summary>
         private RunSession CreateSession()
         {
             var model = new GlucoseModel(_config.Glucose);
             var director = new EventDirector(_config.Glucose, model,
                 new SystemRandomSource(Environment.TickCount), _bus);
             var fsm = new HypoEventFsm(_config, model, director, _bus);
-            return new RunSession(model, director, fsm, _bus.Subscribe<HypoEventTriggered>(fsm.Begin));
+            return new RunSession(model, director, fsm, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
         }
 
         private string ReadConfigJson()

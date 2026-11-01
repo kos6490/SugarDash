@@ -27,9 +27,12 @@ namespace SugarDash.Domain.Config
             // 2
             if (!(levels.HypoReleaseMargin > 0))
                 errors.Add($"glucose.hypoReleaseMargin > 0 이어야 한다 ({levels.HypoReleaseMargin})");
-            if (!(levels.HypoReleaseLevel < levels.HyperThreshold))
-                errors.Add($"glucose: hypoThreshold + hypoReleaseMargin < hyperThreshold 이어야 한다 " +
-                           $"({levels.HypoReleaseLevel} ≥ {levels.HyperThreshold})");
+            if (!(levels.HyperReleaseMargin > 0))
+                errors.Add($"glucose.hyperReleaseMargin > 0 이어야 한다 ({levels.HyperReleaseMargin})");
+            // 저혈당·고혈당의 해제 구간이 겹치지 않아야 한다.
+            if (!(levels.HypoReleaseLevel < levels.HyperReleaseLevel))
+                errors.Add($"glucose: hypoThreshold + hypoReleaseMargin < hyperThreshold − hyperReleaseMargin 이어야 한다 " +
+                           $"({levels.HypoReleaseLevel} ≥ {levels.HyperReleaseLevel})");
 
             // 3
             NonNegative(errors, "glucose.baseDecayPerSec", levels.BaseDecayPerSec);
@@ -108,6 +111,9 @@ namespace SugarDash.Domain.Config
                            $"(trackSnackServings={runner.TrackSnackServings}, under={config.Hypo.Doses.Under})");
             Positive(errors, "runner.runDurationSec", runner.RunDurationSec);
             Positive(errors, "runner.trackSnackIntervalSec", runner.TrackSnackIntervalSec);
+
+            // 20. 고혈당 알리기(docs/hyper-event.md)
+            Positive(errors, "hyper.notifyTimeLimitSec", config.Hyper.NotifyTimeLimitSec);
 
             return errors;
         }

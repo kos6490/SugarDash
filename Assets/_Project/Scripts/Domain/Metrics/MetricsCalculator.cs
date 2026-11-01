@@ -16,8 +16,12 @@ namespace SugarDash.Domain.Metrics
         private static readonly MetricStep[] AllMetricSteps =
             { MetricStep.Recognize, MetricStep.Respond, MetricStep.Dose, MetricStep.Recheck };
 
+        // 판단 시간 중앙값은 고혈당 알리기도 따로 구한다.
         private static readonly HypoStep[] AllHypoSteps =
-            { HypoStep.Recognize, HypoStep.Respond, HypoStep.Dose, HypoStep.Remeasure, HypoStep.Notify };
+        {
+            HypoStep.Recognize, HypoStep.Respond, HypoStep.Dose, HypoStep.Remeasure, HypoStep.Notify,
+            HypoStep.HyperNotify,
+        };
 
         /// <summary>결과 화면용 주행 하나의 요약.</summary>
         public static RunSummary Summarize(RunRecord run)
@@ -27,7 +31,7 @@ namespace SugarDash.Domain.Metrics
             var outcome = run.Events.OfType<RunEliminated>().Any() ? RunOutcome.Eliminated
                 : run.Events.OfType<RunCompleted>().Any() ? RunOutcome.Completed
                 : RunOutcome.Unfinished;
-            return new RunSummary(run.RunId, outcome, Events(run), Calculate(new[] { run }));
+            return new RunSummary(run.RunId, outcome, Events(run), HyperEvents(run), Calculate(new[] { run }));
         }
 
         /// <summary>여러 주행을 모은 지표.</summary>
@@ -90,6 +94,20 @@ namespace SugarDash.Domain.Metrics
 
                 results.Add(new EventResult(id, triggered.IsRecurrence, steps, resolved?.AllCorrect ?? false,
                     resolved != null || eliminated));
+            }
+            return results;
+        }
+
+        /// <summary>주행 안의 고혈당 이벤트를 발동 순서대로 묶는다.</summary>
+        private static IReadOnlyList<HyperEventResult> HyperEvents(RunRecord run)
+        {
+            var results = new List<HyperEventResult>();
+            foreach (var triggered in run.Events.OfType<HyperEventTriggered>())
+            {
+                int id = triggered.EventId;
+                var resolved = run.Events.OfType<HyperResolved>().FirstOrDefault(r => r.EventId == id);
+                bool eliminated = run.Events.OfType<RunEliminated>().Any(r => r.EventId == id);
+                results.Add(new HyperEventResult(id, resolved?.AllCorrect ?? false, resolved != null || eliminated));
             }
             return results;
         }

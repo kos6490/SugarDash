@@ -63,6 +63,8 @@ namespace SugarDash.Infrastructure.Logging
                     r.IsRecurrence = e.IsRecurrence;
                     r.Actual = e.Actual;
                 }))),
+                bus.Subscribe<HyperEventTriggered>(e => Append(Event("HyperEventTriggered", e.EventId, e.SimT, e.T,
+                    r => r.Actual = e.Actual))),
                 bus.Subscribe<SuddenDropStarted>(e => Append(Event("SuddenDropStarted", null, e.SimT, e.T))),
                 bus.Subscribe<GaugeWarningRaised>(e => Append(Event("GaugeWarningRaised", null, e.SimT, e.T,
                     r => r.Displayed = e.Displayed))),
@@ -104,6 +106,8 @@ namespace SugarDash.Infrastructure.Logging
                         r.GlucoseAfter = e.GlucoseAfter;
                     }))),
                 bus.Subscribe<HypoResolved>(e => Append(Event("HypoResolved", e.EventId, e.SimT, e.T,
+                    r => r.AllCorrect = e.AllCorrect))),
+                bus.Subscribe<HyperResolved>(e => Append(Event("HyperResolved", e.EventId, e.SimT, e.T,
                     r => r.AllCorrect = e.AllCorrect))),
                 bus.Subscribe<RunEliminated>(e => Append(Event("RunEliminated", e.EventId, e.SimT, e.T, r =>
                 {

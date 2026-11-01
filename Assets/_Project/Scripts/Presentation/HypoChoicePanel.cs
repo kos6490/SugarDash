@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace SugarDash.Presentation
 {
     /// <summary>
-    /// 2~4단계 선택지와 오류 뒤 "어른에게 알리기" 대기 화면. 단계가 바뀔 때마다 버튼 템플릿을 복제해 다시 만든다.
+    /// 2~4단계 선택지, 고혈당 알리기, 오류 뒤 "어른에게 알리기" 대기 화면. 단계가 바뀔 때마다 버튼 템플릿을 복제해 다시 만든다.
     /// 버튼은 만들 때의 단계를 기억해 명령과 함께 넘긴다(연타로 다음 단계에 잘못 들어가지 않게).
     /// </summary>
     public sealed class HypoChoicePanel : MonoBehaviour
@@ -94,6 +94,11 @@ namespace SugarDash.Presentation
                 case HypoPhase.Notify:
                     Show("이제 무엇을 할까요?");
                     Add("다시 달리기", () => _run.ChooseRunAgain(phase));
+                    AddHelp(phase);
+                    break;
+                case HypoPhase.HyperNotify:
+                    Show("혈당이 높아요. 어떻게 할까요?");
+                    Add("계속 달리기", () => _run.ChooseKeepRunning());
                     AddHelp(phase);
                     break;
                 case HypoPhase.GuardianPrompt:

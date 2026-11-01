@@ -5,7 +5,8 @@
     "fastForwardTickSimSec": 0.5 },
   "glucose": {
     "initial": 120, "min": 20, "max": 400, "hypoThreshold": 70, "hypoReleaseMargin": 10,
-    "hyperThreshold": 250, "baseDecayPerSec": 0.5, "runDecayPerSec": 1, "normalRangeMin": 72
+    "hyperThreshold": 135, "hyperReleaseMargin": 20,
+    "baseDecayPerSec": 0.5, "runDecayPerSec": 1, "normalRangeMin": 72
   },
   "recurrence": { "cooldownSec": 10 },
   "display": { "delaySec": 3, "warningThreshold": 80 },
@@ -14,6 +15,7 @@
     "guardianPromptTimeLimitSec": 5, "resumeCountdownSec": 1, "graceSec": 3,
     "guardianSnackId": "juice", "doses": { "under": 1, "proper": 2, "over": 3 }
   },
+  "hyper": { "notifyTimeLimitSec": 5 },
   "suddenDrop": { "chancePerSec": 0.01, "amount": 30, "durationSec": 5 },
   "snacks": [
     { "id": "juice", "kind": "fast", "totalRise": 30, "onsetSec": 1, "absorbSec": 2, "source": "dev-not-real" },

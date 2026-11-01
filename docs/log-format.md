@@ -20,7 +20,7 @@
 | `seq` | 주행 안에서 1부터 1씩 늘어나는 줄 번호 |
 | `type` | 레코드 종류(아래 표) |
 | `simT`, `t` | simDt 누적 시각, decisionDt 누적 시각(`docs/glucose-model.md` 2.1절). `RunStarted`·`RunEnded`에는 없다 |
-| `eventId` | 저혈당 이벤트 번호. 이벤트에 속하지 않는 레코드에는 없다(`MeterPressed`는 이벤트 밖이면 0) |
+| `eventId` | 저혈당·고혈당 이벤트 번호(같은 순서를 함께 쓴다). 이벤트에 속하지 않는 레코드에는 없다(`MeterPressed`는 이벤트 밖이면 0) |
 
 값이 null인 필드는 쓰지 않는다. 예: 시간 초과한 `StepAnswered`에는 `choiceId`가 없고, 정답이면 `errorCode`가 없다.
 
@@ -31,6 +31,7 @@
 | `RunStarted` | `atUtc` |
 | `RunEnded` | `atUtc` |
 | `HypoEventTriggered` | `isRecurrence`, `actual` |
+| `HyperEventTriggered` | `actual` |
 | `SuddenDropStarted` | - |
 | `GaugeWarningRaised` | `displayed` |
 | `MeterPressed` | `measured`, `unnecessary`, `inGrace` |
@@ -40,14 +41,15 @@
 | `DoseApplied` | `snackId`, `servings`, `chosenByChild` |
 | `RecheckFastForward` | `simSecSkipped`, `glucoseBefore`, `glucoseAfter` |
 | `HypoResolved` | `allCorrect` |
+| `HyperResolved` | `allCorrect`(오류 없이 바로 알렸으면 true) |
 | `RunEliminated` | `step`, `errorCode`(탈락으로 이어진 오류), `cause` |
 | `GraceStarted`, `GraceEnded` | - |
 | `TrackSnackEaten` | `snackId`, `servings` |
 | `RunCompleted` | `worldT`(worldDt 누적, 주행 길이) |
 
 - `atUtc`: `yyyy-MM-ddTHH:mm:ss.fffZ`
-- `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계)
-- `errorCode`: CLAUDE.md 2절의 코드 그대로(`S_MISSED`, `RS_SLOW`, ..., `HELP_INSTEAD`)
+- `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계), `hyper_notify`(고혈당 알리기, `docs/hyper-event.md`)
+- `errorCode`: CLAUDE.md 2절의 코드 그대로(`S_MISSED`, `RS_SLOW`, ..., `HELP_INSTEAD`, `HY_KEEP_RUNNING`, `HY_TIMEOUT`)
 - `cause`: `declined`(알리기 대기에서 "다시 달리기"), `prompt_timeout`(알리기 제한 시간 초과)
 - `decisionSec`: 단계 진입부터 답할 때까지의 `t` 차이. 단계 제한 시간을 넘지 않는다(큰 프레임 뒤 시간 초과도 제한 시간으로 기록).
 - 문자열 코드는 도메인 enum 이름과 따로 `LogCodes`에 고정한다. enum 이름을 바꿔도 과거 기록과 어긋나지 않게 하기 위해서다.
