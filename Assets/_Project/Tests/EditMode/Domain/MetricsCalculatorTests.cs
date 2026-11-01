@@ -188,5 +188,50 @@ namespace SugarDash.Domain.Tests
             Assert.That(summary.Metrics.MeasuredFirst.Rate, Is.Null);
             Assert.That(summary.Metrics.UnnecessaryMeasureCount, Is.EqualTo(0));
         }
+    
+
+        [Test]
+        public void HyperEvents_AreSummarizedSeparately_AndKeptOutOfHypoMetrics()
+        {
+            var run = Run(AllCorrect(1).Concat(new object[]
+            {
+                new HyperEventTriggered(2, 0, 0, 255),
+                Ok(2, HypoStep.HyperNotify, decisionSec: 2),
+                new HyperResolved(2, true, 0, 0),
+                new HyperEventTriggered(3, 0, 0, 260),
+                Wrong(3, HypoStep.HyperNotify, HypoErrorCode.HyKeepRunning, decisionSec: 4),
+                new HyperResolved(3, false, 0, 0),
+                new RunCompleted(40, 40, 50),
+            }).ToArray());
+
+            var summary = MetricsCalculator.Summarize(run);
+
+            Assert.That(summary.Events.Select(e => e.EventId), Is.EqualTo(new[] { 1 }));
+            Assert.That(summary.HyperEvents.Select(e => e.EventId), Is.EqualTo(new[] { 2, 3 }));
+            Assert.That(summary.HyperEvents.Select(e => e.AllCorrect), Is.EqualTo(new[] { true, false }));
+            Assert.That(summary.HyperEvents.Select(e => e.IsFinished), Is.All.True);
+            Assert.That(summary.Metrics.AccurateResponse.ToString(), Is.EqualTo("1/1"));
+            Assert.That(summary.Metrics.StepAccuracy.Values.Select(r => r.ToString()), Is.All.EqualTo("1/1"));
+            Assert.That(summary.Metrics.ErrorCounts[HypoErrorCode.HyKeepRunning], Is.EqualTo(1));
+            Assert.That(summary.Metrics.MedianDecisionSec[HypoStep.HyperNotify], Is.EqualTo(3));
+        }
+
+        [Test]
+        public void HyperEvent_EndingInElimination_IsFinishedButNotCorrect()
+        {
+            var run = Run(
+                new HyperEventTriggered(1, 0, 0, 255),
+                Timeout(1, HypoStep.HyperNotify, HypoErrorCode.HyTimeout),
+                new RunEliminated(1, HypoStep.HyperNotify, HypoErrorCode.HyTimeout, EliminationCause.PromptTimeout, 0, 0));
+
+            var summary = MetricsCalculator.Summarize(run);
+
+            Assert.That(summary.Outcome, Is.EqualTo(RunOutcome.Eliminated));
+            Assert.That(summary.Events, Is.Empty);
+            var hyper = summary.HyperEvents.Single();
+            Assert.That(hyper.AllCorrect, Is.False);
+            Assert.That(hyper.IsFinished, Is.True);
+            Assert.That(summary.Metrics.MedianDecisionSec[HypoStep.HyperNotify], Is.Null, "시간 초과는 판단 시간에서 뺀다");
+        }
     }
 }

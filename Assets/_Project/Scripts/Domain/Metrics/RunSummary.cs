@@ -34,21 +34,42 @@ namespace SugarDash.Domain.Metrics
         public bool IsFinished { get; }
     }
 
+    /// <summary>결과 화면용 고혈당 이벤트 하나의 결과.</summary>
+    public sealed class HyperEventResult
+    {
+        public HyperEventResult(int eventId, bool allCorrect, bool isFinished)
+        {
+            EventId = eventId;
+            AllCorrect = allCorrect;
+            IsFinished = isFinished;
+        }
+
+        public int EventId { get; }
+        /// <summary>오류 없이 바로 알렸다.</summary>
+        public bool AllCorrect { get; }
+        /// <summary>알렸거나 탈락했다. false면 기록이 중간에 끊긴 이벤트다.</summary>
+        public bool IsFinished { get; }
+    }
+
     /// <summary>결과 화면에 보여 줄 주행 하나의 요약.</summary>
     public sealed class RunSummary
     {
-        public RunSummary(string runId, RunOutcome outcome, IReadOnlyList<EventResult> events, RunMetrics metrics)
+        public RunSummary(string runId, RunOutcome outcome, IReadOnlyList<EventResult> events,
+            IReadOnlyList<HyperEventResult> hyperEvents, RunMetrics metrics)
         {
             RunId = runId;
             Outcome = outcome;
             Events = events;
+            HyperEvents = hyperEvents;
             Metrics = metrics;
         }
 
         public string RunId { get; }
         public RunOutcome Outcome { get; }
-        /// <summary>발동 순서대로.</summary>
+        /// <summary>저혈당 이벤트. 발동 순서대로.</summary>
         public IReadOnlyList<EventResult> Events { get; }
+        /// <summary>고혈당 이벤트. 발동 순서대로. 저혈당 지표에는 들어가지 않는다.</summary>
+        public IReadOnlyList<HyperEventResult> HyperEvents { get; }
         /// <summary>이 주행 하나의 지표.</summary>
         public RunMetrics Metrics { get; }
     }
