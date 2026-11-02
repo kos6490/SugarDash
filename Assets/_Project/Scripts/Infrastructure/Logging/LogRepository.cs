@@ -137,8 +137,6 @@ namespace SugarDash.Infrastructure.Logging
                     r.SnackId = e.SnackId;
                     r.Servings = e.Servings;
                 }))),
-                bus.Subscribe<RunCompleted>(e => Append(Event("RunCompleted", null, e.SimT, e.T,
-                    r => r.WorldT = e.WorldT))),
             });
         }
 

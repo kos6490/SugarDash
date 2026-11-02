@@ -182,7 +182,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
   ],
-  "runner": { "trackSnackServings": null, "runDurationSec": null,
+  "runner": { "trackSnackServings": null,
     "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null, "hearts": 3 },
   "elimination": { "glucoseLow": null, "glucoseHigh": null },
   "score": {

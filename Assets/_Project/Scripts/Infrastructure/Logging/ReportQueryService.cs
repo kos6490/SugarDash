@@ -156,8 +156,6 @@ namespace SugarDash.Infrastructure.Logging
                     return new GraceEnded(Req(r.EventId), Req(r.SimT), Req(r.T));
                 case "TrackSnackEaten":
                     return new TrackSnackEaten(r.SnackId, Req(r.Servings), Req(r.SimT), Req(r.T));
-                case "RunCompleted":
-                    return new RunCompleted(Req(r.WorldT), Req(r.SimT), Req(r.T));
                 default:
                     return null;
             }

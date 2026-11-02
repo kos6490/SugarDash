@@ -57,7 +57,7 @@ namespace SugarDash.App.Tests
 
         // 달리기 감소 2/s: 26초에 저혈당 발동, 아무것도 안 하면 36초에 탈락.
         [SetUp]
-        public void SetUp() => SetUpWith(new ConfigBuilder { RunDecayPerSec = 2, RunDurationSec = 10 });
+        public void SetUp() => SetUpWith(new ConfigBuilder { RunDecayPerSec = 2 });
 
         private void SetUpWith(ConfigBuilder builder)
         {
@@ -68,12 +68,11 @@ namespace SugarDash.App.Tests
             bus.Subscribe<HypoEventTriggered>(e => _query.Published.Add(e));
             bus.Subscribe<StepAnswered>(e => _query.Published.Add(e));
             bus.Subscribe<RunEliminated>(e => _query.Published.Add(e));
-            bus.Subscribe<RunCompleted>(e => _query.Published.Add(e));
-            _run = new RunController(config.Runner, () =>
+            _run = new RunController(config.Runner, config.Sections, () =>
             {
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
-                var fsm = new HypoEventFsm(config, model, director, bus, () => 0);
+                var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
                 return new RunSession(model, director, fsm, bus.Subscribe<HypoEventTriggered>(fsm.Begin));
             }, _log, bus);
             _flow = new GameFlowController(_run, _query);
@@ -86,6 +85,16 @@ namespace SugarDash.App.Tests
             {
                 _run.Tick(1);
                 _flow.Tick();
+            }
+        }
+
+        /// <summary>하트(기본 3)를 모두 잃게 해 탈락시킨다. 저혈당 발동(26초) 전에 끝난다.</summary>
+        private void LoseAllHearts()
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                _run.HitObstacle();
+                Frames(1);
             }
         }
 
@@ -102,16 +111,16 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
-        public void Completed_ClosesLogThenLoadsResult()
+        public void HeartsLost_ClosesLogThenLoadsResult()
         {
             _flow.Begin();
-            Frames(10);
+            LoseAllHearts();
 
             Assert.That(_flow.IsShowingResult, Is.True);
             Assert.That(_run.State, Is.EqualTo(RunState.Idle));
             Assert.That(_query.RequestedRunId, Is.EqualTo("run-1"));
             Assert.That(_query.EndedWhenQueried, Is.EqualTo(1), "기록을 닫은 뒤 읽는다");
-            Assert.That(_flow.LastResult.Outcome, Is.EqualTo(RunOutcome.Completed));
+            Assert.That(_flow.LastResult.Outcome, Is.EqualTo(RunOutcome.Eliminated));
             Assert.That(_flow.LastResult.Events, Is.Empty);
 
             Frames(3);
@@ -122,7 +131,6 @@ namespace SugarDash.App.Tests
         public void Eliminated_ShowsResultWithFailedEvent()
         {
             var builder = new ConfigBuilder { RunDecayPerSec = 2 };
-            Assert.That(builder.RunDurationSec, Is.GreaterThan(36), "탈락 전에 완주하지 않아야 한다");
             SetUpWith(builder);
             _flow.Begin();
 
@@ -151,7 +159,7 @@ namespace SugarDash.App.Tests
         public void Retry_FromResult_StartsFreshRun()
         {
             _flow.Begin();
-            Frames(10);
+            LoseAllHearts();
             Assert.That(_flow.CanRetry, Is.True);
 
             _flow.Retry();
@@ -169,7 +177,7 @@ namespace SugarDash.App.Tests
             _query.ReturnsNothing = true;
             _flow.Begin();
 
-            Frames(10);
+            LoseAllHearts();
 
             Assert.That(_flow.IsShowingResult, Is.True);
             Assert.That(_flow.LastResult, Is.Null);

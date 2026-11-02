@@ -43,11 +43,11 @@ namespace SugarDash.Presentation.Tests
             var bus = new DomainEventBus();
             _eaten = new List<TrackSnackEaten>();
             bus.Subscribe<TrackSnackEaten>(e => _eaten.Add(e));
-            _run = new RunController(config.Runner, () =>
+            _run = new RunController(config.Runner, config.Sections, () =>
             {
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
-                var fsm = new HypoEventFsm(config, model, director, bus, () => 0);
+                var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
                 return new RunSession(model, director, fsm, bus.Subscribe<HypoEventTriggered>(fsm.Begin));
             }, new NullLog(), bus);
             _run.StartRun();

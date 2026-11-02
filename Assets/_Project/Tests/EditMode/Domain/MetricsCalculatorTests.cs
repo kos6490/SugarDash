@@ -35,14 +35,18 @@ namespace SugarDash.Domain.Tests
             new HypoResolved(id, true, 0, 0),
         };
 
+        /// <summary>이벤트 밖에서 하트를 모두 잃어 끝난 주행.</summary>
+        private static RunEliminated HeartsLost(double simT, double t) =>
+            new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.HeartsLost, 0, simT, t);
+
         [Test]
         public void AllCorrectEvent_CountsAsAccurate()
         {
-            var run = Run(AllCorrect(1).Append(new RunCompleted(40, 40, 50)).ToArray());
+            var run = Run(AllCorrect(1).Append(HeartsLost(40, 50)).ToArray());
 
             var summary = MetricsCalculator.Summarize(run);
 
-            Assert.That(summary.Outcome, Is.EqualTo(RunOutcome.Completed));
+            Assert.That(summary.Outcome, Is.EqualTo(RunOutcome.Eliminated));
             var e = summary.Events.Single();
             Assert.That(e.AllCorrect, Is.True);
             Assert.That(e.IsFinished, Is.True);
@@ -181,14 +185,13 @@ namespace SugarDash.Domain.Tests
         [Test]
         public void EmptyRun_HasNoRates()
         {
-            var summary = MetricsCalculator.Summarize(Run(new RunCompleted(40, 40, 40)));
+            var summary = MetricsCalculator.Summarize(Run(HeartsLost(40, 40)));
 
             Assert.That(summary.Events, Is.Empty);
             Assert.That(summary.Metrics.AccurateResponse.Rate, Is.Null);
             Assert.That(summary.Metrics.MeasuredFirst.Rate, Is.Null);
             Assert.That(summary.Metrics.UnnecessaryMeasureCount, Is.EqualTo(0));
         }
-    
 
         [Test]
         public void HyperEvents_AreSummarizedSeparately_AndKeptOutOfHypoMetrics()
@@ -201,7 +204,7 @@ namespace SugarDash.Domain.Tests
                 new HyperEventTriggered(3, 0, 0, 260),
                 Wrong(3, HypoStep.HyperNotify, HypoErrorCode.HyKeepRunning, decisionSec: 4),
                 new HyperResolved(3, false, 0, 0),
-                new RunCompleted(40, 40, 50),
+                HeartsLost(40, 50),
             }).ToArray());
 
             var summary = MetricsCalculator.Summarize(run);

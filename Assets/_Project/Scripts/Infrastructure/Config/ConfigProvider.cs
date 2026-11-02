@@ -137,7 +137,6 @@ namespace SugarDash.Infrastructure.Config
                 var runner = Section(dto.Runner, "runner");
                 var runnerConfig = new RunnerConfig(
                     Number(runner?.TrackSnackServings, "runner.trackSnackServings", runner),
-                    Number(runner?.RunDurationSec, "runner.runDurationSec", runner),
                     Number(runner?.TrackSnackIntervalMinSec, "runner.trackSnackIntervalMinSec", runner),
                     Number(runner?.TrackSnackIntervalMaxSec, "runner.trackSnackIntervalMaxSec", runner),
                     Integer(runner?.Hearts, "runner.hearts", runner));

@@ -76,7 +76,6 @@ namespace SugarDash.Domain.Tests
             yield return Case("RecoveryDisplayInsufficient", b => b.SnackById("juice").AbsorbSec = 4);
             yield return Case("TrackSnackZero", b => b.TrackSnackServings = 0);
             yield return Case("TrackSnackNotBelowDoseUnder", b => b.TrackSnackServings = 1);
-            yield return Case("RunDurationZero", b => b.RunDurationSec = 0);
             yield return Case("IntervalMinZero", b => b.TrackSnackIntervalMinSec = 0);
             yield return Case("IntervalMinAboveMax", b => { b.TrackSnackIntervalMinSec = 9; b.TrackSnackIntervalMaxSec = 8; });
             yield return Case("HeartsZero", b => b.Hearts = 0);

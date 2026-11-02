@@ -6,7 +6,7 @@ namespace SugarDash.App
 {
     /// <summary>
     /// 화면과 게임 상태 흐름. 지금은 주행 화면과 결과 화면 둘만 다룬다.
-    /// 탈락·완주하면 기록을 닫고, 닫힌 기록을 다시 읽어 결과를 계산한 뒤 결과 화면으로 간다.
+    /// 탈락하면 기록을 닫고, 닫힌 기록을 다시 읽어 결과를 계산한 뒤 결과 화면으로 간다.
     /// 결과도 기록과 같은 출처에서 계산한다(지표는 저장하지 않고 조회할 때 계산).
     /// </summary>
     public sealed class GameFlowController
@@ -38,7 +38,7 @@ namespace SugarDash.App
         public void Tick()
         {
             if (IsShowingResult) return;
-            if (_run.State != RunState.Eliminated && _run.State != RunState.Completed) return;
+            if (_run.State != RunState.Eliminated) return;
 
             string runId = _run.CurrentRunId;
             _run.EndRun();

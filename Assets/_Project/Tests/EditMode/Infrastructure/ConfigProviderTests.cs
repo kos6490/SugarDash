@@ -40,7 +40,7 @@ namespace SugarDash.Infrastructure.Tests
     { ""id"": ""juice"", ""kind"": ""fast"", ""totalRise"": 30, ""onsetSec"": 1, ""absorbSec"": 2, ""source"": ""test"" },
     { ""id"": ""cracker"", ""kind"": ""slow"", ""totalRise"": 30, ""onsetSec"": 4, ""absorbSec"": 8, ""source"": ""test"" }
   ],
-  ""runner"": { ""trackSnackServings"": 0.5, ""runDurationSec"": 120,
+  ""runner"": { ""trackSnackServings"": 0.5,
     ""trackSnackIntervalMinSec"": 6, ""trackSnackIntervalMaxSec"": 10, ""hearts"": 3 },
   ""elimination"": { ""glucoseLow"": 40, ""glucoseHigh"": 300 },
   ""score"": {
@@ -85,7 +85,6 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Glucose.Time.FastForwardTickSimSec, Is.EqualTo(0.5));
             Assert.That(config.Glucose.Levels.NormalRangeMin, Is.EqualTo(72));
             Assert.That(config.Runner.TrackSnackServings, Is.EqualTo(0.5));
-            Assert.That(config.Runner.RunDurationSec, Is.EqualTo(120));
             Assert.That(config.Runner.TrackSnackIntervalMinSec, Is.EqualTo(6));
             Assert.That(config.Runner.TrackSnackIntervalMaxSec, Is.EqualTo(10));
             Assert.That(config.Runner.Hearts, Is.EqualTo(3));
@@ -156,7 +155,6 @@ namespace SugarDash.Infrastructure.Tests
         public void RunnerFields_NullAreReportedByPath()
         {
             var json = With(ValidJson, "\"trackSnackServings\": 0.5", "\"trackSnackServings\": null");
-            json = With(json, "\"runDurationSec\": 120", "\"runDurationSec\": null");
             json = With(json, "\"trackSnackIntervalMinSec\": 6", "\"trackSnackIntervalMinSec\": null");
             json = With(json, "\"trackSnackIntervalMaxSec\": 10", "\"trackSnackIntervalMaxSec\": null");
             json = With(json, "\"hearts\": 3", "\"hearts\": null");
@@ -164,7 +162,7 @@ namespace SugarDash.Infrastructure.Tests
             var e = LoadFails(json);
 
             Assert.That(e.MissingPaths,
-                Is.EquivalentTo(new[] { "runner.trackSnackServings", "runner.runDurationSec",
+                Is.EquivalentTo(new[] { "runner.trackSnackServings",
                     "runner.trackSnackIntervalMinSec", "runner.trackSnackIntervalMaxSec", "runner.hearts" }));
         }
 

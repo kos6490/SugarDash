@@ -9,8 +9,8 @@ namespace SugarDash.Presentation
     {
         public static string Title(RunSummary result)
         {
-            if (result == null || result.Outcome == RunOutcome.Unfinished) return "결과를 불러오지 못했어요";
-            return result.Outcome == RunOutcome.Eliminated ? "어른이 도와주러 왔어요" : "끝까지 달렸어요!";
+            if (result == null || result.Outcome != RunOutcome.Eliminated) return "결과를 불러오지 못했어요";
+            return "어른이 도와주러 왔어요";
         }
 
         public static string Summary(RunSummary result)

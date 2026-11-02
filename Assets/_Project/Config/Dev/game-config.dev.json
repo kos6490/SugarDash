@@ -22,7 +22,7 @@
     { "id": "cracker", "kind": "slow", "totalRise": 30, "onsetSec": 4, "absorbSec": 8, "source": "dev-not-real" }
   ],
   "runner": {
-    "trackSnackServings": 0.5, "runDurationSec": 40,
+    "trackSnackServings": 0.5,
     "trackSnackIntervalMinSec": 6, "trackSnackIntervalMaxSec": 10, "hearts": 3
   },
   "elimination": { "glucoseLow": 40, "glucoseHigh": 200 },

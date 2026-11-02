@@ -110,7 +110,6 @@ namespace SugarDash.Domain.Config
             if (!(0 < runner.TrackSnackServings && runner.TrackSnackServings < config.Hypo.Doses.Under))
                 errors.Add($"0 < runner.trackSnackServings < hypo.doses.under 이어야 한다 " +
                            $"(trackSnackServings={runner.TrackSnackServings}, under={config.Hypo.Doses.Under})");
-            Positive(errors, "runner.runDurationSec", runner.RunDurationSec);
             if (!(0 < runner.TrackSnackIntervalMinSec && runner.TrackSnackIntervalMinSec <= runner.TrackSnackIntervalMaxSec))
                 errors.Add($"0 < runner.trackSnackIntervalMinSec ≤ runner.trackSnackIntervalMaxSec 이어야 한다 " +
                            $"(min={runner.TrackSnackIntervalMinSec}, max={runner.TrackSnackIntervalMaxSec})");

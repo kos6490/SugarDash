@@ -61,7 +61,7 @@ namespace SugarDash.Bootstrap
             var log = new LogRepository(logDirectory, _config.ConfigVersion);
             _subscriptions.Add(log.Subscribe(_bus));
 
-            _run = new RunController(_config.Runner, CreateSession, log, _bus);
+            _run = new RunController(_config.Runner, _config.Sections, CreateSession, log, _bus);
             _flow = new GameFlowController(_run, new ReportQueryService(logDirectory));
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
@@ -124,7 +124,7 @@ namespace SugarDash.Bootstrap
             var model = new GlucoseModel(_config.Glucose);
             var director = new EventDirector(_config.Glucose, model,
                 new SystemRandomSource(Environment.TickCount), _bus);
-            var fsm = new HypoEventFsm(_config, model, director, _bus, () => 0);
+            var fsm = new HypoEventFsm(_config, model, director, _bus, () => _run.DistanceM);
             return new RunSession(model, director, fsm, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                 _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
         }

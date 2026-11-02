@@ -29,9 +29,8 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
-        public void Title_DependsOnOutcome()
+        public void Title_Eliminated()
         {
-            Assert.That(ResultScreenText.Title(Summary(RunOutcome.Completed)), Is.EqualTo("끝까지 달렸어요!"));
             Assert.That(ResultScreenText.Title(Summary(RunOutcome.Eliminated)), Is.EqualTo("어른이 도와주러 왔어요"));
         }
 
@@ -48,7 +47,7 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void Summary_CountsAllCorrectEvents()
         {
-            var result = Summary(RunOutcome.Completed, Event(true), Event(false));
+            var result = Summary(RunOutcome.Eliminated, Event(true), Event(false));
 
             Assert.That(ResultScreenText.Summary(result), Is.EqualTo("저혈당 2번 중 1번 모두 잘 해냈어요"));
         }
@@ -64,7 +63,7 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void Summary_AddsHyperLine_CountingImmediateNotify()
         {
-            var result = WithHyper(Summary(RunOutcome.Completed, Event(true)), true, false);
+            var result = WithHyper(Summary(RunOutcome.Eliminated, Event(true)), true, false);
 
             Assert.That(ResultScreenText.Summary(result),
                 Is.EqualTo("저혈당 1번 모두 잘 해냈어요\n고혈당 2번 중 1번 바로 알렸어요"));
@@ -81,7 +80,7 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void Summary_WithBothMissed_AddsEncouragementOnceAtBottom()
         {
-            var result = WithHyper(Summary(RunOutcome.Completed, Event(false)), false);
+            var result = WithHyper(Summary(RunOutcome.Eliminated, Event(false)), false);
 
             Assert.That(ResultScreenText.Summary(result),
                 Is.EqualTo("저혈당 1번 모두 아쉬웠어요\n고혈당 1번 모두 아쉬웠어요\n다음에 더 잘해봐요!"));
@@ -90,7 +89,7 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void Summary_WithHypoMissedButHyperNotified_EncouragesAtBottom()
         {
-            var result = WithHyper(Summary(RunOutcome.Completed, Event(false)), true);
+            var result = WithHyper(Summary(RunOutcome.Eliminated, Event(false)), true);
 
             Assert.That(ResultScreenText.Summary(result),
                 Is.EqualTo("저혈당 1번 모두 아쉬웠어요\n고혈당 1번 모두 바로 알렸어요\n다음에 더 잘해봐요!"));
@@ -99,7 +98,7 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void Summary_WhenEveryEventWentWell_SaysAllInsteadOfCount()
         {
-            var result = WithHyper(Summary(RunOutcome.Completed, Event(true), Event(true)), true, true);
+            var result = WithHyper(Summary(RunOutcome.Eliminated, Event(true), Event(true)), true, true);
 
             Assert.That(ResultScreenText.Summary(result),
                 Is.EqualTo("저혈당 2번 모두 잘 해냈어요\n고혈당 2번 모두 바로 알렸어요"));
@@ -108,7 +107,7 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void Summary_WithoutEvents_SaysNoHypo()
         {
-            Assert.That(ResultScreenText.Summary(Summary(RunOutcome.Completed)), Is.EqualTo("이번에는 저혈당이 없었어요"));
+            Assert.That(ResultScreenText.Summary(Summary(RunOutcome.Eliminated)), Is.EqualTo("이번에는 저혈당이 없었어요"));
         }
     }
 }

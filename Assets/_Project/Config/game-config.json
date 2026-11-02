@@ -39,7 +39,7 @@
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
   ],
   "runner": {
-    "trackSnackServings": null, "runDurationSec": null,
+    "trackSnackServings": null,
     "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null, "hearts": 3
   },
   "elimination": { "glucoseLow": null, "glucoseHigh": null },

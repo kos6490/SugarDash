@@ -59,7 +59,6 @@ namespace SugarDash.Infrastructure.Tests
                 false, 61, 51.5),
             new HyperResolved(3, false, 62, 52),
             new RunEliminated(2, HypoStep.Dose, HypoErrorCode.DsOver, EliminationCause.Declined, 77.5, 90, 80),
-            new RunCompleted(40, 120, 110),
         };
 
         /// <summary>런타임 타입으로 발행한다(구독은 타입별이다).</summary>
