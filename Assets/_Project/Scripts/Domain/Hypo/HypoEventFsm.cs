@@ -107,13 +107,14 @@ namespace SugarDash.Domain.Hypo
         /// <summary>
         /// 매 프레임 GlucoseModel.Tick과 EventDirector.Evaluate 뒤에 호출한다.
         /// 한 번에 현재 단계의 마감 하나만 처리한다. 새 단계의 마감은 지금부터 잰다.
-        /// 주행 중 단계(Idle, Recognize, ResumeCountdown, Grace)에서는 실제 혈당이 안전 범위를 벗어나면 바로 탈락한다.
-        /// 대처 중 단계는 시간 초과 순간에만 안전 범위를 판정한다.
+        /// 주행 중 단계(Idle, Recognize)에서는 실제 혈당이 안전 범위를 벗어나면 바로 탈락한다.
+        /// 대처 중 단계는 시간 초과 순간에만 안전 범위를 판정한다. 재개 카운트다운과 유예 시간에는
+        /// 발동이 억제되어 아동이 대처할 기회가 없으므로 판정하지 않고, 유예가 끝난 뒤 다시 판정한다.
         /// </summary>
         public void Update()
         {
             if (Phase == HypoPhase.Eliminated) return;
-            if (IsRunningPhase(Phase) && TryGetOutOfRangeCause(out var cause))
+            if (IsRangeCheckedEveryFrame(Phase) && TryGetOutOfRangeCause(out var cause))
             {
                 Eliminate(cause, null, HypoErrorCode.None);
                 return;
@@ -427,14 +428,13 @@ namespace SugarDash.Domain.Hypo
             Error(step, null, code, afterNotify);
         }
 
-        private static bool IsRunningPhase(HypoPhase phase)
+        /// <summary>매 프레임 혈당 안전 범위로 탈락을 판정하는 단계.</summary>
+        private static bool IsRangeCheckedEveryFrame(HypoPhase phase)
         {
             switch (phase)
             {
                 case HypoPhase.Idle:
                 case HypoPhase.Recognize:
-                case HypoPhase.ResumeCountdown:
-                case HypoPhase.Grace:
                     return true;
                 default:
                     return false;

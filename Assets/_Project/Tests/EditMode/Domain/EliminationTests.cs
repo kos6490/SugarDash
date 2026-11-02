@@ -51,6 +51,46 @@ namespace SugarDash.Domain.Tests
             Assert.That(eventId, Is.GreaterThan(0));
         }
 
+        /// <summary>
+        /// 재개 카운트다운과 유예 시간에는 혈당 범위로 탈락시키지 않는다(아동이 대처할 기회가 없다).
+        /// 유예가 끝난 뒤에도 범위 밖이면 그때 탈락한다.
+        /// </summary>
+        [Test]
+        public void ResumeAndGrace_BelowLow_DoesNotEliminateUntilGraceEnds()
+        {
+            var h = CopingHarness(b =>
+            {
+                b.TrackSnackServings = 0.01;
+                b.DoseUnder = 0.05; // 주스 1.5만 오른다
+            });
+            h.RunUntilTriggered();
+            h.Fsm.PressMeter();
+            h.Fsm.ChooseSnack("juice");
+            h.Fsm.ChooseDose(DoseLevel.Under);
+            h.Fsm.PressHelp(HypoPhase.GuardianPrompt);
+            h.Fsm.ChooseRecheck();
+            h.Fsm.PressHelp(HypoPhase.Notify);
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.ResumeCountdown));
+            Assert.That(h.Model.Actual, Is.LessThan(65), "재개 카운트다운에 들어갈 때 이미 범위 밖이어야 한다");
+
+            bool sawGrace = false;
+            int guard = 0;
+            while (h.Fsm.Phase == HypoPhase.ResumeCountdown || h.Fsm.Phase == HypoPhase.Grace)
+            {
+                Assert.That(guard++, Is.LessThan(20), "유예가 끝나지 않는다");
+                h.Frame(0.5);
+                if (h.Fsm.Phase == HypoPhase.Grace) sawGrace = true;
+            }
+            Assert.That(sawGrace, Is.True, "재개 카운트다운·유예 중에 탈락하지 않고 유예를 끝까지 지나야 한다");
+
+            // 유예가 끝나면 다시 주행 중 판정을 한다.
+            for (int i = 0; i < 4 && h.Fsm.Phase != HypoPhase.Eliminated; i++) h.Frame(0.5);
+
+            Assert.That(h.Model.Actual, Is.LessThan(65));
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
+            Assert.That(h.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.GlucoseLow));
+        }
+
         [Test]
         public void Coping_BelowLowWithinLimit_DoesNotEliminate()
         {
