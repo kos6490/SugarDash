@@ -25,10 +25,13 @@ namespace SugarDash.Presentation
         private RunController _run;
         private IReadOnlyList<SnackConfig> _snacks;
         private HypoPhase? _shown;
+        private System.Random _random;
 
         /// <summary>GameBootstrapper가 연결한다. 반환값을 Dispose하면 구독을 해제한다.</summary>
-        public IDisposable Bind(RunController run, DomainEventBus bus, IReadOnlyList<SnackConfig> snacks)
+        public IDisposable Bind(RunController run, DomainEventBus bus, IReadOnlyList<SnackConfig> snacks,
+            int seed)
         {
+            _random = new System.Random(seed);
             _run = run ?? throw new ArgumentNullException(nameof(run));
             _snacks = snacks ?? throw new ArgumentNullException(nameof(snacks));
 
@@ -69,26 +72,34 @@ namespace SugarDash.Presentation
             {
                 case HypoPhase.Respond:
                     Show("무엇을 먹을까요?");
+                    var respond = new List<(string, Action)>();
                     foreach (var snack in _snacks)
                     {
                         string id = snack.Id;
-                        Add(id, () => _run.ChooseSnack(id));
+                        respond.Add((id, () => _run.ChooseSnack(id)));
                     }
-                    Add("계속 달리기", () => _run.ChooseKeepRunning());
-                    Add("먹을 게 없어요", () => _run.ChooseNoSugar());
+                    respond.Add(("계속 달리기", () => _run.ChooseKeepRunning()));
+                    respond.Add(("먹을 게 없어요", () => _run.ChooseNoSugar()));
+                    AddShuffled(respond);
                     AddHelp(phase);
                     break;
                 case HypoPhase.Dose:
                     Show($"{_run.DoseSnackId}을(를) 얼마나 먹을까요?");
-                    Add("조금", () => _run.ChooseDose(DoseLevel.Under));
-                    Add("알맞게", () => _run.ChooseDose(DoseLevel.Proper));
-                    Add("많이", () => _run.ChooseDose(DoseLevel.Over));
+                    AddShuffled(new List<(string, Action)>
+                    {
+                        ("조금", () => _run.ChooseDose(DoseLevel.Under)),
+                        ("알맞게", () => _run.ChooseDose(DoseLevel.Proper)),
+                        ("많이", () => _run.ChooseDose(DoseLevel.Over)),
+                    });
                     AddHelp(phase);
                     break;
                 case HypoPhase.Remeasure:
                     Show("이제 무엇을 할까요?");
-                    Add("다시 재기", () => _run.ChooseRecheck());
-                    Add("다시 달리기", () => _run.ChooseRunAgain(phase));
+                    AddShuffled(new List<(string, Action)>
+                    {
+                        ("다시 재기", () => _run.ChooseRecheck()),
+                        ("다시 달리기", () => _run.ChooseRunAgain(phase)),
+                    });
                     AddHelp(phase);
                     break;
                 case HypoPhase.Notify:
@@ -103,8 +114,8 @@ namespace SugarDash.Presentation
                     break;
                 case HypoPhase.GuardianPrompt:
                     Show("도움이 필요해요!");
-                    AddHelp(phase);
                     Add("다시 달리기", () => _run.ChooseRunAgain(phase));
+                    AddHelp(phase);
                     break;
                 case HypoPhase.ResumeCountdown:
                     Show("곧 다시 달려요");
@@ -119,6 +130,11 @@ namespace SugarDash.Presentation
         {
             titleText.text = title;
             root.SetActive(true);
+        }
+
+        private void AddShuffled(List<(string Label, Action Action)> choices)
+        {
+            foreach (var (label, action) in ChoiceOrder.Shuffle(choices, _random)) Add(label, action);
         }
 
         private void AddHelp(HypoPhase phase) => Add("어른에게 알리기", () => _run.PressHelp(phase));

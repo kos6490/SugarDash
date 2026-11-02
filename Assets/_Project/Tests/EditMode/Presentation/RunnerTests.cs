@@ -150,7 +150,38 @@ namespace SugarDash.Presentation.Tests
             Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed * _player.StumbleSpeedFactor).Within(Eps));
 
             _player.Advance(_player.StumbleSec + 0.01);
+            Assert.That(_player.CurrentSpeed,
+                Is.EqualTo(_player.RunSpeed + _player.SpeedGainPerSec * (_player.StumbleSec + 0.01f)).Within(Eps));
+        }
+
+        [Test]
+        public void Speed_IncreasesAndCaps()
+        {
+            _player.Advance(10);
+            Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed + _player.SpeedGainPerSec * 10).Within(Eps));
+
+            _player.Advance(1000);
+            Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.MaxRunSpeed).Within(Eps));
+        }
+
+        [Test]
+        public void ResetRun_RestoresSpeed()
+        {
+            _player.Advance(10);
+            _player.ResetRun();
             Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed));
+        }
+
+        [Test]
+        public void HitWhileStumbling_LosesOneHeart()
+        {
+            _player.Resolve(Item(TrackItemKind.LaneBlock));
+            _player.Advance(0.1);
+            _player.Resolve(Item(TrackItemKind.LaneBlock));
+
+            _run.Tick(0.01);
+
+            Assert.That(_run.Hearts, Is.EqualTo(2));
         }
 
         [Test]

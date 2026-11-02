@@ -69,7 +69,7 @@ namespace SugarDash.Bootstrap
                 _config.ConfigVersion);
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
-            _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks));
+            _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks, Environment.TickCount));
             _subscriptions.Add(resultScreen.Bind(_flow));
 
             player.Init(_run, true);
@@ -99,6 +99,7 @@ namespace SugarDash.Bootstrap
 
             double worldDt = _run.LastWorldDt;
             player.Advance(worldDt);
+            _run.AdvanceDistance(player.CurrentSpeed * worldDt);
             var phase = _run.Phase;
             bool obstaclesAllowed = phase != HypoPhase.ResumeCountdown && phase != HypoPhase.Grace;
             foreach (var item in track.Advance(worldDt, player.CurrentSpeed, obstaclesAllowed))
