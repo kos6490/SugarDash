@@ -79,6 +79,11 @@ namespace SugarDash.App
         /// <summary>3단계에서 양을 고를 간식.</summary>
         public string DoseSnackId => _session?.Fsm.DoseSnackId;
 
+        /// <summary>지금 점수. 주행 중(일시정지 포함)이 아니면 0.</summary>
+        public double Score => State == RunState.Idle || _session == null
+            ? 0
+            : _session.Scoring.Total(_session.Model.SimTime, DistanceM);
+
         public void StartRun()
         {
             if (State != RunState.Idle) throw new InvalidOperationException($"이미 주행 중이다 ({State})");

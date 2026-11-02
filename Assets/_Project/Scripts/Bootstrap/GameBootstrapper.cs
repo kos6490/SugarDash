@@ -8,6 +8,7 @@ using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Glucose;
 using SugarDash.Domain.Hypo;
+using SugarDash.Domain.Scoring;
 using SugarDash.Infrastructure;
 using SugarDash.Infrastructure.Config;
 using SugarDash.Infrastructure.Logging;
@@ -125,8 +126,9 @@ namespace SugarDash.Bootstrap
             var director = new EventDirector(_config.Glucose, model,
                 new SystemRandomSource(Environment.TickCount), _bus);
             var fsm = new HypoEventFsm(_config, model, director, _bus, () => _run.DistanceM);
-            return new RunSession(model, director, fsm, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
-                _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
+            var scoring = new ScoringService(_config.Score);
+            return new RunSession(model, director, fsm, scoring, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper), scoring.Subscribe(_bus));
         }
 
         private string ReadConfigJson()

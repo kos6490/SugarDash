@@ -73,7 +73,9 @@ namespace SugarDash.App.Tests
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
                 var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
-                return new RunSession(model, director, fsm, bus.Subscribe<HypoEventTriggered>(fsm.Begin));
+                var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
+                return new RunSession(model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                    scoring.Subscribe(bus));
             }, _log, bus);
             _flow = new GameFlowController(_run, _query);
         }

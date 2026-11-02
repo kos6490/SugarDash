@@ -85,7 +85,8 @@ namespace SugarDash.App.Tests
                     var fsm = new HypoEventFsm(config, model, director, Bus, () => Run.DistanceM);
                     var flag = new Flag(Bus.Subscribe<HypoEventTriggered>(fsm.Begin));
                     Sessions.Add(flag);
-                    return new RunSession(model, director, fsm, flag,
+                    var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
+                    return new RunSession(model, director, fsm, scoring, flag, scoring.Subscribe(Bus),
                         Bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
                 }, Log, Bus);
             }
@@ -120,6 +121,19 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Log.Begun, Is.EqualTo(1));
             Assert.That(rig.Run.Actual, Is.EqualTo(120));
             Assert.Throws<InvalidOperationException>(() => rig.Run.StartRun());
+        }
+
+        [Test]
+        public void Score_GrowsWhileInRangeAndRunning()
+        {
+            var rig = new Rig(b => { b.Initial = 120; b.RunDecayPerSec = 0; b.BaseDecayPerSec = 0; });
+            rig.Run.StartRun();
+            for (int i = 0; i < 5; i++)
+            {
+                rig.Run.AdvanceDistance(10);
+                rig.Run.Tick(1);
+            }
+            Assert.That(rig.Run.Score, Is.EqualTo(5 * 1 + 50 * 0.1).Within(Eps));
         }
 
         [Test]
