@@ -35,10 +35,27 @@ namespace SugarDash.Presentation.Tests
             {
                 _presenter.ApplyShake(1, i * 0.05f);
                 Assert.That((_cam.transform.position - P - _presenter.LastOffset).magnitude, Is.LessThan(1e-4f));
+                Assert.That(_presenter.LastOffset.magnitude, Is.GreaterThan(0f));
                 Assert.That(_presenter.LastOffset.magnitude, Is.LessThanOrEqualTo(_presenter.maxAmplitude * 1.5f));
                 Assert.That(Mathf.Abs(_presenter.LastOffset.x), Is.LessThanOrEqualTo(_presenter.maxAmplitude + 1e-5f));
                 Assert.That(Mathf.Abs(_presenter.LastOffset.y), Is.LessThanOrEqualTo(_presenter.maxAmplitude + 1e-5f));
             }
+        }
+
+        [Test]
+        public void ExternalAbsoluteWrite_BecomesBase()
+        {
+            _presenter.ApplyShake(1, 0.2f);
+            var q = new Vector3(5f, 6f, 7f);
+            _cam.transform.position = q; // PlayerController가 매 프레임 절대 위치를 쓰는 상황
+
+            _presenter.ApplyShake(1, 0.4f);
+
+            Assert.That((_cam.transform.position - q - _presenter.LastOffset).magnitude, Is.LessThan(1e-4f));
+
+            _presenter.ApplyShake(0, 0.5f);
+
+            Assert.That((_cam.transform.position - q).magnitude, Is.LessThan(1e-4f));
         }
 
         [Test]

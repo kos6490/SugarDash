@@ -18,7 +18,9 @@ namespace SugarDash.Presentation
         private double _startGlucose;
         private double _lowGlucose;
 
-        /// <summary>이번 프레임에 카메라에 더한 오프셋.</summary>
+        private Vector3 _lastWritten;
+
+        /// <summary>마지막 ApplyShake가 카메라 기준 위치에 더한 오프셋.</summary>
         public Vector3 LastOffset { get; private set; }
 
         public IDisposable Bind(RunController run, double shakeStartGlucose, double glucoseLow)
@@ -32,6 +34,8 @@ namespace SugarDash.Presentation
                 _run = null;
             });
         }
+
+        private void OnDisable() => ApplyShake(0, 0f);
 
         public void LateUpdate()
         {
@@ -54,7 +58,11 @@ namespace SugarDash.Presentation
                     (Mathf.PerlinNoise(0.77f, t) * 2f - 1f) * amp, 0f);
             }
 
-            cameraTarget.position += offset - LastOffset;
+            // 다른 코드(PlayerController)가 위치를 새로 썼으면 그 값이 기준, 아니면 지난 오프셋을 뺀 값이 기준이다.
+            var current = cameraTarget.position;
+            var basePos = current == _lastWritten ? current - LastOffset : current;
+            cameraTarget.position = basePos + offset;
+            _lastWritten = cameraTarget.position;
             LastOffset = offset;
         }
     }
