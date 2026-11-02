@@ -36,6 +36,7 @@ namespace SugarDash.Bootstrap
         [SerializeField] private PlayerController player;
         [SerializeField] private TrackSpawner track;
         [SerializeField] private InputAdapter input;
+        [SerializeField] private SymptomEffectPresenter symptomEffect;
 
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private GameConfig _config;
@@ -71,6 +72,8 @@ namespace SugarDash.Bootstrap
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks, Environment.TickCount));
             _subscriptions.Add(resultScreen.Bind(_flow));
+            if (symptomEffect != null)
+                _subscriptions.Add(symptomEffect.Bind(_run, _config.Symptom.ShakeStartGlucose, _config.Elimination.GlucoseLow));
 
             player.Init(_run, true);
             track.Init(_config.Runner.TrackSnackIntervalMinSec, _config.Runner.TrackSnackIntervalMaxSec,

@@ -145,6 +145,10 @@ namespace SugarDash.Infrastructure.Config
                     Number(elimination?.GlucoseLow, "elimination.glucoseLow", elimination),
                     Number(elimination?.GlucoseHigh, "elimination.glucoseHigh", elimination));
 
+                var symptom = Section(dto.Symptom, "symptom");
+                var symptomConfig = new SymptomConfig(
+                    Number(symptom?.ShakeStartGlucose, "symptom.shakeStartGlucose", symptom));
+
                 var scoreConfig = MapScore(Section(dto.Score, "score"));
 
                 var sections = new List<SectionConfig>();
@@ -163,7 +167,7 @@ namespace SugarDash.Infrastructure.Config
                 var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
                     snacks);
                 return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, hyperConfig,
-                    runnerConfig, eliminationConfig, scoreConfig, sections);
+                    runnerConfig, eliminationConfig, symptomConfig, scoreConfig, sections);
             }
 
             private ScoreConfig MapScore(ScoreDto score)

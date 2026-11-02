@@ -126,6 +126,12 @@ namespace SugarDash.Domain.Config
                 errors.Add($"glucose.hyperThreshold < elimination.glucoseHigh ≤ glucose.max 이어야 한다 " +
                            $"(hyperThreshold={levels.HyperThreshold}, glucoseHigh={elimination.GlucoseHigh}, max={levels.Max})");
 
+            // 24. 증상 연출: 흔들림은 탈락 기준 위에서 시작해야 하고 혈당 범위를 벗어나지 않는다
+            double shakeStart = config.Symptom.ShakeStartGlucose;
+            if (!(elimination.GlucoseLow < shakeStart && shakeStart <= levels.Max))
+                errors.Add($"elimination.glucoseLow < symptom.shakeStartGlucose ≤ glucose.max 이어야 한다 " +
+                           $"(glucoseLow={elimination.GlucoseLow}, shakeStartGlucose={shakeStart}, max={levels.Max})");
+
             // 22. 점수
             ValidateScore(errors, config.Score);
 

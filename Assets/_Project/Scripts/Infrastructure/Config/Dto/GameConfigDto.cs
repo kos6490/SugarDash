@@ -22,6 +22,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public List<SnackDto> Snacks { get; set; }
         public RunnerDto Runner { get; set; }
         public EliminationDto Elimination { get; set; }
+        public SymptomDto Symptom { get; set; }
         public ScoreDto Score { get; set; }
         public List<SectionDto> Sections { get; set; }
     }
@@ -123,6 +124,12 @@ namespace SugarDash.Infrastructure.Config.Dto
     {
         public double? GlucoseLow { get; set; }
         public double? GlucoseHigh { get; set; }
+    }
+
+    [Preserve]
+    public sealed class SymptomDto
+    {
+        public double? ShakeStartGlucose { get; set; }
     }
 
     [Preserve]

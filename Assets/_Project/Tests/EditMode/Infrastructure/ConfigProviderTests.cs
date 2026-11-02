@@ -43,6 +43,7 @@ namespace SugarDash.Infrastructure.Tests
   ""runner"": { ""trackSnackServings"": 0.5,
     ""trackSnackIntervalMinSec"": 6, ""trackSnackIntervalMaxSec"": 10 },
   ""elimination"": { ""glucoseLow"": 40, ""glucoseHigh"": 300 },
+  ""symptom"": { ""shakeStartGlucose"": 90 },
   ""score"": {
     ""inRangePerSec"": 1, ""perMeter"": 0.1,
     ""correct"": { ""recognize"": 10, ""respond"": 11, ""dose"": 12, ""remeasure"": 13, ""notify"": 14, ""hyperNotify"": 15 },
@@ -88,6 +89,7 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Runner.TrackSnackIntervalMinSec, Is.EqualTo(6));
             Assert.That(config.Runner.TrackSnackIntervalMaxSec, Is.EqualTo(10));
             Assert.That(config.Elimination.GlucoseLow, Is.EqualTo(40));
+            Assert.That(config.Symptom.ShakeStartGlucose, Is.EqualTo(90));
             Assert.That(config.Elimination.GlucoseHigh, Is.EqualTo(300));
             Assert.That(config.Score.InRangePerSec, Is.EqualTo(1));
             Assert.That(config.Score.ErrorWeights[HypoErrorCode.SMissed], Is.EqualTo(0));
@@ -209,6 +211,16 @@ namespace SugarDash.Infrastructure.Tests
                 .ToList();
 
             Assert.That(keys, Is.EquivalentTo(codes));
+        }
+
+        [Test]
+        public void SymptomField_NullIsReportedByPath()
+        {
+            var json = With(ValidJson, "\"shakeStartGlucose\": 90", "\"shakeStartGlucose\": null");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths, Is.EqualTo(new[] { "symptom.shakeStartGlucose" }));
         }
 
         [Test]

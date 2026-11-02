@@ -43,6 +43,7 @@
     "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null
   },
   "elimination": { "glucoseLow": null, "glucoseHigh": null },
+  "symptom": { "shakeStartGlucose": null },
   "score": {
     "inRangePerSec": null, "perMeter": null,
     "correct": {

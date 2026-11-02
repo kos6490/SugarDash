@@ -26,6 +26,7 @@
     "trackSnackIntervalMinSec": 6, "trackSnackIntervalMaxSec": 10
   },
   "elimination": { "glucoseLow": 40, "glucoseHigh": 200 },
+  "symptom": { "shakeStartGlucose": 80 },
   "score": {
     "inRangePerSec": 1, "perMeter": 0.1,
     "correct": { "recognize": 10, "respond": 10, "dose": 10, "remeasure": 10, "notify": 10, "hyperNotify": 10 },

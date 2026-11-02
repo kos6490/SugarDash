@@ -82,6 +82,8 @@ namespace SugarDash.Domain.Tests
             yield return Case("GlucoseLowBelowMin", b => b.GlucoseLow = 19);
             yield return Case("GlucoseHighAtHyperThreshold", b => b.GlucoseHigh = 250);
             yield return Case("GlucoseHighAboveMax", b => b.GlucoseHigh = 401);
+            yield return Case("ShakeStartAtGlucoseLow", b => b.ShakeStartGlucose = 40);
+            yield return Case("ShakeStartAboveMax", b => b.ShakeStartGlucose = 401);
             yield return Case("NegativeInRangePerSec", b => b.InRangePerSec = -1);
             yield return Case("KeepRunningNotZero", b => b.ErrorWeightOverrides[HypoErrorCode.RsKeepRunning] = 1);
             yield return Case("HyperKeepRunningNotZero", b => b.ErrorWeightOverrides[HypoErrorCode.HyKeepRunning] = 1);

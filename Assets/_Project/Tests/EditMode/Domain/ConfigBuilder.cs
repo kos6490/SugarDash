@@ -69,6 +69,7 @@ namespace SugarDash.Domain.Tests
 
         public double GlucoseLow = 40;
         public double GlucoseHigh = 300;
+        public double ShakeStartGlucose = 90;
 
         public double InRangePerSec = 1;
         public double PerMeter = 0.1;
@@ -103,6 +104,7 @@ namespace SugarDash.Domain.Tests
             new HyperConfig(HyperNotifyTimeLimitSec),
             new RunnerConfig(TrackSnackServings, TrackSnackIntervalMinSec, TrackSnackIntervalMaxSec),
             new EliminationConfig(GlucoseLow, GlucoseHigh),
+            new SymptomConfig(ShakeStartGlucose),
             BuildScore(),
             Sections.ToList());
 

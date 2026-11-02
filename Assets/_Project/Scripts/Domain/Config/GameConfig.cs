@@ -8,7 +8,7 @@ namespace SugarDash.Domain.Config
         public const string RequiredUnit = "mg/dL";
 
         public GameConfig(string configVersion, string unit, GlucoseConfig glucose, HypoConfig hypo,
-            HyperConfig hyper, RunnerConfig runner, EliminationConfig elimination, ScoreConfig score,
+            HyperConfig hyper, RunnerConfig runner, EliminationConfig elimination, SymptomConfig symptom, ScoreConfig score,
             IReadOnlyList<SectionConfig> sections)
         {
             ConfigVersion = configVersion;
@@ -18,6 +18,7 @@ namespace SugarDash.Domain.Config
             Hyper = hyper;
             Runner = runner;
             Elimination = elimination;
+            Symptom = symptom;
             Score = score;
             Sections = sections;
         }
@@ -30,6 +31,7 @@ namespace SugarDash.Domain.Config
         public HyperConfig Hyper { get; }
         public RunnerConfig Runner { get; }
         public EliminationConfig Elimination { get; }
+        public SymptomConfig Symptom { get; }
         public ScoreConfig Score { get; }
         public IReadOnlyList<SectionConfig> Sections { get; }
     }

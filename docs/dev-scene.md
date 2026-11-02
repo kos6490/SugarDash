@@ -196,7 +196,8 @@ Unity 에디터 기본 배치:
 2. 같은 방법으로 `Track`(컴포넌트 `TrackSpawner`), `Input`(컴포넌트 `InputAdapter`)을 만든다.
 3. 세 오브젝트 모두 위치를 원점으로 맞춘다. 하나씩 선택하고 Inspector의 `Transform` 칸 오른쪽 끝 `⋮`(점 세 개) → `Reset`. Position이 0, 0, 0이 되면 된다.
 4. `Player`를 선택하고 `Player Controller`의 `Camera Rig` 칸에 Hierarchy의 `Main Camera`를 끌어다 놓는다. 카메라 위치는 실행하면 코드가 맞춘다.
-5. 그 밖의 값(속도, 점프 높이 등)은 기본값 그대로 둔다. 나중에 감각을 맞출 때 Inspector에서 바꾼다(Play 중에 바꾼 값은 멈추면 되돌아간다).
+5. `Main Camera`를 선택하고 `Add Component` → `SymptomEffectPresenter`. `Camera Target` 칸에 `Main Camera` 자신을 끌어다 놓는다(실제 혈당이 낮을수록 카메라만 흔들리고 UI는 흔들리지 않는다).
+6. 그 밖의 값(속도, 점프 높이, 흔들림 폭 등)은 기본값 그대로 둔다. 나중에 감각을 맞출 때 Inspector에서 바꾼다(Play 중에 바꾼 값은 멈추면 되돌아간다).
 
 ## 8. 조립 지점 (GameBootstrapper)
 
@@ -213,6 +214,7 @@ Unity 에디터 기본 배치:
 | Result Screen | Hierarchy의 `ResultScreen` |
 | Player | Hierarchy의 `Player` |
 | Track | Hierarchy의 `Track` |
+| Symptom Effect | Hierarchy의 `Main Camera` (Symptom Effect Presenter가 붙은 오브젝트) |
 | Input | Hierarchy의 `Input` |
 
 4. Cmd+S로 저장한다.
@@ -262,6 +264,7 @@ DevRun
 - 화면의 혈당 숫자와 막대는 **3초 늦게** 따라오는 표시 혈당이다. `측정기`를 누르면 그 순간의 **실제** 혈당이 `측정: OO mg/dL`로 나온다.
 - 달리는 동안 혈당은 초당 1.5씩, 선택 패널이 떠 있는 동안(세계 정지)에는 초당 0.5씩 내려간다.
 - 실제 혈당이 70 아래로 내려가면(시작 후 약 33초) 저혈당이 발동한다. 화면에는 아무 표시가 없고, 이때 화면 숫자는 약 75다.
+- 실제 혈당이 80 아래로 내려가면 화면(카메라)이 흔들리기 시작하고, 40에 가까워질수록 더 크게 흔들린다. 혈당 바 등 UI는 흔들리지 않는다.
 - 각 단계와 `도움이 필요해요!` 대기는 제한 시간이 5초다.
 - 실제 혈당이 135 이상이 되면 고혈당이 발동한다(개발 설정만 낮춰 둔 값). 고혈당 알리기도 제한 시간이 5초다.
 - 주행은 끝이 없다. 탈락할 때까지 이어지고, 완주 화면은 없다. 장애물에 한 번 부딪히면 바로 탈락한다. 달릴수록 점점 빨라진다.
