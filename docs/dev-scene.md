@@ -354,7 +354,7 @@ A의 3번까지 진행한 뒤 아래 중 하나를 해 본다. 오류가 나면 
 | 3 | 하트가 0이 된다 | 결과 화면 제목 `어른이 도와주러 왔어요`. 요약 맨 위에 `점수 N점`, `최고 점수 M점`, 첫 판이면 `새 최고 기록!` |
 | 4 | `다시 하기` 후 더 일찍 탈락한다 | 이번 점수가 이전보다 낮으면 `새 최고 기록!`이 없고 `최고 점수`는 그대로다 |
 
-최고 점수 파일 `best-score.json`은 9.9절의 기록 폴더(`~/Library/Application Support/ZeroSugar/SugarDash/`)에 저장된다. 이 파일을 지우면 다음 판이 다시 첫 판처럼 `새 최고 기록!`이 나온다. 혈당이 40 미만이거나 200 초과여도 탈락한다.
+최고 점수 파일 `best-score.json`은 `~/Library/Application Support/ZeroSugar/SugarDash/` 폴더에 저장된다. 9.9절의 `logs/` 폴더가 아니라 그 바로 위 폴더이다. 이 파일을 지우면 다음 판이 다시 첫 판처럼 `새 최고 기록!`이 나온다. 혈당이 40 미만이거나 200 초과여도 탈락한다.
 
 ### 9.9 기록 확인
 macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Support/ZeroSugar/SugarDash/logs/`로 이동한다. 주행마다 `{runId}.jsonl` 파일이 하나씩 생긴다. 텍스트 편집기로 열면 한 줄에 기록 하나가 있고, 모든 줄의 `configVersion`이 `dev-not-real`이다.

@@ -191,7 +191,7 @@ namespace SugarDash.App
 
         /// <summary>
         /// 캐릭터가 앞으로 간 거리를 더한다. 구간 경계를 넘으면 다음 구간에 들어간다(한 번에 여러 경계를 넘으면 차례로 모두).
-        /// 세계가 멈춘 동안에는 움직이지 않으므로 무시한다.
+        /// 명령은 처리되는 시점에 판정한다. 세계가 멈춘 뒤 처리되면 무시하므로, 멈추기 직전 프레임에 쌓인 거리는 버려진다(관대하게 처리).
         /// </summary>
         /// <param name="meters">0 이상의 유한수(m).</param>
         public void AdvanceDistance(double meters)
@@ -216,7 +216,7 @@ namespace SugarDash.App
 
         /// <summary>
         /// 장애물에 부딪혔다(PlayerController 충돌 판정). 하트를 하나 잃고, 모두 잃으면 탈락한다.
-        /// 세계가 멈춘 동안에는 부딪힐 수 없으므로 무시한다.
+        /// 명령은 처리되는 시점에 판정한다. 세계가 멈춘 뒤 처리되면 무시하므로, 멈추기 직전 프레임에 쌓인 충돌은 버려진다(관대하게 처리).
         /// </summary>
         public void HitObstacle() => Enqueue(s =>
         {

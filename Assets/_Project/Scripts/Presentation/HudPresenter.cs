@@ -65,6 +65,9 @@ namespace SugarDash.Presentation
             {
                 // 주행이 닫혀 혈당 값이 없으므로 마지막 화면을 그대로 둔다. 결과는 ResultScreenView가 보여 준다.
                 meterButton.interactable = false;
+                if (heartsText != null) heartsText.text = $"하트 {_run.Hearts}";
+                if (scoreText != null && _flow.LastScore != null)
+                    scoreText.text = $"점수 {(int)Math.Floor(_flow.LastScore.Value)}";
                 return;
             }
 

@@ -90,6 +90,11 @@ namespace SugarDash.App.Tests
             bus.Subscribe<HypoEventTriggered>(e => _query.Published.Add(e));
             bus.Subscribe<StepAnswered>(e => _query.Published.Add(e));
             bus.Subscribe<RunEliminated>(e => _query.Published.Add(e));
+            bus.Subscribe<GlucoseRangeEntered>(e => _query.Published.Add(e));
+            bus.Subscribe<GlucoseRangeExited>(e => _query.Published.Add(e));
+            bus.Subscribe<RecheckFastForward>(e => _query.Published.Add(e));
+            bus.Subscribe<SectionEntered>(e => _query.Published.Add(e));
+            bus.Subscribe<ObstacleHit>(e => _query.Published.Add(e));
             _run = new RunController(config.Runner, config.Sections, () =>
             {
                 var model = new GlucoseModel(config.Glucose);
@@ -166,6 +171,49 @@ namespace SugarDash.App.Tests
             Assert.That(result.Events, Has.Count.EqualTo(1));
             Assert.That(result.Events[0].AllCorrect, Is.False);
             Assert.That(result.Events[0].Steps[MetricStep.Recognize], Is.False);
+        }
+
+        /// <summary>
+        /// 저혈당 대처(재확인 빨리감기 포함)를 마치고 알리기 대기 시간 초과로 탈락한다.
+        /// 기록으로 다시 계산한 점수가 주행 중 누적 점수와 같아야 한다.
+        /// </summary>
+        [Test]
+        public void LastScore_MatchesLiveScore_AfterCopingAndFastForward()
+        {
+            _flow.Begin();
+            for (int i = 0; i < 26; i++)
+            {
+                if (i % 5 == 0) _run.AdvanceDistance(10);
+                Frames(1);
+            }
+            Assert.That(_run.Phase, Is.EqualTo(HypoPhase.Recognize), "저혈당이 발동한 상태여야 한다");
+
+            _run.PressMeter();
+            Frames(1);
+            _run.ChooseSnack("juice");
+            Frames(1);
+            _run.ChooseDose(DoseLevel.Proper);
+            Frames(1);
+            _run.ChooseRecheck();
+            Frames(1);
+            Assert.That(_query.Published.OfType<RecheckFastForward>().Any(), Is.True, "빨리감기가 일어나야 한다");
+            Assert.That(_query.Published.OfType<GlucoseRangeEntered>().Any(), Is.True);
+            Assert.That(_run.Score, Is.GreaterThan(0));
+
+            // 알리기를 누르지 않고 기다려 제한 시간 초과로 탈락시킨다.
+            double liveScore = double.NaN;
+            for (int i = 0; i < 60 && !_flow.IsShowingResult; i++)
+            {
+                _run.Tick(1);
+                if (_run.State == RunState.Eliminated) liveScore = _run.Score;
+                _flow.Tick();
+            }
+
+            Assert.That(_flow.IsShowingResult, Is.True);
+            Assert.That(_query.Published.OfType<RunEliminated>().Count(), Is.EqualTo(1));
+            Assert.That(double.IsNaN(liveScore), Is.False);
+            Assert.That(_flow.LastScore, Is.Not.Null);
+            Assert.That(_flow.LastScore.Value, Is.EqualTo(liveScore).Within(1e-9));
         }
 
         [Test]

@@ -525,6 +525,13 @@ namespace SugarDash.App.Tests
 
             Assert.That(rig.Run.State, Is.EqualTo(RunState.Eliminated));
             Assert.That(rig.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.HeartsLost));
+
+            // 대조: 부딪히지 않으면 같은 Tick에서 혈당 탈락이 난다(두 원인이 모두 살아 있었다).
+            var control = new Rig(b => { b.Hearts = 1; b.GlucoseLow = 65; });
+            control.Run.StartRun();
+            control.Ticks(27);
+            control.Run.Tick(1);
+            Assert.That(control.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.GlucoseLow));
         }
 
         [Test]

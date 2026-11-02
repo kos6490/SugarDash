@@ -47,7 +47,7 @@
 | `TrackSnackEaten` | `snackId`, `servings` |
 | `SectionEntered` | `section`(`signal`, `condition`, `complex`), `distanceM`. 주행 시작 시 첫 구간도 기록 |
 | `ObstacleHit` | `heartsLeft`, `distanceM` |
-| `GlucoseRangeEntered`, `GlucoseRangeExited` | `actual`. 적정 범위(`normalRangeMin` 이상 `hyperThreshold` 미만) 들어감·나감. 점수 재계산용. 시작 시 범위 안이면 `RunStarted` 바로 뒤에 `GlucoseRangeEntered` |
+| `GlucoseRangeEntered`, `GlucoseRangeExited` | `actual`. 적정 범위(`normalRangeMin` 이상 `hyperThreshold` 미만) 들어감·나감. 점수 재계산용. 주행 시작 때 기록 순서는 `RunStarted` → `SectionEntered` → `GlucoseRangeEntered`(시작 시 범위 안일 때만) |
 
 - `atUtc`: `yyyy-MM-ddTHH:mm:ss.fffZ`
 - `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계), `hyper_notify`(고혈당 알리기, `docs/hyper-event.md`)
