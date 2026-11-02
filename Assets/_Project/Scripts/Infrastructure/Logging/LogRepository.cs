@@ -17,7 +17,7 @@ namespace SugarDash.Infrastructure.Logging
     public sealed class LogRepository : ILogRepository
     {
         /// <summary>레코드 형식을 바꾸면 올린다.</summary>
-        public const int SchemaVersion = 1;
+        public const int SchemaVersion = 2;
 
         private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
 
@@ -114,7 +114,22 @@ namespace SugarDash.Infrastructure.Logging
                     r.Step = e.Step.HasValue ? LogCodes.Step(e.Step.Value) : null;
                     r.ErrorCode = LogCodes.Error(e.Reason);
                     r.Cause = LogCodes.Cause(e.Cause);
+                    r.DistanceM = e.DistanceM;
                 }))),
+                bus.Subscribe<SectionEntered>(e => Append(Event("SectionEntered", null, e.SimT, e.T, r =>
+                {
+                    r.Section = e.Section;
+                    r.DistanceM = e.DistanceM;
+                }))),
+                bus.Subscribe<ObstacleHit>(e => Append(Event("ObstacleHit", null, e.SimT, e.T, r =>
+                {
+                    r.HeartsLeft = e.HeartsLeft;
+                    r.DistanceM = e.DistanceM;
+                }))),
+                bus.Subscribe<GlucoseRangeEntered>(e => Append(Event("GlucoseRangeEntered", null, e.SimT, e.T,
+                    r => r.Actual = e.Actual))),
+                bus.Subscribe<GlucoseRangeExited>(e => Append(Event("GlucoseRangeExited", null, e.SimT, e.T,
+                    r => r.Actual = e.Actual))),
                 bus.Subscribe<GraceStarted>(e => Append(Event("GraceStarted", e.EventId, e.SimT, e.T))),
                 bus.Subscribe<GraceEnded>(e => Append(Event("GraceEnded", e.EventId, e.SimT, e.T))),
                 bus.Subscribe<TrackSnackEaten>(e => Append(Event("TrackSnackEaten", null, e.SimT, e.T, r =>

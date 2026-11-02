@@ -20,7 +20,7 @@
 | `seq` | 주행 안에서 1부터 1씩 늘어나는 줄 번호 |
 | `type` | 레코드 종류(아래 표) |
 | `simT`, `t` | simDt 누적 시각, decisionDt 누적 시각(`docs/glucose-model.md` 2.1절). `RunStarted`·`RunEnded`에는 없다 |
-| `eventId` | 저혈당·고혈당 이벤트 번호(같은 순서를 함께 쓴다). 이벤트에 속하지 않는 레코드에는 없다(`MeterPressed`는 이벤트 밖이면 0) |
+| `eventId` | 저혈당·고혈당 이벤트 번호(같은 순서를 함께 쓴다). 이벤트에 속하지 않는 레코드에는 없다(`MeterPressed`는 이벤트 밖이면 0). `RunEliminated`의 `eventId`도 대처 이벤트 밖(주행 중 하트·혈당 탈락)이면 0 |
 
 값이 null인 필드는 쓰지 않는다. 예: 시간 초과한 `StepAnswered`에는 `choiceId`가 없고, 정답이면 `errorCode`가 없다.
 

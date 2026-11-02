@@ -58,7 +58,7 @@ namespace SugarDash.Infrastructure.Tests
             new StepAnswered(3, HypoStep.HyperNotify, "keep_running", false, HypoErrorCode.HyKeepRunning, false, 1.5,
                 false, 61, 51.5),
             new HyperResolved(3, false, 62, 52),
-            new RunEliminated(2, HypoStep.Dose, HypoErrorCode.DsOver, EliminationCause.Declined, 0, 90, 80),
+            new RunEliminated(2, HypoStep.Dose, HypoErrorCode.DsOver, EliminationCause.Declined, 77.5, 90, 80),
             new RunCompleted(40, 120, 110),
         };
 
@@ -99,11 +99,48 @@ namespace SugarDash.Infrastructure.Tests
         }
 
         [Test]
+        public void RoundTrip_NewRecordTypes()
+        {
+            string runId = _repo.BeginRun();
+            var published = new object[]
+            {
+                new SectionEntered("signal", 12.5, 1, 1),
+                new GlucoseRangeEntered(95.5, 2, 2),
+                new ObstacleHit(2, 30.25, 3, 3),
+                new GlucoseRangeExited(60.5, 4, 4),
+                new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.HeartsLost, 55.5, 5, 5),
+                new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.GlucoseLow, 56.5, 6, 6),
+                new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.GlucoseHigh, 57.5, 7, 7),
+            };
+            foreach (var e in published) Publish(e);
+            _repo.EndRun();
+
+            var run = _query.LoadRun(runId);
+
+            Assert.That(run.SkippedLineCount, Is.EqualTo(0));
+            Assert.That(run.Events, Has.Count.EqualTo(published.Length));
+            for (int i = 0; i < published.Length; i++) AssertSameProperties(published[i], run.Events[i]);
+        }
+
+        [Test]
+        public void SchemaVersion1Lines_AreSkipped()
+        {
+            string runId = _repo.BeginRun();
+            File.AppendAllText(Path.Combine(_dir, runId + ".jsonl"),
+                "{\"schemaVersion\":1,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":2,\"type\":\"SuddenDropStarted\",\"simT\":1,\"t\":1}\n");
+
+            var run = _query.LoadRun(runId);
+
+            Assert.That(run.Events, Is.Empty);
+            Assert.That(run.SkippedLineCount, Is.EqualTo(1));
+        }
+
+        [Test]
         public void BrokenLastLine_IsSkipped()
         {
             string runId = _repo.BeginRun();
             _bus.Publish(new SuddenDropStarted(1, 1));
-            File.AppendAllText(Path.Combine(_dir, runId + ".jsonl"), "{\"schemaVersion\":1,\"ty");
+            File.AppendAllText(Path.Combine(_dir, runId + ".jsonl"), "{\"schemaVersion\":2,\"ty");
 
             var run = _query.LoadRun(runId);
 
@@ -118,10 +155,10 @@ namespace SugarDash.Infrastructure.Tests
             string runId = _repo.BeginRun();
             string path = Path.Combine(_dir, runId + ".jsonl");
             File.AppendAllText(path,
-                "{\"schemaVersion\":1,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":2,\"type\":\"Future\"}\n" +
+                "{\"schemaVersion\":2,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":2,\"type\":\"Future\"}\n" +
                 "{\"schemaVersion\":99,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":3,\"type\":\"SuddenDropStarted\",\"simT\":1,\"t\":1}\n" +
-                "{\"schemaVersion\":1,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":4,\"type\":\"SuddenDropStarted\",\"simT\":1}\n" +
-                "{\"schemaVersion\":1,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":5,\"type\":\"GuardianNotified\",\"eventId\":1,\"step\":\"jump\",\"simT\":1,\"t\":1}\n");
+                "{\"schemaVersion\":2,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":4,\"type\":\"SuddenDropStarted\",\"simT\":1}\n" +
+                "{\"schemaVersion\":2,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":5,\"type\":\"GuardianNotified\",\"eventId\":1,\"step\":\"jump\",\"simT\":1,\"t\":1}\n");
 
             var run = _query.LoadRun(runId);
 

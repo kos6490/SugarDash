@@ -47,5 +47,9 @@ namespace SugarDash.Infrastructure.Logging.Dto
 
         public bool? AllCorrect { get; set; }
         public string Cause { get; set; }
+        public double? DistanceM { get; set; }
+
+        public string Section { get; set; }
+        public int? HeartsLeft { get; set; }
     }
 }
