@@ -59,7 +59,7 @@ namespace SugarDash.Domain.Tests
             var run = Run(
                 Triggered(1),
                 Timeout(1, HypoStep.Recognize, HypoErrorCode.SMissed),
-                new RunEliminated(1, HypoStep.Recognize, HypoErrorCode.SMissed, EliminationCause.PromptTimeout, 0, 0));
+                new RunEliminated(1, HypoStep.Recognize, HypoErrorCode.SMissed, EliminationCause.PromptTimeout, 0, 0, 0));
 
             var summary = MetricsCalculator.Summarize(run);
 
@@ -170,7 +170,7 @@ namespace SugarDash.Domain.Tests
                 new MeterPressed(0, 90, true, false, 0, 0),
                 new MeterPressed(0, 60, false, false, 0, 0),
                 Triggered(1), Timeout(1, HypoStep.Recognize, HypoErrorCode.SMissed),
-                new RunEliminated(1, HypoStep.Recognize, HypoErrorCode.SMissed, EliminationCause.Declined, 0, 0));
+                new RunEliminated(1, HypoStep.Recognize, HypoErrorCode.SMissed, EliminationCause.Declined, 0, 0, 0));
 
             var m = MetricsCalculator.Calculate(new[] { first, second });
 
@@ -222,7 +222,7 @@ namespace SugarDash.Domain.Tests
             var run = Run(
                 new HyperEventTriggered(1, 0, 0, 255),
                 Timeout(1, HypoStep.HyperNotify, HypoErrorCode.HyTimeout),
-                new RunEliminated(1, HypoStep.HyperNotify, HypoErrorCode.HyTimeout, EliminationCause.PromptTimeout, 0, 0));
+                new RunEliminated(1, HypoStep.HyperNotify, HypoErrorCode.HyTimeout, EliminationCause.PromptTimeout, 0, 0, 0));
 
             var summary = MetricsCalculator.Summarize(run);
 

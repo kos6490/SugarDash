@@ -27,6 +27,8 @@ namespace SugarDash.Domain.Tests
         public readonly EventDirector Director;
         public readonly HypoEventFsm Fsm;
         public readonly List<object> Events = new List<object>();
+        /// <summary>FSM이 탈락 기록에 싣는 주행 거리.</summary>
+        public double Distance;
 
         public HypoHarness(Action<ConfigBuilder> configure = null)
         {
@@ -51,10 +53,12 @@ namespace SugarDash.Domain.Tests
             Collect<HyperResolved>(bus);
             Collect<GraceStarted>(bus);
             Collect<GraceEnded>(bus);
+            Collect<GlucoseRangeEntered>(bus);
+            Collect<GlucoseRangeExited>(bus);
 
             Model = new GlucoseModel(config.Glucose);
             Director = new EventDirector(config.Glucose, Model, new NoRandom(), bus);
-            Fsm = new HypoEventFsm(config, Model, Director, bus);
+            Fsm = new HypoEventFsm(config, Model, Director, bus, () => Distance);
             bus.Subscribe<HypoEventTriggered>(Fsm.Begin);
             bus.Subscribe<HyperEventTriggered>(Fsm.BeginHyper);
         }

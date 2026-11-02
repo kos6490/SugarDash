@@ -138,7 +138,7 @@ namespace SugarDash.Infrastructure.Logging
                     return new HyperResolved(Req(r.EventId), Req(r.AllCorrect), Req(r.SimT), Req(r.T));
                 case "RunEliminated":
                     return new RunEliminated(Req(r.EventId), LogCodes.ParseStep(r.Step),
-                        LogCodes.ParseError(r.ErrorCode), LogCodes.ParseCause(r.Cause), Req(r.SimT), Req(r.T));
+                        LogCodes.ParseError(r.ErrorCode), LogCodes.ParseCause(r.Cause), 0, Req(r.SimT), Req(r.T));
                 case "GraceStarted":
                     return new GraceStarted(Req(r.EventId), Req(r.SimT), Req(r.T));
                 case "GraceEnded":

@@ -29,6 +29,7 @@ namespace SugarDash.Domain.Hypo
         private readonly GlucoseModel _model;
         private readonly EventDirector _director;
         private readonly DomainEventBus _bus;
+        private readonly Func<double> _distanceM;
 
         private double _phaseStart;
         private double _deadline;
@@ -40,7 +41,9 @@ namespace SugarDash.Domain.Hypo
         private HypoErrorCode _promptError;
         private Action _afterNotify;
 
-        public HypoEventFsm(GameConfig config, GlucoseModel model, EventDirector director, DomainEventBus bus)
+        /// <param name="distanceM">탈락 기록에 실을 현재 주행 거리(m).</param>
+        public HypoEventFsm(GameConfig config, GlucoseModel model, EventDirector director, DomainEventBus bus,
+            Func<double> distanceM)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _hypo = config.Hypo;
@@ -48,6 +51,7 @@ namespace SugarDash.Domain.Hypo
             _model = model ?? throw new ArgumentNullException(nameof(model));
             _director = director ?? throw new ArgumentNullException(nameof(director));
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
+            _distanceM = distanceM ?? throw new ArgumentNullException(nameof(distanceM));
         }
 
         public HypoPhase Phase { get; private set; } = HypoPhase.Idle;
@@ -103,10 +107,18 @@ namespace SugarDash.Domain.Hypo
         /// <summary>
         /// 매 프레임 GlucoseModel.Tick과 EventDirector.Evaluate 뒤에 호출한다.
         /// 한 번에 현재 단계의 마감 하나만 처리한다. 새 단계의 마감은 지금부터 잰다.
+        /// 주행 중 단계(Idle, Recognize, ResumeCountdown, Grace)에서는 실제 혈당이 안전 범위를 벗어나면 바로 탈락한다.
+        /// 대처 중 단계는 시간 초과 순간에만 안전 범위를 판정한다.
         /// </summary>
         public void Update()
         {
-            if (Phase == HypoPhase.Idle || Phase == HypoPhase.Eliminated) return;
+            if (Phase == HypoPhase.Eliminated) return;
+            if (IsRunningPhase(Phase) && TryGetOutOfRangeCause(out var cause))
+            {
+                Eliminate(cause, null, HypoErrorCode.None);
+                return;
+            }
+            if (Phase == HypoPhase.Idle) return;
             double now = Phase == HypoPhase.Grace ? _model.SimTime : _model.DecisionTime;
             if (now < _deadline) return;
 
@@ -117,26 +129,27 @@ namespace SugarDash.Domain.Hypo
                     break;
                 case HypoPhase.Respond:
                     DoseSnackId = _hypo.GuardianSnackId;
-                    Error(HypoStep.Respond, null, HypoErrorCode.RsTimeout, EnterDose);
+                    Timeout(HypoStep.Respond, HypoErrorCode.RsTimeout, EnterDose);
                     break;
                 case HypoPhase.Dose:
-                    Error(HypoStep.Dose, null, HypoErrorCode.DsTimeout, () =>
+                    Timeout(HypoStep.Dose, HypoErrorCode.DsTimeout, () =>
                     {
                         ApplyDose(_hypo.Doses.Proper, false);
                         EnterRemeasure();
                     });
                     break;
                 case HypoPhase.Remeasure:
-                    Error(HypoStep.Remeasure, null, HypoErrorCode.RcNoRecheck, RemeasureAndNotify);
+                    Timeout(HypoStep.Remeasure, HypoErrorCode.RcNoRecheck, RemeasureAndNotify);
                     break;
                 case HypoPhase.Notify:
-                    Error(HypoStep.Notify, null, HypoErrorCode.RcNoNotify, Resolve);
+                    Timeout(HypoStep.Notify, HypoErrorCode.RcNoNotify, Resolve);
                     break;
                 case HypoPhase.HyperNotify:
-                    Error(HypoStep.HyperNotify, null, HypoErrorCode.HyTimeout, Resolve);
+                    Timeout(HypoStep.HyperNotify, HypoErrorCode.HyTimeout, Resolve);
                     break;
                 case HypoPhase.GuardianPrompt:
-                    Eliminate(EliminationCause.PromptTimeout);
+                    // 혈당이 안전 범위 밖이어도 알리기 대기 시간 초과로 기록한다.
+                    Eliminate(EliminationCause.PromptTimeout, _promptStep, _promptError);
                     break;
                 case HypoPhase.ResumeCountdown:
                     Publish(new GraceStarted(EventId, _model.SimTime, _model.DecisionTime));
@@ -150,6 +163,14 @@ namespace SugarDash.Domain.Hypo
                     EventId = 0;
                     break;
             }
+        }
+
+        /// <summary>하트를 모두 잃었다. 어느 단계에서든 바로 탈락한다. 이미 탈락했으면 아무것도 하지 않는다.</summary>
+        public void EliminateHeartsLost()
+        {
+            if (Phase == HypoPhase.Eliminated) return;
+
+            Eliminate(EliminationCause.HeartsLost, null, HypoErrorCode.None);
         }
 
         public void PressMeter()
@@ -256,7 +277,7 @@ namespace SugarDash.Domain.Hypo
                     Error(HypoStep.Notify, ChoiceRunAgain, HypoErrorCode.RcNoNotify, Resolve);
                     return true;
                 case HypoPhase.GuardianPrompt:
-                    Eliminate(EliminationCause.Declined);
+                    Eliminate(EliminationCause.Declined, _promptStep, _promptError);
                     return true;
                 default:
                     return false;
@@ -390,6 +411,55 @@ namespace SugarDash.Domain.Hypo
             Enter(HypoPhase.GuardianPrompt, _hypo.GuardianPromptTimeLimitSec);
         }
 
+        /// <summary>
+        /// 대처 중 단계의 시간 초과. 실제 혈당이 안전 범위 밖이면 시간 초과 기록 뒤 탈락하고,
+        /// 범위 안이면 오류 공통 처리로 간다.
+        /// </summary>
+        private void Timeout(HypoStep step, HypoErrorCode code, Action afterNotify)
+        {
+            if (TryGetOutOfRangeCause(out var cause))
+            {
+                _anyError = true;
+                PublishAnswer(step, null, false, code, false, false);
+                Eliminate(cause, step, code);
+                return;
+            }
+            Error(step, null, code, afterNotify);
+        }
+
+        private static bool IsRunningPhase(HypoPhase phase)
+        {
+            switch (phase)
+            {
+                case HypoPhase.Idle:
+                case HypoPhase.Recognize:
+                case HypoPhase.ResumeCountdown:
+                case HypoPhase.Grace:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>실제 혈당이 안전 범위를 벗어났으면 탈락 원인을 돌려준다. 경계값 자체는 범위 안이다.</summary>
+        private bool TryGetOutOfRangeCause(out EliminationCause cause)
+        {
+            double actual = _model.Actual;
+            var elimination = _config.Elimination;
+            if (actual < elimination.GlucoseLow)
+            {
+                cause = EliminationCause.GlucoseLow;
+                return true;
+            }
+            if (actual > elimination.GlucoseHigh)
+            {
+                cause = EliminationCause.GlucoseHigh;
+                return true;
+            }
+            cause = default;
+            return false;
+        }
+
         private void HelpInstead(HypoStep step, HypoErrorCode code, Action afterNotify)
         {
             _anyError = true;
@@ -398,9 +468,9 @@ namespace SugarDash.Domain.Hypo
             afterNotify();
         }
 
-        private void Eliminate(EliminationCause cause)
+        private void Eliminate(EliminationCause cause, HypoStep? step, HypoErrorCode reason)
         {
-            Publish(new RunEliminated(EventId, _promptStep, _promptError, cause, _model.SimTime,
+            Publish(new RunEliminated(EventId, step, reason, cause, _distanceM(), _model.SimTime,
                 _model.DecisionTime));
             _afterNotify = null;
             Phase = HypoPhase.Eliminated;

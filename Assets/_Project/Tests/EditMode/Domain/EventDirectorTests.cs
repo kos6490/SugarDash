@@ -23,6 +23,8 @@ namespace SugarDash.Domain.Tests
         private List<HypoEventTriggered> _hypos;
         private List<SuddenDropStarted> _drops;
         private List<GaugeWarningRaised> _warnings;
+        private List<GlucoseRangeEntered> _entered;
+        private List<GlucoseRangeExited> _exited;
 
         private void Setup(Action<ConfigBuilder> configure, params double[] randoms)
         {
@@ -36,6 +38,10 @@ namespace SugarDash.Domain.Tests
             bus.Subscribe<SuddenDropStarted>(_drops.Add);
             _warnings = new List<GaugeWarningRaised>();
             bus.Subscribe<GaugeWarningRaised>(_warnings.Add);
+            _entered = new List<GlucoseRangeEntered>();
+            _exited = new List<GlucoseRangeExited>();
+            bus.Subscribe<GlucoseRangeEntered>(_entered.Add);
+            bus.Subscribe<GlucoseRangeExited>(_exited.Add);
             _model = new GlucoseModel(config);
             _director = new EventDirector(config, _model, new FakeRandom(randoms), bus);
         }
@@ -287,6 +293,59 @@ namespace SugarDash.Domain.Tests
             Setup(null);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => _director.Evaluate(-1));
+        }
+
+        [Test]
+        public void TargetRange_InitialInRange_PublishesEntered()
+        {
+            Setup(null);
+
+            _director.EvaluateTargetRange();
+
+            Assert.That(_entered, Has.Count.EqualTo(1));
+            Assert.That(_entered[0].Actual, Is.EqualTo(120).Within(1e-9));
+            Assert.That(_exited, Is.Empty);
+            Assert.That(_director.IsInTargetRange, Is.True);
+        }
+
+        [Test]
+        public void TargetRange_InitialOutOfRange_PublishesNothing()
+        {
+            Setup(b => b.Initial = 75);
+
+            _director.EvaluateTargetRange();
+
+            Assert.That(_entered, Is.Empty);
+            Assert.That(_exited, Is.Empty);
+            Assert.That(_director.IsInTargetRange, Is.False);
+        }
+
+        [Test]
+        public void TargetRange_CrossingBelow_PublishesExitedOnce()
+        {
+            Setup(b => { b.Initial = 82; b.BaseDecayPerSec = 1; });
+
+            Run(10); // 82 → 72. 80 아래(79)에서 한 번 나간다.
+
+            Assert.That(_entered, Has.Count.EqualTo(1));
+            Assert.That(_exited, Has.Count.EqualTo(1));
+            Assert.That(_exited[0].Actual, Is.EqualTo(79).Within(1e-9));
+            Assert.That(_director.IsInTargetRange, Is.False);
+        }
+
+        [Test]
+        public void TargetRange_ReachingHyperThreshold_PublishesExited()
+        {
+            Setup(b => b.Initial = 235);
+            _model.EatSnack("juice", 1); // 30 상승, onset 1, absorb 2
+
+            Run(1); // 235
+            Assert.That(_exited, Is.Empty);
+            Run(1); // 250: 고혈당 임계값과 같으면 범위 밖
+
+            Assert.That(_exited, Has.Count.EqualTo(1));
+            Assert.That(_exited[0].Actual, Is.EqualTo(250).Within(1e-9));
+            Assert.That(_director.IsInTargetRange, Is.False);
         }
     }
 }

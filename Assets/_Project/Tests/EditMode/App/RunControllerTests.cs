@@ -80,7 +80,7 @@ namespace SugarDash.App.Tests
                 {
                     var model = new GlucoseModel(config.Glucose);
                     var director = new EventDirector(config.Glucose, model, new NoRandom(), Bus);
-                    var fsm = new HypoEventFsm(config, model, director, Bus);
+                    var fsm = new HypoEventFsm(config, model, director, Bus, () => 0);
                     var flag = new Flag(Bus.Subscribe<HypoEventTriggered>(fsm.Begin));
                     Sessions.Add(flag);
                     return new RunSession(model, director, fsm, flag,

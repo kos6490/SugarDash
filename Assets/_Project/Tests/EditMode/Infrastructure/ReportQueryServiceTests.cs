@@ -58,7 +58,7 @@ namespace SugarDash.Infrastructure.Tests
             new StepAnswered(3, HypoStep.HyperNotify, "keep_running", false, HypoErrorCode.HyKeepRunning, false, 1.5,
                 false, 61, 51.5),
             new HyperResolved(3, false, 62, 52),
-            new RunEliminated(2, HypoStep.Dose, HypoErrorCode.DsOver, EliminationCause.Declined, 90, 80),
+            new RunEliminated(2, HypoStep.Dose, HypoErrorCode.DsOver, EliminationCause.Declined, 0, 90, 80),
             new RunCompleted(40, 120, 110),
         };
 

@@ -111,7 +111,7 @@ namespace SugarDash.Infrastructure.Logging
                     r => r.AllCorrect = e.AllCorrect))),
                 bus.Subscribe<RunEliminated>(e => Append(Event("RunEliminated", e.EventId, e.SimT, e.T, r =>
                 {
-                    r.Step = LogCodes.Step(e.Step);
+                    r.Step = e.Step.HasValue ? LogCodes.Step(e.Step.Value) : null;
                     r.ErrorCode = LogCodes.Error(e.Reason);
                     r.Cause = LogCodes.Cause(e.Cause);
                 }))),

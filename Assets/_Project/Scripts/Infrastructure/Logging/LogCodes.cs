@@ -51,6 +51,9 @@ namespace SugarDash.Infrastructure.Logging
             {
                 case EliminationCause.Declined: return "declined";
                 case EliminationCause.PromptTimeout: return "prompt_timeout";
+                case EliminationCause.HeartsLost: return "hearts_lost";
+                case EliminationCause.GlucoseLow: return "glucose_low";
+                case EliminationCause.GlucoseHigh: return "glucose_high";
                 default: throw new ArgumentOutOfRangeException(nameof(cause), cause, null);
             }
         }

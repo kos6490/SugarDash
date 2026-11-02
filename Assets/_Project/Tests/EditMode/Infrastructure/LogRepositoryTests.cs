@@ -127,7 +127,7 @@ namespace SugarDash.Infrastructure.Tests
             _bus.Publish(new MeterPressed(0, 90, true, true, 50, 39));
             _bus.Publish(new SuddenDropStarted(60, 49));
             _bus.Publish(new RunEliminated(2, HypoStep.Recognize, HypoErrorCode.SMissed,
-                EliminationCause.PromptTimeout, 90, 79));
+                EliminationCause.PromptTimeout, 0, 90, 79));
             _bus.Publish(new TrackSnackEaten("juice", 0.5, 95, 84));
             _bus.Publish(new RunCompleted(80, 120, 110));
 

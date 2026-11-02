@@ -124,7 +124,7 @@ namespace SugarDash.Bootstrap
             var model = new GlucoseModel(_config.Glucose);
             var director = new EventDirector(_config.Glucose, model,
                 new SystemRandomSource(Environment.TickCount), _bus);
-            var fsm = new HypoEventFsm(_config, model, director, _bus);
+            var fsm = new HypoEventFsm(_config, model, director, _bus, () => 0);
             return new RunSession(model, director, fsm, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                 _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
         }
