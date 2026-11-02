@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SugarDash.Domain.Hypo;
 
 namespace SugarDash.Domain.Config
 {
@@ -110,12 +111,88 @@ namespace SugarDash.Domain.Config
                 errors.Add($"0 < runner.trackSnackServings < hypo.doses.under 이어야 한다 " +
                            $"(trackSnackServings={runner.TrackSnackServings}, under={config.Hypo.Doses.Under})");
             Positive(errors, "runner.runDurationSec", runner.RunDurationSec);
-            Positive(errors, "runner.trackSnackIntervalSec", runner.TrackSnackIntervalSec);
+            if (!(0 < runner.TrackSnackIntervalMinSec && runner.TrackSnackIntervalMinSec <= runner.TrackSnackIntervalMaxSec))
+                errors.Add($"0 < runner.trackSnackIntervalMinSec ≤ runner.trackSnackIntervalMaxSec 이어야 한다 " +
+                           $"(min={runner.TrackSnackIntervalMinSec}, max={runner.TrackSnackIntervalMaxSec})");
+            if (!(runner.Hearts >= 1)) errors.Add($"runner.hearts ≥ 1 이어야 한다 ({runner.Hearts})");
 
             // 20. 고혈당 알리기(docs/hyper-event.md)
             Positive(errors, "hyper.notifyTimeLimitSec", config.Hyper.NotifyTimeLimitSec);
 
+            // 21. 혈당 안전 범위 탈락 기준
+            var elimination = config.Elimination;
+            if (!(levels.Min <= elimination.GlucoseLow && elimination.GlucoseLow < levels.HypoThreshold))
+                errors.Add($"glucose.min ≤ elimination.glucoseLow < glucose.hypoThreshold 이어야 한다 " +
+                           $"(min={levels.Min}, glucoseLow={elimination.GlucoseLow}, hypoThreshold={levels.HypoThreshold})");
+            if (!(levels.HyperThreshold < elimination.GlucoseHigh && elimination.GlucoseHigh <= levels.Max))
+                errors.Add($"glucose.hyperThreshold < elimination.glucoseHigh ≤ glucose.max 이어야 한다 " +
+                           $"(hyperThreshold={levels.HyperThreshold}, glucoseHigh={elimination.GlucoseHigh}, max={levels.Max})");
+
+            // 22. 점수
+            ValidateScore(errors, config.Score);
+
+            // 23. 구간
+            ValidateSections(errors, config.Sections);
+
             return errors;
+        }
+
+        private static void ValidateScore(List<string> errors, ScoreConfig score)
+        {
+            NonNegative(errors, "score.inRangePerSec", score.InRangePerSec);
+            NonNegative(errors, "score.perMeter", score.PerMeter);
+            foreach (HypoStep step in Enum.GetValues(typeof(HypoStep)))
+            {
+                if (!score.CorrectWeights.TryGetValue(step, out var weight))
+                    errors.Add($"score.correct: {step} 없음");
+                else
+                    NonNegative(errors, $"score.correct.{step}", weight);
+            }
+            foreach (HypoErrorCode code in Enum.GetValues(typeof(HypoErrorCode)))
+            {
+                if (code == HypoErrorCode.None) continue;
+                if (!score.ErrorWeights.TryGetValue(code, out var weight))
+                    errors.Add($"score.errors: {code} 없음");
+                else
+                    NonNegative(errors, $"score.errors.{code}", weight);
+            }
+            // 위험한 선택은 0점이다.
+            foreach (var code in new[] { HypoErrorCode.RsKeepRunning, HypoErrorCode.HyKeepRunning })
+            {
+                if (score.ErrorWeights.TryGetValue(code, out var weight) && weight != 0)
+                    errors.Add($"score.errors.{code}는 0 이어야 한다 ({weight})");
+            }
+        }
+
+        private static readonly string[] SectionIds = { "signal", "condition", "complex" };
+
+        private static void ValidateSections(List<string> errors, IReadOnlyList<SectionConfig> sections)
+        {
+            if (sections.Count == 0)
+            {
+                errors.Add("sections: 1개 이상이어야 한다");
+                return;
+            }
+            var seen = new HashSet<string>();
+            for (int i = 0; i < sections.Count; i++)
+            {
+                var section = sections[i];
+                if (Array.IndexOf(SectionIds, section.Id) < 0)
+                    errors.Add($"sections[{i}].id는 signal, condition, complex 중 하나여야 한다 ({section.Id})");
+                else if (!seen.Add(section.Id))
+                    errors.Add($"sections[{i}].id가 중복된다 ({section.Id})");
+
+                bool last = i == sections.Count - 1;
+                if (last)
+                {
+                    if (section.LengthM != null)
+                        errors.Add($"sections[{i}].lengthM은 마지막 구간에서 비어 있어야 한다 ({section.LengthM})");
+                }
+                else if (!(section.LengthM.HasValue && section.LengthM.Value > 0))
+                {
+                    errors.Add($"sections[{i}].lengthM > 0 이어야 한다 ({section.LengthM})");
+                }
+            }
         }
 
         // 13~18. 저혈당 이벤트(HypoEventFsm) 설정.

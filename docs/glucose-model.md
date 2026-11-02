@@ -182,9 +182,16 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
   ],
-  "runner": { "trackSnackServings": null, "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null, "hearts": 3 },
+  "runner": { "trackSnackServings": null, "runDurationSec": null,
+    "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null, "hearts": 3 },
   "elimination": { "glucoseLow": null, "glucoseHigh": null },
-  "score": { "inRangePerSec": null, "perMeter": null, "weights": { } },
+  "score": {
+    "inRangePerSec": null, "perMeter": null,
+    "correct": { "recognize": null, "respond": null, "dose": null, "remeasure": null, "notify": null, "hyperNotify": null },
+    "errors": { "S_MISSED": null, "RS_SLOW": null, "RS_KEEP_RUNNING": 0, "RS_NONE": null, "RS_TIMEOUT": null,
+      "HELP_INSTEAD": null, "DS_UNDER": null, "DS_OVER": null, "DS_TIMEOUT": null,
+      "RC_NO_RECHECK": null, "RC_NO_NOTIFY": null, "HY_KEEP_RUNNING": 0, "HY_TIMEOUT": null }
+  },
   "sections": [ { "id": "signal" } ]
 }
 ```
@@ -196,7 +203,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 - `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
 - `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
 - `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.trackSnackIntervalMinSec`·`MaxSec`는 트랙 간식 간격의 범위(worldDt 기준 초), `runner.hearts`는 하트 개수(게임 값, 3)다(2.5절).
-- `elimination.glucoseLow`·`glucoseHigh`는 탈락하는 실제 혈당 범위, `score.*`는 점수 값, `sections`는 구간 목록(마지막 구간만 `lengthM` 없이 끝없이 이어짐)이다. `score.weights` 키 형식은 구현 때 정한다. 달리기 속도, 레인 폭, 점프·슬라이드 시간, 장애물 간격, 충돌 감속 같은 러너 감각 수치는 혈당과 무관하므로 JSON이 아니라 각 컴포넌트의 Inspector 값으로 둔다.
+- `elimination.glucoseLow`·`glucoseHigh`는 탈락하는 실제 혈당 범위, `score.*`는 점수 값, `sections`는 구간 목록(마지막 구간만 `lengthM` 없이 끝없이 이어짐)이다. `score.correct`는 단계별 정답 가중치(`recognize`~`hyperNotify`), `score.errors`는 오류 코드별 가중치(키는 로그의 오류 코드와 같다)이고 `RS_KEEP_RUNNING`·`HY_KEEP_RUNNING`은 위험한 선택이라 0으로 고정한다. 달리기 속도, 레인 폭, 점프·슬라이드 시간, 장애물 간격, 충돌 감속 같은 러너 감각 수치는 혈당과 무관하므로 JSON이 아니라 각 컴포넌트의 Inspector 값으로 둔다.
 
 ## 8. 불변식
 
@@ -232,8 +239,8 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 ### 8.3 주행 설정
 19. `0 < runner.trackSnackServings < hypo.doses.under`, `0 < runner.trackSnackIntervalMinSec ≤ trackSnackIntervalMaxSec`, `runner.hearts ≥ 1`(정수)
 21. `glucose.min ≤ elimination.glucoseLow < glucose.hypoThreshold`, `glucose.hyperThreshold < elimination.glucoseHigh ≤ glucose.max`
-22. `score.*` 값은 모두 `≥ 0`
-23. `sections`는 1개 이상, id 중복 없음, 마지막을 뺀 항목은 `lengthM > 0`, 마지막 항목은 `lengthM` 없음
+22. `score.*` 값은 모두 `≥ 0`, `correct`는 모든 단계, `errors`는 `None`을 뺀 모든 오류 코드가 있어야 한다. `RS_KEEP_RUNNING`, `HY_KEEP_RUNNING`은 0
+23. `sections`는 1개 이상, id는 `signal`·`condition`·`complex` 중 하나이고 중복 없음, 마지막을 뺀 항목은 `lengthM > 0`, 마지막 항목은 `lengthM` 없음
 
 ### 8.4 고혈당 설정
 20. `hyper.notifyTimeLimitSec > 0` (`docs/hyper-event.md`)

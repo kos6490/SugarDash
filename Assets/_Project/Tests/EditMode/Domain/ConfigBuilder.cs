@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SugarDash.Domain.Config;
+using SugarDash.Domain.Hypo;
 
 namespace SugarDash.Domain.Tests
 {
@@ -63,7 +65,21 @@ namespace SugarDash.Domain.Tests
 
         public double TrackSnackServings = 0.5;
         public double RunDurationSec = 120;
-        public double TrackSnackIntervalSec = 8;
+        public double TrackSnackIntervalMinSec = 8;
+        public double TrackSnackIntervalMaxSec = 8;
+        public int Hearts = 3;
+
+        public double GlucoseLow = 40;
+        public double GlucoseHigh = 300;
+
+        public double InRangePerSec = 1;
+        public double PerMeter = 0.1;
+        public double CorrectWeight = 10;
+        public double ErrorWeight = 0;
+        /// <summary>ErrorWeight 기본값 위에 덮어쓰는 오류별 가중치.</summary>
+        public Dictionary<HypoErrorCode, double> ErrorWeightOverrides = new Dictionary<HypoErrorCode, double>();
+
+        public List<SectionConfig> Sections = new List<SectionConfig> { new SectionConfig("signal", null) };
 
         public List<Snack> Snacks = new List<Snack>
         {
@@ -87,6 +103,19 @@ namespace SugarDash.Domain.Tests
             Step1TimeLimitSec, Step2TimeLimitSec, Step3TimeLimitSec, Step4TimeLimitSec, GuardianPromptTimeLimitSec,
             ResumeCountdownSec, GraceSec, GuardianSnackId, new DoseConfig(DoseUnder, DoseProper, DoseOver)),
             new HyperConfig(HyperNotifyTimeLimitSec),
-            new RunnerConfig(TrackSnackServings, RunDurationSec, TrackSnackIntervalSec));
+            new RunnerConfig(TrackSnackServings, RunDurationSec, TrackSnackIntervalMinSec, TrackSnackIntervalMaxSec,
+                Hearts),
+            new EliminationConfig(GlucoseLow, GlucoseHigh),
+            BuildScore(),
+            Sections.ToList());
+
+        private ScoreConfig BuildScore()
+        {
+            var correct = Enum.GetValues(typeof(HypoStep)).Cast<HypoStep>().ToDictionary(step => step, _ => CorrectWeight);
+            var errors = Enum.GetValues(typeof(HypoErrorCode)).Cast<HypoErrorCode>()
+                .Where(code => code != HypoErrorCode.None)
+                .ToDictionary(code => code, code => ErrorWeightOverrides.TryGetValue(code, out var w) ? w : ErrorWeight);
+            return new ScoreConfig(InRangePerSec, PerMeter, correct, errors);
+        }
     }
 }

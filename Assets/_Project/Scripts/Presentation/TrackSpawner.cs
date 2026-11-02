@@ -30,7 +30,9 @@ namespace SugarDash.Presentation
         private readonly List<TrackItem> _items = new List<TrackItem>();
         private readonly List<TrackItem> _crossed = new List<TrackItem>();
         private IReadOnlyList<string> _snackIds;
-        private double _snackIntervalSec;
+        private double _snackIntervalMinSec;
+        private double _snackIntervalMaxSec;
+        private double _nextSnackIntervalSec;
         private int _seed;
         private bool _createViews;
         private System.Random _random;
@@ -48,16 +50,19 @@ namespace SugarDash.Presentation
         /// <summary>주행 시작부터 달린 거리.</summary>
         public double Distance => _distance;
 
-        /// <param name="snackIntervalSec">설정 runner.trackSnackIntervalSec.</param>
+        /// <param name="snackIntervalMinSec">설정 runner.trackSnackIntervalMinSec.</param>
+        /// <param name="snackIntervalMaxSec">설정 runner.trackSnackIntervalMaxSec. 간격은 min~max 사이에서 시드 난수로 뽑는다.</param>
         /// <param name="snackIds">트랙에 놓을 간식 id. 무작위로 고른다.</param>
         /// <param name="seed">배치 난수 시드. 같으면 같은 트랙이 나온다.</param>
         /// <param name="createViews">false면 화면 없이 배치만 계산한다(테스트용).</param>
-        public void Init(double snackIntervalSec, IReadOnlyList<string> snackIds, int seed, bool createViews)
+        public void Init(double snackIntervalMinSec, double snackIntervalMaxSec, IReadOnlyList<string> snackIds, int seed, bool createViews)
         {
-            if (!(snackIntervalSec > 0)) throw new ArgumentOutOfRangeException(nameof(snackIntervalSec));
+            if (!(snackIntervalMinSec > 0)) throw new ArgumentOutOfRangeException(nameof(snackIntervalMinSec));
+            if (!(snackIntervalMaxSec >= snackIntervalMinSec)) throw new ArgumentOutOfRangeException(nameof(snackIntervalMaxSec));
             if (snackIds == null || snackIds.Count == 0) throw new ArgumentException("간식이 없다", nameof(snackIds));
 
-            _snackIntervalSec = snackIntervalSec;
+            _snackIntervalMinSec = snackIntervalMinSec;
+            _snackIntervalMaxSec = snackIntervalMaxSec;
             _snackIds = snackIds;
             _seed = seed;
             _createViews = createViews;
@@ -75,6 +80,7 @@ namespace SugarDash.Presentation
             _nextObstacleAt = startClearDistance;
             _nextMarkerAt = 0;
             _snackTimer = 0;
+            _nextSnackIntervalSec = NextSnackInterval();
             _lastObstacleZ = double.NegativeInfinity;
             FillAhead(true);
         }
@@ -149,9 +155,10 @@ namespace SugarDash.Presentation
                 _nextObstacleAt += obstacleSpacing;
             }
 
-            while (_snackTimer >= _snackIntervalSec)
+            while (_snackTimer >= _nextSnackIntervalSec)
             {
-                _snackTimer -= _snackIntervalSec;
+                _snackTimer -= _nextSnackIntervalSec;
+                _nextSnackIntervalSec = NextSnackInterval();
                 double z = spawnAheadDistance;
                 int lane = _random.Next(-1, 2);
                 if (lane == _lastObstacleLane && Math.Abs(z - _lastObstacleZ) < snackObstacleGap)
@@ -160,6 +167,9 @@ namespace SugarDash.Presentation
                 Add(new TrackItem(TrackItemKind.Snack, lane, z, id));
             }
         }
+
+        private double NextSnackInterval() =>
+            _snackIntervalMinSec + (_snackIntervalMaxSec - _snackIntervalMinSec) * _random.NextDouble();
 
         /// <summary>달린 거리 기준 위치를 캐릭터 기준 z로 바꾼다.</summary>
         private double Ahead(double atDistance) => atDistance - _distance;

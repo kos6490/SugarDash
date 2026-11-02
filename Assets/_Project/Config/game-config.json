@@ -38,5 +38,21 @@
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
   ],
-  "runner": { "trackSnackServings": null, "runDurationSec": null, "trackSnackIntervalSec": null }
+  "runner": {
+    "trackSnackServings": null, "runDurationSec": null,
+    "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null, "hearts": 3
+  },
+  "elimination": { "glucoseLow": null, "glucoseHigh": null },
+  "score": {
+    "inRangePerSec": null, "perMeter": null,
+    "correct": {
+      "recognize": null, "respond": null, "dose": null, "remeasure": null, "notify": null, "hyperNotify": null
+    },
+    "errors": {
+      "S_MISSED": null, "RS_SLOW": null, "RS_KEEP_RUNNING": 0, "RS_NONE": null, "RS_TIMEOUT": null,
+      "HELP_INSTEAD": null, "DS_UNDER": null, "DS_OVER": null, "DS_TIMEOUT": null,
+      "RC_NO_RECHECK": null, "RC_NO_NOTIFY": null, "HY_KEEP_RUNNING": 0, "HY_TIMEOUT": null
+    }
+  },
+  "sections": [ { "id": "signal" } ]
 }

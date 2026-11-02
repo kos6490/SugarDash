@@ -69,7 +69,8 @@ namespace SugarDash.Bootstrap
             _subscriptions.Add(resultScreen.Bind(_flow));
 
             player.Init(_run, true);
-            track.Init(_config.Runner.TrackSnackIntervalSec, _config.Glucose.Snacks.Select(s => s.Id).ToList(),
+            track.Init(_config.Runner.TrackSnackIntervalMinSec, _config.Runner.TrackSnackIntervalMaxSec,
+                _config.Glucose.Snacks.Select(s => s.Id).ToList(),
                 Environment.TickCount, true);
             input.Init(_run, player);
         }

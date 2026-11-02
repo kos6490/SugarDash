@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine.Scripting;
 
 namespace SugarDash.Infrastructure.Config.Dto
@@ -20,6 +21,9 @@ namespace SugarDash.Infrastructure.Config.Dto
         public SuddenDropDto SuddenDrop { get; set; }
         public List<SnackDto> Snacks { get; set; }
         public RunnerDto Runner { get; set; }
+        public EliminationDto Elimination { get; set; }
+        public ScoreDto Score { get; set; }
+        public List<SectionDto> Sections { get; set; }
     }
 
     [Preserve]
@@ -100,7 +104,9 @@ namespace SugarDash.Infrastructure.Config.Dto
     {
         public double? TrackSnackServings { get; set; }
         public double? RunDurationSec { get; set; }
-        public double? TrackSnackIntervalSec { get; set; }
+        public double? TrackSnackIntervalMinSec { get; set; }
+        public double? TrackSnackIntervalMaxSec { get; set; }
+        public int? Hearts { get; set; }
     }
 
     [Preserve]
@@ -112,5 +118,58 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? OnsetSec { get; set; }
         public double? AbsorbSec { get; set; }
         public string Source { get; set; }
+    }
+
+    [Preserve]
+    public sealed class EliminationDto
+    {
+        public double? GlucoseLow { get; set; }
+        public double? GlucoseHigh { get; set; }
+    }
+
+    [Preserve]
+    public sealed class ScoreDto
+    {
+        public double? InRangePerSec { get; set; }
+        public double? PerMeter { get; set; }
+        public ScoreCorrectDto Correct { get; set; }
+        public ScoreErrorsDto Errors { get; set; }
+    }
+
+    [Preserve]
+    public sealed class ScoreCorrectDto
+    {
+        public double? Recognize { get; set; }
+        public double? Respond { get; set; }
+        public double? Dose { get; set; }
+        public double? Remeasure { get; set; }
+        public double? Notify { get; set; }
+        public double? HyperNotify { get; set; }
+    }
+
+    /// <summary>키는 LogCodes.Error와 같은 문자열이다. 테스트로 대응을 확인한다.</summary>
+    [Preserve]
+    public sealed class ScoreErrorsDto
+    {
+        [JsonProperty("S_MISSED")] public double? SMissed { get; set; }
+        [JsonProperty("RS_SLOW")] public double? RsSlow { get; set; }
+        [JsonProperty("RS_KEEP_RUNNING")] public double? RsKeepRunning { get; set; }
+        [JsonProperty("RS_NONE")] public double? RsNone { get; set; }
+        [JsonProperty("RS_TIMEOUT")] public double? RsTimeout { get; set; }
+        [JsonProperty("HELP_INSTEAD")] public double? HelpInstead { get; set; }
+        [JsonProperty("DS_UNDER")] public double? DsUnder { get; set; }
+        [JsonProperty("DS_OVER")] public double? DsOver { get; set; }
+        [JsonProperty("DS_TIMEOUT")] public double? DsTimeout { get; set; }
+        [JsonProperty("RC_NO_RECHECK")] public double? RcNoRecheck { get; set; }
+        [JsonProperty("RC_NO_NOTIFY")] public double? RcNoNotify { get; set; }
+        [JsonProperty("HY_KEEP_RUNNING")] public double? HyKeepRunning { get; set; }
+        [JsonProperty("HY_TIMEOUT")] public double? HyTimeout { get; set; }
+    }
+
+    [Preserve]
+    public sealed class SectionDto
+    {
+        public string Id { get; set; }
+        public double? LengthM { get; set; }
     }
 }

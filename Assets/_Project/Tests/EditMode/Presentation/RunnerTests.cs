@@ -202,7 +202,7 @@ namespace SugarDash.Presentation.Tests
         {
             _go = new GameObject("Track");
             _track = _go.AddComponent<TrackSpawner>();
-            _track.Init(SnackInterval, Snacks, 42, false);
+            _track.Init(SnackInterval, SnackInterval, Snacks, 42, false);
         }
 
         [TearDown]
@@ -250,6 +250,69 @@ namespace SugarDash.Presentation.Tests
 
             var rows = _track.Items.Where(i => i.IsObstacle).GroupBy(i => Math.Round(i.Z, 3));
             Assert.That(rows.All(r => r.Count() == 1), Is.True);
+        }
+
+        /// <summary>새 스포너로 seconds 동안 dt씩 진행하며 간식이 놓인 worldDt 누적 시각을 모은다.</summary>
+        private static List<double> SnackSpawnTimes(double min, double max, int seed, double seconds, double dt)
+        {
+            var go = new GameObject("RandomTrack");
+            try
+            {
+                var track = go.AddComponent<TrackSpawner>();
+                track.Init(min, max, Snacks, seed, false);
+                var seen = new HashSet<TrackItem>(track.Items.Where(i => i.Kind == TrackItemKind.Snack));
+                var times = new List<double>();
+                int steps = (int)Math.Round(seconds / dt);
+                for (int i = 1; i <= steps; i++)
+                {
+                    track.Advance(dt, Speed, true);
+                    foreach (var item in track.Items.Where(x => x.Kind == TrackItemKind.Snack && seen.Add(x)))
+                        times.Add(i * dt);
+                }
+                return times;
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void SnackInterval_StaysWithinRange()
+        {
+            var times = SnackSpawnTimes(4, 6, 42, 300, 0.1);
+
+            Assert.That(times.Count, Is.GreaterThan(40));
+            var gaps = times.Zip(times.Skip(1), (a, b) => b - a).ToList();
+            // 한 프레임(0.1초) 단위로 감지하므로 그만큼의 오차를 허용한다.
+            Assert.That(gaps, Is.All.InRange(4 - 0.15, 6 + 0.15));
+            Assert.That(gaps.Max() - gaps.Min(), Is.GreaterThan(0.5), "간격이 무작위로 달라져야 한다");
+        }
+
+        [Test]
+        public void SnackInterval_SameSeed_SameSequence()
+        {
+            var a = SnackSpawnTimes(4, 6, 7, 120, 0.1);
+            var b = SnackSpawnTimes(4, 6, 7, 120, 0.1);
+
+            Assert.That(a, Is.Not.Empty);
+            Assert.That(a, Is.EqualTo(b));
+        }
+
+        [Test]
+        public void SnackInterval_InvalidRange_Throws()
+        {
+            var go = new GameObject("BadTrack");
+            try
+            {
+                var track = go.AddComponent<TrackSpawner>();
+                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(0, 5, Snacks, 1, false));
+                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(6, 5, Snacks, 1, false));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
         }
 
         [Test]

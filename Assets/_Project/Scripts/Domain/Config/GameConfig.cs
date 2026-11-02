@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SugarDash.Domain.Config
 {
     /// <summary>설정 파일 하나에 대응하는 전체 설정.</summary>
@@ -6,7 +8,8 @@ namespace SugarDash.Domain.Config
         public const string RequiredUnit = "mg/dL";
 
         public GameConfig(string configVersion, string unit, GlucoseConfig glucose, HypoConfig hypo,
-            HyperConfig hyper, RunnerConfig runner)
+            HyperConfig hyper, RunnerConfig runner, EliminationConfig elimination, ScoreConfig score,
+            IReadOnlyList<SectionConfig> sections)
         {
             ConfigVersion = configVersion;
             Unit = unit;
@@ -14,6 +17,9 @@ namespace SugarDash.Domain.Config
             Hypo = hypo;
             Hyper = hyper;
             Runner = runner;
+            Elimination = elimination;
+            Score = score;
+            Sections = sections;
         }
 
         /// <summary>로그 레코드마다 함께 저장한다.</summary>
@@ -23,5 +29,8 @@ namespace SugarDash.Domain.Config
         public HypoConfig Hypo { get; }
         public HyperConfig Hyper { get; }
         public RunnerConfig Runner { get; }
+        public EliminationConfig Elimination { get; }
+        public ScoreConfig Score { get; }
+        public IReadOnlyList<SectionConfig> Sections { get; }
     }
 }
