@@ -165,12 +165,12 @@ namespace SugarDash.Domain.Hypo
             }
         }
 
-        /// <summary>하트를 모두 잃었다. 어느 단계에서든 바로 탈락한다. 이미 탈락했으면 아무것도 하지 않는다.</summary>
-        public void EliminateHeartsLost()
+        /// <summary>장애물에 부딪혔다. 어느 단계에서든 바로 탈락한다. 이미 탈락했으면 아무것도 하지 않는다.</summary>
+        public void EliminateObstacleHit()
         {
             if (Phase == HypoPhase.Eliminated) return;
 
-            Eliminate(EliminationCause.HeartsLost, null, HypoErrorCode.None);
+            Eliminate(EliminationCause.ObstacleHit, null, HypoErrorCode.None);
         }
 
         public void PressMeter()

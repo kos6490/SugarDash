@@ -41,7 +41,7 @@ namespace SugarDash.Infrastructure.Tests
     { ""id"": ""cracker"", ""kind"": ""slow"", ""totalRise"": 30, ""onsetSec"": 4, ""absorbSec"": 8, ""source"": ""test"" }
   ],
   ""runner"": { ""trackSnackServings"": 0.5,
-    ""trackSnackIntervalMinSec"": 6, ""trackSnackIntervalMaxSec"": 10, ""hearts"": 3 },
+    ""trackSnackIntervalMinSec"": 6, ""trackSnackIntervalMaxSec"": 10 },
   ""elimination"": { ""glucoseLow"": 40, ""glucoseHigh"": 300 },
   ""score"": {
     ""inRangePerSec"": 1, ""perMeter"": 0.1,
@@ -87,7 +87,6 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Runner.TrackSnackServings, Is.EqualTo(0.5));
             Assert.That(config.Runner.TrackSnackIntervalMinSec, Is.EqualTo(6));
             Assert.That(config.Runner.TrackSnackIntervalMaxSec, Is.EqualTo(10));
-            Assert.That(config.Runner.Hearts, Is.EqualTo(3));
             Assert.That(config.Elimination.GlucoseLow, Is.EqualTo(40));
             Assert.That(config.Elimination.GlucoseHigh, Is.EqualTo(300));
             Assert.That(config.Score.InRangePerSec, Is.EqualTo(1));
@@ -157,13 +156,12 @@ namespace SugarDash.Infrastructure.Tests
             var json = With(ValidJson, "\"trackSnackServings\": 0.5", "\"trackSnackServings\": null");
             json = With(json, "\"trackSnackIntervalMinSec\": 6", "\"trackSnackIntervalMinSec\": null");
             json = With(json, "\"trackSnackIntervalMaxSec\": 10", "\"trackSnackIntervalMaxSec\": null");
-            json = With(json, "\"hearts\": 3", "\"hearts\": null");
 
             var e = LoadFails(json);
 
             Assert.That(e.MissingPaths,
                 Is.EquivalentTo(new[] { "runner.trackSnackServings",
-                    "runner.trackSnackIntervalMinSec", "runner.trackSnackIntervalMaxSec", "runner.hearts" }));
+                    "runner.trackSnackIntervalMinSec", "runner.trackSnackIntervalMaxSec" }));
         }
 
         [Test]

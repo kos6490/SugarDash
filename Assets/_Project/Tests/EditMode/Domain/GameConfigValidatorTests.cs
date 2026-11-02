@@ -78,7 +78,6 @@ namespace SugarDash.Domain.Tests
             yield return Case("TrackSnackNotBelowDoseUnder", b => b.TrackSnackServings = 1);
             yield return Case("IntervalMinZero", b => b.TrackSnackIntervalMinSec = 0);
             yield return Case("IntervalMinAboveMax", b => { b.TrackSnackIntervalMinSec = 9; b.TrackSnackIntervalMaxSec = 8; });
-            yield return Case("HeartsZero", b => b.Hearts = 0);
             yield return Case("GlucoseLowAtHypoThreshold", b => b.GlucoseLow = 70);
             yield return Case("GlucoseLowBelowMin", b => b.GlucoseLow = 19);
             yield return Case("GlucoseHighAtHyperThreshold", b => b.GlucoseHigh = 250);

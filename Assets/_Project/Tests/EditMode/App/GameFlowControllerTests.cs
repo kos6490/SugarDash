@@ -94,7 +94,6 @@ namespace SugarDash.App.Tests
             bus.Subscribe<GlucoseRangeExited>(e => _query.Published.Add(e));
             bus.Subscribe<RecheckFastForward>(e => _query.Published.Add(e));
             bus.Subscribe<SectionEntered>(e => _query.Published.Add(e));
-            bus.Subscribe<ObstacleHit>(e => _query.Published.Add(e));
             _run = new RunController(config.Runner, config.Sections, () =>
             {
                 var model = new GlucoseModel(config.Glucose);
@@ -118,14 +117,11 @@ namespace SugarDash.App.Tests
             }
         }
 
-        /// <summary>하트(기본 3)를 모두 잃게 해 탈락시킨다. 저혈당 발동(26초) 전에 끝난다.</summary>
-        private void LoseAllHearts()
+        /// <summary>장애물에 한 번 부딪혀 탈락시킨다. 저혈당 발동(26초) 전에 끝난다.</summary>
+        private void HitObstacleOnce()
         {
-            for (int i = 0; i < 3; i++)
-            {
-                _run.HitObstacle();
-                Frames(1);
-            }
+            _run.HitObstacle();
+            Frames(1);
         }
 
         [Test]
@@ -141,10 +137,10 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
-        public void HeartsLost_ClosesLogThenLoadsResult()
+        public void ObstacleHit_ClosesLogThenLoadsResult()
         {
             _flow.Begin();
-            LoseAllHearts();
+            HitObstacleOnce();
 
             Assert.That(_flow.IsShowingResult, Is.True);
             Assert.That(_run.State, Is.EqualTo(RunState.Idle));
@@ -232,7 +228,7 @@ namespace SugarDash.App.Tests
         public void Retry_FromResult_StartsFreshRun()
         {
             _flow.Begin();
-            LoseAllHearts();
+            HitObstacleOnce();
             Assert.That(_flow.CanRetry, Is.True);
 
             _flow.Retry();
@@ -250,7 +246,7 @@ namespace SugarDash.App.Tests
             _query.ReturnsNothing = true;
             _flow.Begin();
 
-            LoseAllHearts();
+            HitObstacleOnce();
 
             Assert.That(_flow.IsShowingResult, Is.True);
             Assert.That(_flow.LastResult, Is.Null);
@@ -260,7 +256,7 @@ namespace SugarDash.App.Tests
         public void FirstRun_IsNewBestAndSaved()
         {
             _flow.Begin();
-            LoseAllHearts();
+            HitObstacleOnce();
 
             Assert.That(_flow.LastScore, Is.Not.Null);
             Assert.That(_flow.IsNewBest, Is.True);
@@ -274,7 +270,7 @@ namespace SugarDash.App.Tests
         {
             _best.Stored = 1e9;
             _flow.Begin();
-            LoseAllHearts();
+            HitObstacleOnce();
 
             Assert.That(_flow.LastScore, Is.Not.Null);
             Assert.That(_flow.IsNewBest, Is.False);
@@ -288,7 +284,7 @@ namespace SugarDash.App.Tests
             _query.OmitEliminated = true;
             _best.Stored = 5;
             _flow.Begin();
-            LoseAllHearts();
+            HitObstacleOnce();
 
             Assert.That(_flow.LastScore, Is.Null);
             Assert.That(_flow.IsNewBest, Is.False);
@@ -300,7 +296,7 @@ namespace SugarDash.App.Tests
         public void Retry_ClearsScores()
         {
             _flow.Begin();
-            LoseAllHearts();
+            HitObstacleOnce();
 
             _flow.Retry();
 

@@ -3,13 +3,11 @@ namespace SugarDash.Domain.Config
     /// <summary>주행(러너) 설정.</summary>
     public sealed class RunnerConfig
     {
-        public RunnerConfig(double trackSnackServings, double trackSnackIntervalMinSec, double trackSnackIntervalMaxSec,
-            int hearts)
+        public RunnerConfig(double trackSnackServings, double trackSnackIntervalMinSec, double trackSnackIntervalMaxSec)
         {
             TrackSnackServings = trackSnackServings;
             TrackSnackIntervalMinSec = trackSnackIntervalMinSec;
             TrackSnackIntervalMaxSec = trackSnackIntervalMaxSec;
-            Hearts = hearts;
         }
 
         /// <summary>트랙에서 주운 간식 하나에 곱하는 배수. 처치량보다 작아 혈당을 조금만 올린다.</summary>
@@ -18,7 +16,5 @@ namespace SugarDash.Domain.Config
         public double TrackSnackIntervalMinSec { get; }
         /// <summary>트랙 간식이 나오는 간격의 최댓값(worldDt 기준 초).</summary>
         public double TrackSnackIntervalMaxSec { get; }
-        /// <summary>시작 하트 수.</summary>
-        public int Hearts { get; }
     }
 }

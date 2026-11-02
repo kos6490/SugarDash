@@ -138,8 +138,7 @@ namespace SugarDash.Infrastructure.Config
                 var runnerConfig = new RunnerConfig(
                     Number(runner?.TrackSnackServings, "runner.trackSnackServings", runner),
                     Number(runner?.TrackSnackIntervalMinSec, "runner.trackSnackIntervalMinSec", runner),
-                    Number(runner?.TrackSnackIntervalMaxSec, "runner.trackSnackIntervalMaxSec", runner),
-                    Integer(runner?.Hearts, "runner.hearts", runner));
+                    Number(runner?.TrackSnackIntervalMaxSec, "runner.trackSnackIntervalMaxSec", runner));
 
                 var elimination = Section(dto.Elimination, "elimination");
                 var eliminationConfig = new EliminationConfig(

@@ -173,15 +173,13 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
-        public void HitWhileStumbling_LosesOneHeart()
+        public void Hit_EliminatesRun()
         {
-            _player.Resolve(Item(TrackItemKind.LaneBlock));
-            _player.Advance(0.1);
             _player.Resolve(Item(TrackItemKind.LaneBlock));
 
             _run.Tick(0.01);
 
-            Assert.That(_run.Hearts, Is.EqualTo(2));
+            Assert.That(_run.State, Is.EqualTo(RunState.Eliminated));
         }
 
         [Test]

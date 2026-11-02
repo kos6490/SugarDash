@@ -40,7 +40,7 @@
   ],
   "runner": {
     "trackSnackServings": null,
-    "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null, "hearts": 3
+    "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null
   },
   "elimination": { "glucoseLow": null, "glucoseHigh": null },
   "score": {

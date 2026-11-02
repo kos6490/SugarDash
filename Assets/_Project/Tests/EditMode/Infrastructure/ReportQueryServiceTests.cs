@@ -105,9 +105,8 @@ namespace SugarDash.Infrastructure.Tests
             {
                 new SectionEntered("signal", 12.5, 1, 1),
                 new GlucoseRangeEntered(95.5, 2, 2),
-                new ObstacleHit(2, 30.25, 3, 3),
                 new GlucoseRangeExited(60.5, 4, 4),
-                new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.HeartsLost, 55.5, 5, 5),
+                new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.ObstacleHit, 55.5, 5, 5),
                 new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.GlucoseLow, 56.5, 6, 6),
                 new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.GlucoseHigh, 57.5, 7, 7),
             };

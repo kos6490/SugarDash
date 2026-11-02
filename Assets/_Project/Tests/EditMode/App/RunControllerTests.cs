@@ -75,7 +75,6 @@ namespace SugarDash.App.Tests
                 Collect<RunEliminated>();
                 Collect<TrackSnackEaten>();
                 Collect<SectionEntered>();
-                Collect<ObstacleHit>();
                 Collect<GlucoseRangeEntered>();
 
                 Run = new RunController(config.Runner, config.Sections, () =>
@@ -376,7 +375,6 @@ namespace SugarDash.App.Tests
             Assert.That(rig.All<GlucoseRangeEntered>(), Has.Count.EqualTo(1));
             Assert.That(rig.Events.FindIndex(e => e is SectionEntered),
                 Is.LessThan(rig.Events.FindIndex(e => e is GlucoseRangeEntered)));
-            Assert.That(rig.Run.Hearts, Is.EqualTo(3));
             Assert.That(rig.Run.DistanceM, Is.EqualTo(0));
             Assert.That(rig.Run.CurrentSectionId, Is.EqualTo("signal"));
 
@@ -385,22 +383,19 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
-        public void ThreeHits_Eliminates()
+        public void OneHit_Eliminates()
         {
             var rig = new Rig();
             rig.Run.StartRun();
 
-            for (int i = 0; i < 3; i++)
-            {
-                rig.Run.HitObstacle();
-                rig.Run.Tick(0.1);
-            }
+            rig.Run.AdvanceDistance(7);
+            rig.Run.HitObstacle();
+            rig.Run.Tick(0.1);
 
-            Assert.That(rig.All<ObstacleHit>().Select(h => h.HeartsLeft), Is.EqualTo(new[] { 2, 1, 0 }));
-            Assert.That(rig.Run.Hearts, Is.EqualTo(0));
             Assert.That(rig.Run.State, Is.EqualTo(RunState.Eliminated));
             var eliminated = rig.All<RunEliminated>().Single();
-            Assert.That(eliminated.Cause, Is.EqualTo(EliminationCause.HeartsLost));
+            Assert.That(eliminated.Cause, Is.EqualTo(EliminationCause.ObstacleHit));
+            Assert.That(eliminated.DistanceM, Is.EqualTo(7));
             Assert.That(eliminated.Step, Is.Null);
             Assert.That(eliminated.Reason, Is.EqualTo(HypoErrorCode.None));
         }
@@ -416,24 +411,8 @@ namespace SugarDash.App.Tests
             rig.Run.HitObstacle();
             rig.Run.Tick(1);
 
-            Assert.That(rig.Run.Hearts, Is.EqualTo(3));
-            Assert.That(rig.All<ObstacleHit>(), Is.Empty);
-        }
-
-        [Test]
-        public void ObstacleHit_CarriesDistance()
-        {
-            var rig = new Rig();
-            rig.Run.StartRun();
-
-            rig.Run.AdvanceDistance(7);
-            rig.Run.HitObstacle();
-            rig.Run.Tick(1);
-
-            var hit = rig.All<ObstacleHit>().Single();
-            Assert.That(hit.HeartsLeft, Is.EqualTo(2));
-            Assert.That(hit.DistanceM, Is.EqualTo(7));
-            Assert.That(hit.SimT, Is.EqualTo(0), "명령은 시간이 흐르기 전에 처리된다");
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running));
+            Assert.That(rig.All<RunEliminated>(), Is.Empty);
         }
 
         [Test]
@@ -508,11 +487,11 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Run.DistanceM, Is.EqualTo(200));
         }
 
-        /// <summary>같은 Tick에서 하트와 혈당이 함께 탈락 조건이 되면 탈락은 하나만 낸다(명령이 먼저 처리된다).</summary>
+        /// <summary>같은 Tick에서 장애물과 혈당이 함께 탈락 조건이 되면 탈락은 하나만 낸다(명령이 먼저 처리된다).</summary>
         [Test]
-        public void HeartsAndGlucoseSameTick_PublishesOneElimination()
+        public void ObstacleAndGlucoseSameTick_PublishesOneElimination()
         {
-            var rig = new Rig(b => { b.Hearts = 1; b.GlucoseLow = 65; });
+            var rig = new Rig(b => b.GlucoseLow = 65);
             rig.Run.StartRun();
             rig.Ticks(27); // 26초에 발동(68), 27초에 66
             Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Recognize), "1단계에서는 세계가 흐른다");
@@ -524,10 +503,10 @@ namespace SugarDash.App.Tests
             rig.Ticks(3);
 
             Assert.That(rig.Run.State, Is.EqualTo(RunState.Eliminated));
-            Assert.That(rig.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.HeartsLost));
+            Assert.That(rig.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.ObstacleHit));
 
             // 대조: 부딪히지 않으면 같은 Tick에서 혈당 탈락이 난다(두 원인이 모두 살아 있었다).
-            var control = new Rig(b => { b.Hearts = 1; b.GlucoseLow = 65; });
+            var control = new Rig(b => b.GlucoseLow = 65);
             control.Run.StartRun();
             control.Ticks(27);
             control.Run.Tick(1);
@@ -537,7 +516,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void CommandsAfterElimination_AreIgnored()
         {
-            var rig = new Rig(b => b.Hearts = 1);
+            var rig = new Rig();
             rig.Run.StartRun();
             rig.Run.AdvanceDistance(3);
             rig.Run.HitObstacle();
@@ -551,17 +530,16 @@ namespace SugarDash.App.Tests
             rig.Run.PickUpSnack("juice");
             rig.Ticks(3);
 
-            Assert.That(rig.Run.Hearts, Is.EqualTo(0));
             Assert.That(rig.Run.DistanceM, Is.EqualTo(3));
             Assert.That(rig.Run.Actual, Is.EqualTo(actual));
             Assert.That(rig.Events, Has.Count.EqualTo(eventCount), "탈락 뒤에는 새 이벤트가 없다");
         }
 
-        /// <summary>하트·거리가 같은 큐 안에서 탈락 뒤에 오면 버린다.</summary>
+        /// <summary>장애물·거리가 같은 큐 안에서 탈락 뒤에 오면 버린다.</summary>
         [Test]
         public void CommandsQueuedBehindElimination_AreDropped()
         {
-            var rig = new Rig(b => b.Hearts = 1);
+            var rig = new Rig();
             rig.Run.StartRun();
 
             rig.Run.HitObstacle();
@@ -569,9 +547,8 @@ namespace SugarDash.App.Tests
             rig.Run.HitObstacle();
             rig.Run.Tick(1);
 
-            Assert.That(rig.All<ObstacleHit>(), Has.Count.EqualTo(1));
+            Assert.That(rig.All<RunEliminated>(), Has.Count.EqualTo(1));
             Assert.That(rig.Run.DistanceM, Is.EqualTo(0));
-            Assert.That(rig.Run.Hearts, Is.EqualTo(0));
         }
 
         [Test]
@@ -587,7 +564,7 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
-        public void EndRun_ClearsSection_AndNewRunResetsHeartsAndDistance()
+        public void EndRun_ClearsSection_AndNewRunResetsDistance()
         {
             var rig = new Rig();
             rig.Run.StartRun();
@@ -599,7 +576,6 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Run.CurrentSectionId, Is.Null);
             rig.Run.StartRun();
 
-            Assert.That(rig.Run.Hearts, Is.EqualTo(3));
             Assert.That(rig.Run.DistanceM, Is.EqualTo(0));
             Assert.That(rig.All<SectionEntered>(), Has.Count.EqualTo(2));
         }

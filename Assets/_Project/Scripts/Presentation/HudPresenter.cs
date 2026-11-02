@@ -21,8 +21,6 @@ namespace SugarDash.Presentation
         [SerializeField] private Button meterButton;
         [SerializeField] private Text meterText;
         [SerializeField] private Text statusText;
-        [Tooltip("남은 하트 표시. 비워 두면 표시하지 않는다.")]
-        [SerializeField] private Text heartsText;
         [Tooltip("점수 표시. 비워 두면 표시하지 않는다.")]
         [SerializeField] private Text scoreText;
 
@@ -65,7 +63,6 @@ namespace SugarDash.Presentation
             {
                 // 주행이 닫혀 혈당 값이 없으므로 마지막 화면을 그대로 둔다. 결과는 ResultScreenView가 보여 준다.
                 meterButton.interactable = false;
-                if (heartsText != null) heartsText.text = $"하트 {_run.Hearts}";
                 if (scoreText != null && _flow.LastScore != null)
                     scoreText.text = $"점수 {(int)Math.Floor(_flow.LastScore.Value)}";
                 return;
@@ -88,7 +85,6 @@ namespace SugarDash.Presentation
                                        (phase == HypoPhase.Idle || phase == HypoPhase.Recognize ||
                                         phase == HypoPhase.Grace);
 
-            if (heartsText != null) heartsText.text = $"하트 {_run.Hearts}";
             if (scoreText != null) scoreText.text = $"점수 {(int)Math.Floor(_run.Score)}";
 
             statusText.text = _run.State == RunState.Paused ? "잠시 멈춤" : "";

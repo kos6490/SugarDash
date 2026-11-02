@@ -150,8 +150,8 @@ namespace SugarDash.Presentation
 
         private Outcome Stumble()
         {
-            // 비틀거리는 동안 또 부딪혀도 하트는 한 번만 잃는다.
-            if (!IsStumbling) _run.HitObstacle();
+            // 부딪히면 바로 탈락한다. 비틀거림 연출은 탈락 처리 전까지 보여 준다.
+            _run.HitObstacle();
             _stumbleLeft = stumbleSec;
             return Outcome.Hit;
         }

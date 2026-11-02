@@ -65,7 +65,6 @@ namespace SugarDash.App
         public double DistanceM { get; private set; }
 
         /// <summary>남은 하트. 주행을 닫은 뒤에도 마지막 값을 둔다.</summary>
-        public int Hearts { get; private set; }
 
         /// <summary>지금 구간의 id. 열린 주행이 없으면 null.</summary>
         public string CurrentSectionId => _session == null ? null : _sections[_sectionIndex].Id;
@@ -96,7 +95,6 @@ namespace SugarDash.App
             RunCount++;
             State = RunState.Running;
 
-            Hearts = _runner.Hearts;
             DistanceM = 0;
             _sectionIndex = 0;
             _sectionEndM = SectionLength(0);
@@ -215,16 +213,14 @@ namespace SugarDash.App
         }
 
         /// <summary>
-        /// 장애물에 부딪혔다(PlayerController 충돌 판정). 하트를 하나 잃고, 모두 잃으면 탈락한다.
+        /// 장애물에 부딪혔다(PlayerController 충돌 판정). 바로 탈락한다.
         /// 명령은 처리되는 시점에 판정한다. 세계가 멈춘 뒤 처리되면 무시하므로, 멈추기 직전 프레임에 쌓인 충돌은 버려진다(관대하게 처리).
         /// </summary>
         public void HitObstacle() => Enqueue(s =>
         {
             if (s.Fsm.IsWorldFrozen) return;
 
-            Hearts--;
-            _bus.Publish(new ObstacleHit(Hearts, DistanceM, s.Model.SimTime, s.Model.DecisionTime));
-            if (Hearts <= 0) s.Fsm.EliminateHeartsLost();
+            s.Fsm.EliminateObstacleHit();
         });
 
         /// <summary>i번째 구간의 길이. 마지막 구간(lengthM 없음)이면 양의 무한대라 그 뒤 경계는 없다.</summary>

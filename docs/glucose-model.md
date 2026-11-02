@@ -75,7 +75,7 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 - 달리기 강도(`activity`)는 달리는 동안 항상 1이다. 점프·슬라이드에 따른 차등은 두지 않는다.
 - 트랙 간식을 주우면 `runner.trackSnackServings`배만큼 혈당에 반영한다. 1단계(위험 인지) 중에도 반영하며 대처 단계 판정과는 무관하다. 세계가 멈춘 동안에는 주울 수 없다.
 - 트랙 간식은 `runner.trackSnackIntervalMinSec`~`trackSnackIntervalMaxSec`(worldDt 기준 초) 사이에서 매번 무작위로 고른 간격마다 하나씩 놓인다. 간식 종류는 `snacks` 목록에서 무작위로 고른다. 이 간격이 주행 중 혈당 균형을 직접 좌우하므로 담당자가 정할 값이다.
-- 장애물 충돌은 혈당과 무관하다. 부딪히면 잠깐 느려지고(PlayerController) 하트를 하나 잃는다. 비틀거리는 동안 다시 부딪혀도 하트를 잃지 않는다. 하트(`runner.hearts`)를 모두 잃으면 탈락한다.
+- 장애물 충돌은 혈당과 무관하다. 부딪히면 잠깐 느려지는 연출(PlayerController)과 함께 바로 탈락한다(원인 `obstacle_hit`). 세계가 멈춘 동안(2~4단계 등)에는 충돌이 없다.
 - 러너 화면(캐릭터, 트랙)은 `RunController.LastWorldDt`로만 움직인다. 그래서 2~4단계·알리기 대기·재개 카운트다운·일시정지 중에는 멈추고, 1단계와 유예 시간에는 달린다.
 - 재개 카운트다운과 유예 시간에는 트랙의 장애물을 모두 치우고 새로 놓지 않는다. 간식은 계속 놓는다.
 - 한 판은 탈락할 때까지 끝없이 이어진다. 고정 주행 길이와 완주는 없다. 달린 거리(`worldDt × 속도` 누적)로 구간이 바뀌고 점수가 쌓인다.
@@ -183,7 +183,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
   ],
   "runner": { "trackSnackServings": null,
-    "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null, "hearts": 3 },
+    "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null },
   "elimination": { "glucoseLow": null, "glucoseHigh": null },
   "score": {
     "inRangePerSec": null, "perMeter": null,
@@ -202,7 +202,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 - `hypo.doses`는 간식 1회분에 곱하는 배수(과소·적정·과잉)다.
 - `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
 - `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
-- `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.trackSnackIntervalMinSec`·`MaxSec`는 트랙 간식 간격의 범위(worldDt 기준 초), `runner.hearts`는 하트 개수(게임 값, 3)다(2.5절).
+- `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.trackSnackIntervalMinSec`·`MaxSec`는 트랙 간식 간격의 범위(worldDt 기준 초)다.
 - `elimination.glucoseLow`·`glucoseHigh`는 탈락하는 실제 혈당 범위, `score.*`는 점수 값, `sections`는 구간 목록(마지막 구간만 `lengthM` 없이 끝없이 이어짐)이다. `score.correct`는 단계별 정답 가중치(`recognize`~`hyperNotify`), `score.errors`는 오류 코드별 가중치(키는 로그의 오류 코드와 같다)이고 `RS_KEEP_RUNNING`·`HY_KEEP_RUNNING`은 위험한 선택이라 0으로 고정한다. 달리기 속도, 레인 폭, 점프·슬라이드 시간, 장애물 간격, 충돌 감속 같은 러너 감각 수치는 혈당과 무관하므로 JSON이 아니라 각 컴포넌트의 Inspector 값으로 둔다.
 
 ## 8. 불변식
@@ -237,7 +237,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     - `W`가 양의 유한수가 아니면 14·18번은 건너뛴다(9번이 이미 보고).
 
 ### 8.3 주행 설정
-19. `0 < runner.trackSnackServings < hypo.doses.under`, `0 < runner.trackSnackIntervalMinSec ≤ trackSnackIntervalMaxSec`, `runner.hearts ≥ 1`(정수)
+19. `0 < runner.trackSnackServings < hypo.doses.under`, `0 < runner.trackSnackIntervalMinSec ≤ trackSnackIntervalMaxSec`
 21. `glucose.min ≤ elimination.glucoseLow < glucose.hypoThreshold`, `glucose.hyperThreshold < elimination.glucoseHigh ≤ glucose.max`
 22. `score.*` 값은 모두 `≥ 0`, `correct`는 모든 단계, `errors`는 `None`을 뺀 모든 오류 코드가 있어야 한다. `RS_KEEP_RUNNING`, `HY_KEEP_RUNNING`은 0
 23. `sections`는 1개 이상, id는 `signal`·`condition`·`complex` 중 하나이고 중복 없음, 마지막을 뺀 항목은 `lengthM > 0`, 마지막 항목은 `lengthM` 없음
@@ -255,7 +255,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 | 고혈당 처리 | 정책 A로 1순위 범위 편입, `hyperThreshold` 사용. 설계는 `docs/hyper-event.md` |
 | MetricsCalculator | 불필요 측정 정의 변경, 재발 이벤트의 정확 대응률 포함 여부, 4단계는 재측정·알리기 두 기록을 묶어 계산 |
 | EventDirector | 급하강 판정(`IRandomSource`), 저혈당 발동·cooldown·재무장·재발 판정, EventId, 게이지 경고, 유예 중 억제 |
-| RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 쌓인 명령 처리 → Tick → Evaluate → Update 순서 호출(2.5절), 하트·거리·구간, 혈당 범위 탈락 |
+| RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 쌓인 명령 처리 → Tick → Evaluate → Update 순서 호출(2.5절), 거리·구간, 장애물 탈락, 혈당 범위 탈락 |
 | ScoringService | 혈당 유지(적정 범위 시간), 대처 가중치, 거리 점수. 주행 중 누적과 기록 재계산을 같은 규칙으로 |
 | LogRepository | `SimT`·`T` 모두 기록, `isRecurrence`, `inGrace`, `helpInstead`, 실제 선택한 간식과 양(`DoseApplied`), 빨리 감기 전후 혈당 |
 | 설정 로더 | null 수집 실패, 교차 검증 단계 |

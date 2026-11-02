@@ -113,7 +113,6 @@ namespace SugarDash.Domain.Config
             if (!(0 < runner.TrackSnackIntervalMinSec && runner.TrackSnackIntervalMinSec <= runner.TrackSnackIntervalMaxSec))
                 errors.Add($"0 < runner.trackSnackIntervalMinSec ≤ runner.trackSnackIntervalMaxSec 이어야 한다 " +
                            $"(min={runner.TrackSnackIntervalMinSec}, max={runner.TrackSnackIntervalMaxSec})");
-            if (!(runner.Hearts >= 1)) errors.Add($"runner.hearts ≥ 1 이어야 한다 ({runner.Hearts})");
 
             // 20. 고혈당 알리기(docs/hyper-event.md)
             Positive(errors, "hyper.notifyTimeLimitSec", config.Hyper.NotifyTimeLimitSec);

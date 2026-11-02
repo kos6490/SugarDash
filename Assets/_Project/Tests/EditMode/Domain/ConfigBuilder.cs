@@ -66,7 +66,6 @@ namespace SugarDash.Domain.Tests
         public double TrackSnackServings = 0.5;
         public double TrackSnackIntervalMinSec = 8;
         public double TrackSnackIntervalMaxSec = 8;
-        public int Hearts = 3;
 
         public double GlucoseLow = 40;
         public double GlucoseHigh = 300;
@@ -102,7 +101,7 @@ namespace SugarDash.Domain.Tests
             Step1TimeLimitSec, Step2TimeLimitSec, Step3TimeLimitSec, Step4TimeLimitSec, GuardianPromptTimeLimitSec,
             ResumeCountdownSec, GraceSec, GuardianSnackId, new DoseConfig(DoseUnder, DoseProper, DoseOver)),
             new HyperConfig(HyperNotifyTimeLimitSec),
-            new RunnerConfig(TrackSnackServings, TrackSnackIntervalMinSec, TrackSnackIntervalMaxSec, Hearts),
+            new RunnerConfig(TrackSnackServings, TrackSnackIntervalMinSec, TrackSnackIntervalMaxSec),
             new EliminationConfig(GlucoseLow, GlucoseHigh),
             BuildScore(),
             Sections.ToList());

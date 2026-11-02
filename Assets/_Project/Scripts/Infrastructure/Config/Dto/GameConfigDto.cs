@@ -105,7 +105,6 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? TrackSnackServings { get; set; }
         public double? TrackSnackIntervalMinSec { get; set; }
         public double? TrackSnackIntervalMaxSec { get; set; }
-        public int? Hearts { get; set; }
     }
 
     [Preserve]

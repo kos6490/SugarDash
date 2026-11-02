@@ -46,35 +46,32 @@ namespace SugarDash.Infrastructure.Tests
         {
             _repo.BeginRun();
             _bus.Publish(new SectionEntered("signal", 12.5, 1, 1));
-            _bus.Publish(new ObstacleHit(2, 30.25, 2, 2));
             _bus.Publish(new GlucoseRangeEntered(95.5, 3, 3));
             _bus.Publish(new GlucoseRangeExited(60.5, 4, 4));
-            _bus.Publish(new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.HeartsLost, 55.5, 5, 5));
+            _bus.Publish(new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.ObstacleHit, 55.5, 5, 5));
 
             var raw = RawLines();
             var lines = Lines();
             Assert.That(lines.Select(l => l.Type), Is.EqualTo(new[]
             {
-                "RunStarted", "SectionEntered", "ObstacleHit", "GlucoseRangeEntered", "GlucoseRangeExited",
+                "RunStarted", "SectionEntered", "GlucoseRangeEntered", "GlucoseRangeExited",
                 "RunEliminated"
             }));
             Assert.That(lines[1].Section, Is.EqualTo("signal"));
             Assert.That(lines[1].DistanceM, Is.EqualTo(12.5));
-            Assert.That(lines[2].HeartsLeft, Is.EqualTo(2));
-            Assert.That(lines[2].DistanceM, Is.EqualTo(30.25));
-            Assert.That(lines[3].Actual, Is.EqualTo(95.5));
-            Assert.That(lines[4].Actual, Is.EqualTo(60.5));
-            for (int i = 1; i <= 4; i++)
+            Assert.That(lines[2].Actual, Is.EqualTo(95.5));
+            Assert.That(lines[3].Actual, Is.EqualTo(60.5));
+            for (int i = 1; i <= 3; i++)
             {
                 Assert.That(raw[i], Does.Not.Contain("eventId"), lines[i].Type);
                 Assert.That(lines[i].SchemaVersion, Is.EqualTo(2));
             }
 
-            Assert.That(raw[5], Does.Not.Contain("\"step\""));
-            Assert.That(raw[5], Does.Not.Contain("errorCode"));
-            Assert.That(lines[5].Cause, Is.EqualTo("hearts_lost"));
-            Assert.That(lines[5].DistanceM, Is.EqualTo(55.5));
-            Assert.That(lines[5].SchemaVersion, Is.EqualTo(2));
+            Assert.That(raw[4], Does.Not.Contain("\"step\""));
+            Assert.That(raw[4], Does.Not.Contain("errorCode"));
+            Assert.That(lines[4].Cause, Is.EqualTo("obstacle_hit"));
+            Assert.That(lines[4].DistanceM, Is.EqualTo(55.5));
+            Assert.That(lines[4].SchemaVersion, Is.EqualTo(2));
             Assert.That(LogRepository.SchemaVersion, Is.EqualTo(2));
         }
 

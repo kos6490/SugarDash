@@ -49,6 +49,5 @@ namespace SugarDash.Infrastructure.Logging.Dto
         public double? DistanceM { get; set; }
 
         public string Section { get; set; }
-        public int? HeartsLeft { get; set; }
     }
 }

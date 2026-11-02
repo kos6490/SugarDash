@@ -20,7 +20,7 @@
 | `seq` | 주행 안에서 1부터 1씩 늘어나는 줄 번호 |
 | `type` | 레코드 종류(아래 표) |
 | `simT`, `t` | simDt 누적 시각, decisionDt 누적 시각(`docs/glucose-model.md` 2.1절). `RunStarted`·`RunEnded`에는 없다 |
-| `eventId` | 저혈당·고혈당 이벤트 번호(같은 순서를 함께 쓴다). 이벤트에 속하지 않는 레코드에는 없다(`MeterPressed`는 이벤트 밖이면 0). `RunEliminated`의 `eventId`도 대처 이벤트 밖(주행 중 하트·혈당 탈락)이면 0 |
+| `eventId` | 저혈당·고혈당 이벤트 번호(같은 순서를 함께 쓴다). 이벤트에 속하지 않는 레코드에는 없다(`MeterPressed`는 이벤트 밖이면 0). `RunEliminated`의 `eventId`도 대처 이벤트 밖(주행 중 장애물·혈당 탈락)이면 0 |
 
 값이 null인 필드는 쓰지 않는다. 예: 시간 초과한 `StepAnswered`에는 `choiceId`가 없고, 정답이면 `errorCode`가 없다.
 
@@ -42,17 +42,16 @@
 | `RecheckFastForward` | `simSecSkipped`, `glucoseBefore`, `glucoseAfter` |
 | `HypoResolved` | `allCorrect` |
 | `HyperResolved` | `allCorrect`(오류 없이 바로 알렸으면 true) |
-| `RunEliminated` | `step`, `errorCode`(탈락으로 이어진 오류. 대처 중 시간 초과에서 혈당으로 탈락하면 그 단계와 시간 초과 오류, 주행 중 하트·혈당 탈락이면 둘 다 없음), `cause`, `distanceM` |
+| `RunEliminated` | `step`, `errorCode`(탈락으로 이어진 오류. 대처 중 시간 초과에서 혈당으로 탈락하면 그 단계와 시간 초과 오류, 주행 중 장애물·혈당 탈락이면 둘 다 없음), `cause`, `distanceM` |
 | `GraceStarted`, `GraceEnded` | - |
 | `TrackSnackEaten` | `snackId`, `servings` |
 | `SectionEntered` | `section`(`signal`, `condition`, `complex`), `distanceM`. 주행 시작 시 첫 구간도 기록 |
-| `ObstacleHit` | `heartsLeft`, `distanceM` |
 | `GlucoseRangeEntered`, `GlucoseRangeExited` | `actual`. 적정 범위(`normalRangeMin` 이상 `hyperThreshold` 미만) 들어감·나감. 점수 재계산용. 주행 시작 때 기록 순서는 `RunStarted` → `SectionEntered` → `GlucoseRangeEntered`(시작 시 범위 안일 때만) |
 
 - `atUtc`: `yyyy-MM-ddTHH:mm:ss.fffZ`
 - `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계), `hyper_notify`(고혈당 알리기, `docs/hyper-event.md`)
 - `errorCode`: CLAUDE.md 2절의 코드 그대로(`S_MISSED`, `RS_SLOW`, ..., `HELP_INSTEAD`, `HY_KEEP_RUNNING`, `HY_TIMEOUT`)
-- `cause`: `declined`(알리기 대기에서 "다시 달리기"), `prompt_timeout`(알리기 제한 시간 초과), `hearts_lost`(하트를 모두 잃음), `glucose_low`·`glucose_high`(실제 혈당이 안전 범위를 벗어남)
+- `cause`: `declined`(알리기 대기에서 "다시 달리기"), `prompt_timeout`(알리기 제한 시간 초과), `obstacle_hit`(장애물에 부딪힘), `glucose_low`·`glucose_high`(실제 혈당이 안전 범위를 벗어남)
 - `RunCompleted`는 없앴다(한 판은 탈락으로만 끝난다).
 - 점수는 저장하지 않는다. `StepAnswered`의 선택, `GlucoseRangeEntered/Exited`, `RecheckFastForward`, `RunEliminated.distanceM`으로 ScoringService가 다시 계산한다.
 - `decisionSec`: 단계 진입부터 답할 때까지의 `t` 차이. 단계 제한 시간을 넘지 않는다(큰 프레임 뒤 시간 초과도 제한 시간으로 기록).

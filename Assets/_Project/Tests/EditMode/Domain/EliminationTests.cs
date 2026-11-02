@@ -149,16 +149,16 @@ namespace SugarDash.Domain.Tests
         }
 
         [Test]
-        public void EliminateHeartsLost_PublishesOnce()
+        public void EliminateObstacleHit_PublishesOnce()
         {
             var h = Harness();
 
-            h.Fsm.EliminateHeartsLost();
-            h.Fsm.EliminateHeartsLost();
+            h.Fsm.EliminateObstacleHit();
+            h.Fsm.EliminateObstacleHit();
 
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
             var eliminated = h.All<RunEliminated>().Single();
-            Assert.That(eliminated.Cause, Is.EqualTo(EliminationCause.HeartsLost));
+            Assert.That(eliminated.Cause, Is.EqualTo(EliminationCause.ObstacleHit));
             Assert.That(eliminated.Step, Is.Null);
             Assert.That(eliminated.Reason, Is.EqualTo(HypoErrorCode.None));
             Assert.That(eliminated.EventId, Is.EqualTo(0));
@@ -170,7 +170,7 @@ namespace SugarDash.Domain.Tests
             var h = Harness();
             h.Distance = 123.5;
 
-            h.Fsm.EliminateHeartsLost();
+            h.Fsm.EliminateObstacleHit();
 
             Assert.That(h.Last<RunEliminated>().DistanceM, Is.EqualTo(123.5));
         }
