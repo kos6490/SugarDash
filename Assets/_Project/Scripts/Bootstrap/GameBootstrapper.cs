@@ -12,6 +12,7 @@ using SugarDash.Domain.Scoring;
 using SugarDash.Infrastructure;
 using SugarDash.Infrastructure.Config;
 using SugarDash.Infrastructure.Logging;
+using SugarDash.Infrastructure.Progress;
 using SugarDash.Presentation;
 using UnityEngine;
 
@@ -63,7 +64,9 @@ namespace SugarDash.Bootstrap
             _subscriptions.Add(log.Subscribe(_bus));
 
             _run = new RunController(_config.Runner, _config.Sections, CreateSession, log, _bus);
-            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory));
+            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory), _config.Score,
+                new BestScoreRepository(Path.Combine(Application.persistentDataPath, "best-score.json")),
+                _config.ConfigVersion);
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks));

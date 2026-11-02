@@ -109,5 +109,30 @@ namespace SugarDash.Presentation.Tests
         {
             Assert.That(ResultScreenText.Summary(Summary(RunOutcome.Eliminated)), Is.EqualTo("이번에는 저혈당이 없었어요"));
         }
-    }
+    
+        [Test]
+        public void Summary_WithScore_StartsWithScoreLines()
+        {
+            var lines = ResultScreenText.Summary(Summary(RunOutcome.Eliminated), 123.9, 200, false).Split('\n');
+
+            Assert.That(lines[0], Is.EqualTo("점수 123점"));
+            Assert.That(lines[1], Is.EqualTo("최고 점수 200점"));
+            Assert.That(lines[2], Is.EqualTo("이번에는 저혈당이 없었어요"));
+        }
+
+        [Test]
+        public void Summary_NewBest_AddsLine()
+        {
+            var lines = ResultScreenText.Summary(Summary(RunOutcome.Eliminated), 300.2, 300.2, true).Split('\n');
+
+            Assert.That(lines[2], Is.EqualTo("새 최고 기록!"));
+        }
+
+        [Test]
+        public void Summary_NoScore_HasNoScoreLines()
+        {
+            Assert.That(ResultScreenText.Summary(Summary(RunOutcome.Eliminated), null, 200, false),
+                Is.EqualTo("이번에는 저혈당이 없었어요"));
+        }
+}
 }

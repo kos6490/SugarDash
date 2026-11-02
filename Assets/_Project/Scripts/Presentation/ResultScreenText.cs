@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SugarDash.Domain.Metrics;
@@ -13,11 +14,19 @@ namespace SugarDash.Presentation
             return "어른이 도와주러 왔어요";
         }
 
-        public static string Summary(RunSummary result)
+        public static string Summary(RunSummary result, double? score = null, double? best = null,
+            bool isNewBest = false)
         {
             if (result == null || result.Outcome == RunOutcome.Unfinished) return "";
 
-            var lines = new List<string> { HypoSummary(result) };
+            var lines = new List<string>();
+            if (score != null)
+            {
+                lines.Add($"점수 {Math.Floor(score.Value):0}점");
+                if (best != null) lines.Add($"최고 점수 {Math.Floor(best.Value):0}점");
+                if (isNewBest) lines.Add("새 최고 기록!");
+            }
+            lines.Add(HypoSummary(result));
             string hyper = HyperSummary(result);
             if (hyper != null) lines.Add(hyper);
 

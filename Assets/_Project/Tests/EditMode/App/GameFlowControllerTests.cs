@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Glucose;
@@ -35,6 +36,7 @@ namespace SugarDash.App.Tests
             private readonly FakeLog _log;
             public readonly List<object> Published = new List<object>();
             public bool ReturnsNothing;
+            public bool OmitEliminated;
             public string RequestedRunId;
             public int EndedWhenQueried = -1;
 
@@ -46,10 +48,30 @@ namespace SugarDash.App.Tests
             {
                 RequestedRunId = runId;
                 EndedWhenQueried = _log.Ended;
-                return ReturnsNothing ? null : new RunRecord(runId, "test", null, null, Published.ToArray(), 0);
+                if (ReturnsNothing) return null;
+                var events = OmitEliminated
+                    ? Published.Where(e => !(e is RunEliminated)).ToArray()
+                    : Published.ToArray();
+                return new RunRecord(runId, "test", null, null, events, 0);
             }
         }
 
+        private sealed class FakeBest : IBestScoreStore
+        {
+            public double? Stored;
+            public int Saves;
+            public string LastConfigVersion;
+            public double? Load(string configVersion) => Stored;
+
+            public void Save(string configVersion, double score)
+            {
+                Saves++;
+                LastConfigVersion = configVersion;
+                Stored = score;
+            }
+        }
+
+        private FakeBest _best;
         private FakeLog _log;
         private FakeQuery _query;
         private RunController _run;
@@ -77,7 +99,8 @@ namespace SugarDash.App.Tests
                 return new RunSession(model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                     scoring.Subscribe(bus));
             }, _log, bus);
-            _flow = new GameFlowController(_run, _query);
+            _best = new FakeBest();
+            _flow = new GameFlowController(_run, _query, config.Score, _best, "cfg-test");
         }
 
         /// <summary>GameBootstrapper처럼 RunController.Tick 뒤 GameFlowController.Tick을 부른다.</summary>
@@ -183,6 +206,59 @@ namespace SugarDash.App.Tests
 
             Assert.That(_flow.IsShowingResult, Is.True);
             Assert.That(_flow.LastResult, Is.Null);
+        }
+
+        [Test]
+        public void FirstRun_IsNewBestAndSaved()
+        {
+            _flow.Begin();
+            LoseAllHearts();
+
+            Assert.That(_flow.LastScore, Is.Not.Null);
+            Assert.That(_flow.IsNewBest, Is.True);
+            Assert.That(_flow.BestScore, Is.EqualTo(_flow.LastScore));
+            Assert.That(_best.Saves, Is.EqualTo(1));
+            Assert.That(_best.LastConfigVersion, Is.EqualTo("cfg-test"));
+        }
+
+        [Test]
+        public void LowerScore_KeepsBest()
+        {
+            _best.Stored = 1e9;
+            _flow.Begin();
+            LoseAllHearts();
+
+            Assert.That(_flow.LastScore, Is.Not.Null);
+            Assert.That(_flow.IsNewBest, Is.False);
+            Assert.That(_flow.BestScore, Is.EqualTo(1e9));
+            Assert.That(_best.Saves, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void UnfinishedRun_DoesNotUpdateBest()
+        {
+            _query.OmitEliminated = true;
+            _best.Stored = 5;
+            _flow.Begin();
+            LoseAllHearts();
+
+            Assert.That(_flow.LastScore, Is.Null);
+            Assert.That(_flow.IsNewBest, Is.False);
+            Assert.That(_flow.BestScore, Is.EqualTo(5));
+            Assert.That(_best.Saves, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Retry_ClearsScores()
+        {
+            _flow.Begin();
+            LoseAllHearts();
+
+            _flow.Retry();
+
+            Assert.That(_flow.LastScore, Is.Null);
+            Assert.That(_flow.BestScore, Is.Null);
+            Assert.That(_flow.IsNewBest, Is.False);
         }
 
         [Test]

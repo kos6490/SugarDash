@@ -1,6 +1,8 @@
 using System;
+using SugarDash.Domain.Config;
 using SugarDash.Domain.Metrics;
 using SugarDash.Domain.Ports;
+using SugarDash.Domain.Scoring;
 
 namespace SugarDash.App
 {
@@ -14,8 +16,16 @@ namespace SugarDash.App
         private readonly RunController _run;
         private readonly ILogQuery _query;
 
-        public GameFlowController(RunController run, ILogQuery query)
+        private readonly ScoreConfig _score;
+        private readonly IBestScoreStore _best;
+        private readonly string _configVersion;
+
+        public GameFlowController(RunController run, ILogQuery query, ScoreConfig score, IBestScoreStore best,
+            string configVersion)
         {
+            _score = score ?? throw new ArgumentNullException(nameof(score));
+            _best = best ?? throw new ArgumentNullException(nameof(best));
+            _configVersion = configVersion ?? throw new ArgumentNullException(nameof(configVersion));
             _run = run ?? throw new ArgumentNullException(nameof(run));
             _query = query ?? throw new ArgumentNullException(nameof(query));
         }
@@ -25,6 +35,15 @@ namespace SugarDash.App
 
         /// <summary>마지막으로 끝난 주행의 요약. 기록 파일을 찾지 못했으면 null.</summary>
         public RunSummary LastResult { get; private set; }
+
+        /// <summary>마지막 주행의 점수. 탈락 기록이 없으면 null.</summary>
+        public double? LastScore { get; private set; }
+
+        /// <summary>결과 화면에 보여 줄 최고 점수(이번 점수 포함). 없으면 null.</summary>
+        public double? BestScore { get; private set; }
+
+        /// <summary>이번 점수가 최고 점수를 새로 넘었다.</summary>
+        public bool IsNewBest { get; private set; }
 
         /// <summary>결과 화면에서 다시 할 수 있다.</summary>
         public bool CanRetry => IsShowingResult;
@@ -44,7 +63,17 @@ namespace SugarDash.App
             _run.EndRun();
             var record = runId == null ? null : _query.LoadRun(runId);
             LastResult = record == null ? null : MetricsCalculator.Summarize(record);
+            UpdateScores(record);
             IsShowingResult = true;
+        }
+
+        private void UpdateScores(Domain.Records.RunRecord record)
+        {
+            LastScore = record == null ? null : ScoringService.Calculate(record, _score);
+            double? prev = _best.Load(_configVersion);
+            IsNewBest = LastScore != null && (prev == null || LastScore > prev);
+            if (IsNewBest) _best.Save(_configVersion, LastScore.Value);
+            BestScore = IsNewBest ? LastScore : prev;
         }
 
         /// <summary>결과 화면을 닫고 새 주행을 연다.</summary>
@@ -54,6 +83,9 @@ namespace SugarDash.App
 
             IsShowingResult = false;
             LastResult = null;
+            LastScore = null;
+            BestScore = null;
+            IsNewBest = false;
             _run.StartRun();
         }
 
