@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace SugarDash.Domain.Tests
 {
-    /// <summary>세 가지 탈락(알리지 않음, 혈당 안전 범위 이탈, 하트 모두 잃음)을 RunEliminated 하나로 낸다.</summary>
+    /// <summary>세 가지 탈락(알리지 않음, 혈당 안전 범위 이탈, 장애물 충돌)을 RunEliminated 하나로 낸다.</summary>
     public class EliminationTests
     {
         private static HypoHarness Harness(System.Action<ConfigBuilder> configure = null) =>

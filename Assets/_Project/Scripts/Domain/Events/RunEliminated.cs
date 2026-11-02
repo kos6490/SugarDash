@@ -3,7 +3,7 @@ using SugarDash.Domain.Hypo;
 namespace SugarDash.Domain.Events
 {
     /// <summary>
-    /// 주행에서 탈락했다. 오류 뒤 어른에게 알리지 않았거나, 실제 혈당이 안전 범위를 벗어났거나, 하트를 모두 잃었다.
+    /// 주행에서 탈락했다. 오류 뒤 어른에게 알리지 않았거나, 실제 혈당이 안전 범위를 벗어났거나, 장애물에 부딪혔다.
     /// 어른이 도와주러 오는 장면 뒤 결과 화면으로 간다.
     /// </summary>
     public sealed class RunEliminated
@@ -22,7 +22,7 @@ namespace SugarDash.Domain.Events
 
         /// <summary>진행 중인 이벤트 번호. 이벤트가 없을 때 탈락하면 0.</summary>
         public int EventId { get; }
-        /// <summary>탈락으로 이어진 단계. 주행 중 탈락(혈당·하트)이면 null.</summary>
+        /// <summary>탈락으로 이어진 단계. 주행 중 탈락(혈당·장애물)이면 null.</summary>
         public HypoStep? Step { get; }
         /// <summary>탈락으로 이어진 그 단계의 오류. 주행 중 탈락이면 None.</summary>
         public HypoErrorCode Reason { get; }

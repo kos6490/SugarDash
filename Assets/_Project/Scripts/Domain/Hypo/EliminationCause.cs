@@ -7,7 +7,7 @@ namespace SugarDash.Domain.Hypo
         Declined,
         /// <summary>알리기 제한 시간을 넘겼다.</summary>
         PromptTimeout,
-        /// <summary>장애물에 부딪혀 하트를 모두 잃었다.</summary>
+        /// <summary>장애물에 부딪혔다.</summary>
         ObstacleHit,
         /// <summary>실제 혈당이 안전 범위 하한(elimination.glucoseLow) 아래로 내려갔다.</summary>
         GlucoseLow,

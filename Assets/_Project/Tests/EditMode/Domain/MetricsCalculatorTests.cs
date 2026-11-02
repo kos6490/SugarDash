@@ -35,7 +35,7 @@ namespace SugarDash.Domain.Tests
             new HypoResolved(id, true, 0, 0),
         };
 
-        /// <summary>이벤트 밖에서 하트를 모두 잃어 끝난 주행.</summary>
+        /// <summary>이벤트 밖에서 장애물에 부딪혀 끝난 주행.</summary>
         private static RunEliminated ObstacleHit(double simT, double t) =>
             new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.ObstacleHit, 0, simT, t);
 

@@ -12,7 +12,7 @@ namespace SugarDash.App
     /// (docs/glucose-model.md 2.1절).
     /// 화면의 명령은 큐에 쌓았다가 다음 <see cref="Tick"/> 맨 앞에서 처리한다. 명령은 지난 프레임의
     /// HypoEventFsm.Update가 끝난 시각에 처리되므로, 마감이 지난 답이 정상 답으로 받아지지 않는다.
-    /// 주행은 탈락할 때까지 끝없이 이어진다. 거리에 따라 설정의 구간이 차례로 열리고, 장애물에 부딪히면 하트를 잃는다.
+    /// 주행은 탈락할 때까지 끝없이 이어진다. 거리에 따라 설정의 구간이 차례로 열리고, 장애물에 한 번 부딪히면 탈락한다.
     /// </summary>
     public sealed class RunController
     {
@@ -63,8 +63,6 @@ namespace SugarDash.App
 
         /// <summary>이번 주행에서 달린 거리(m). <see cref="AdvanceDistance"/>로만 는다. 주행을 닫은 뒤에도 마지막 값을 둔다.</summary>
         public double DistanceM { get; private set; }
-
-        /// <summary>남은 하트. 주행을 닫은 뒤에도 마지막 값을 둔다.</summary>
 
         /// <summary>지금 구간의 id. 열린 주행이 없으면 null.</summary>
         public string CurrentSectionId => _session == null ? null : _sections[_sectionIndex].Id;

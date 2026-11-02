@@ -150,7 +150,7 @@ namespace SugarDash.Presentation
 
         private Outcome Stumble()
         {
-            // 부딪히면 바로 탈락한다. 비틀거림 연출은 탈락 처리 전까지 보여 준다.
+            // 부딪히면 바로 탈락해 결과 화면이 곧 뜬다. 비틀거림 연출은 그 전 잠깐만 보인다.
             _run.HitObstacle();
             _stumbleLeft = stumbleSec;
             return Outcome.Hit;
