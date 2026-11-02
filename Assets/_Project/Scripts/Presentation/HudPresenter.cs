@@ -23,10 +23,14 @@ namespace SugarDash.Presentation
         [SerializeField] private Text statusText;
         [Tooltip("점수 표시. 비워 두면 표시하지 않는다.")]
         [SerializeField] private Text scoreText;
+        [Tooltip("측정 결과 글자를 보여 주는 시간(초). 지나면 지운다.")]
+        [SerializeField] private float meterTextShowSec = 3f;
 
         private RunController _run;
         private GameFlowController _flow;
         private int _shownRunCount;
+        // 측정 결과 글자를 지울 시각(Time.time). 보여 주는 글자가 없으면 음수.
+        private float _meterTextHideAt = -1;
 
         /// <summary>GameBootstrapper가 연결한다. 반환값을 Dispose하면 구독과 버튼 연결을 해제한다.</summary>
         public IDisposable Bind(RunController run, GameFlowController flow, DomainEventBus bus,
@@ -43,7 +47,11 @@ namespace SugarDash.Presentation
 
             var subscriptions = new List<IDisposable>
             {
-                bus.Subscribe<MeterPressed>(e => meterText.text = $"측정: {e.Measured:0} mg/dL"),
+                bus.Subscribe<MeterPressed>(e =>
+                {
+                    meterText.text = $"측정: {e.Measured:0} mg/dL";
+                    _meterTextHideAt = Time.time + meterTextShowSec;
+                }),
             };
 
             return new Unbinder(() =>
@@ -71,8 +79,10 @@ namespace SugarDash.Presentation
             if (_run.RunCount != _shownRunCount)
             {
                 _shownRunCount = _run.RunCount;
-                meterText.text = "";
+                ClearMeterText();
             }
+
+            if (_meterTextHideAt >= 0 && Time.time >= _meterTextHideAt) ClearMeterText();
 
             double displayed = _run.Displayed;
             glucoseBar.value = (float)displayed;
@@ -91,5 +101,11 @@ namespace SugarDash.Presentation
         }
 
         private void OnMeter() => _run?.PressMeter();
+
+        private void ClearMeterText()
+        {
+            meterText.text = "";
+            _meterTextHideAt = -1;
+        }
     }
 }
