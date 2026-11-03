@@ -28,6 +28,8 @@ namespace SugarDash.Presentation
         [SerializeField] private float restClearDistance = 8f;
         [SerializeField] private float markerSpacing = 5f;
         [SerializeField] private float laneWidth = 2.5f;
+        [Tooltip("물체 모습을 만드는 월드 담당 도우미. 비워 두면 기본 도형(PrimitiveViews)을 쓴다.")]
+        [SerializeField] private TrackItemLook look;
 
         private readonly List<TrackItem> _items = new List<TrackItem>();
         private readonly List<TrackItem> _crossed = new List<TrackItem>();
@@ -264,7 +266,8 @@ namespace SugarDash.Presentation
 
         private void Add(TrackItem item)
         {
-            if (_createViews) item.View = PrimitiveViews.CreateItem(item, transform);
+            if (_createViews)
+                item.View = look != null ? look.CreateView(item, transform) : PrimitiveViews.CreateItem(item, transform);
             UpdateView(item);
             _items.Add(item);
         }
