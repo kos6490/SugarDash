@@ -76,23 +76,22 @@ namespace SugarDash.Presentation.Tests
             Assert.That(SleepTransitionView.ShouldFade(2, 0), Is.False, "새 주행");
         }
 
-        [TestCase(0f, 0f)]
-        [TestCase(0.2f, 0.5f)]
-        [TestCase(0.4f, 1f)]
-        [TestCase(0.5f, 1f)]
-        [TestCase(0.9f, 0.5f)]
-        [TestCase(1.2f, 0f)]
+        [TestCase(0f, 1f)]
+        [TestCase(0.1f, 1f)]
+        [TestCase(0.2f, 1f)]
+        [TestCase(0.5f, 0.5f)]
+        [TestCase(0.8f, 0f)]
         [TestCase(5f, 0f)]
-        public void SleepTransition_AlphaCurve(float elapsed, float expected)
+        public void SleepTransition_AlphaCurve_StartsBlack(float elapsed, float expected)
         {
-            Assert.That(SleepTransitionView.AlphaAt(elapsed, 0.4f, 0.2f, 0.6f), Is.EqualTo(expected).Within(1e-5f));
+            Assert.That(SleepTransitionView.AlphaAt(elapsed, 0.2f, 0.6f), Is.EqualTo(expected).Within(1e-5f));
         }
 
         [Test]
         public void SleepTransition_AlphaCurve_ZeroLengths()
         {
-            Assert.That(SleepTransitionView.AlphaAt(0f, 0f, 0f, 0f), Is.EqualTo(0f));
-            Assert.That(SleepTransitionView.AlphaAt(0f, 0f, 0.2f, 0.6f), Is.EqualTo(1f));
+            Assert.That(SleepTransitionView.AlphaAt(0f, 0f, 0f), Is.EqualTo(0f));
+            Assert.That(SleepTransitionView.AlphaAt(0f, 0f, 0.6f), Is.EqualTo(1f));
         }
     }
 }

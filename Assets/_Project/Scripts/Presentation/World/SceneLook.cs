@@ -14,6 +14,8 @@ namespace SugarDash.Presentation
         [Tooltip("장면마다 색을 바꿀 바닥. 비워 두면 아무것도 바꾸지 않는다.")]
         [SerializeField] private Renderer ground;
 
+        private Material _groundCopy;
+
         /// <summary>장면 id별 개발용 바닥 색. 모르는 id(장면 없는 구간 포함)는 회색.</summary>
         public static Color GroundColorOf(string sceneId)
         {
@@ -50,7 +52,15 @@ namespace SugarDash.Presentation
 
         private void SetGround(string sceneId)
         {
-            if (ground != null) ground.material.color = GroundColorOf(sceneId);
+            if (ground == null) return;
+            // ground.material은 처음 쓸 때 머티리얼 사본을 만든다. 사본은 저절로 지워지지 않아 OnDestroy에서 지운다.
+            if (_groundCopy == null) _groundCopy = ground.material;
+            _groundCopy.color = GroundColorOf(sceneId);
+        }
+
+        private void OnDestroy()
+        {
+            if (_groundCopy != null) Destroy(_groundCopy);
         }
     }
 }

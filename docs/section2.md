@@ -58,7 +58,7 @@
 ]
 ```
 
-- 개발 설정: `signal` 300m, 운동장·놀이터·나들이 200m씩, 집 80m. 1형 개발 설정의 나들이만 간식 간격을 3~4초로 덮어써 맵이 바뀌는 것을 눈으로 볼 수 있다.
+- 개발 설정: `signal` 300m, 운동장·놀이터·나들이 200m씩, 집 140m. 1형 개발 설정의 나들이만 간식 간격을 3~4초로 덮어써 맵이 바뀌는 것을 눈으로 볼 수 있다.
 - `spawns`를 생략하면 `true`다.
 
 ### 3.1 덮어쓰기(`overrides`)
@@ -88,7 +88,7 @@
 | --- | --- | --- | --- |
 | 월드 | `World/SceneLook` | `SceneEntered`(장면 id, 때) | 장면별 맵 배경(운동장, 놀이터, 나들이, 집), 때별 조명·하늘. 지금은 바닥 색만 바뀐다 |
 | 월드 | `World/TrackItemLook` | 지금 장면 id(`SceneId`) | 장면별 장애물 모양(운동장 축구공, 놀이터 미끄럼틀 등). 1구간 일과 같은 파일이다 |
-| 화면 | `Screen/SleepTransitionView` | 하루가 넘어감(`SceneEntered`의 `dayIndex`가 오름) | 잠자는 그림이나 해·달 전환. 암전 길이는 Inspector 값(`Fade Out Sec`, `Hold Sec`, `Fade In Sec`) |
+| 화면 | `Screen/SleepTransitionView` | 하루가 넘어감(`SceneEntered`의 `dayIndex`가 오름) | 잠자는 그림이나 해·달 전환. 바로 검게 한 뒤 밝힌다(서서히 어두워지면 바뀐 맵이 먼저 보임). 길이는 Inspector 값(`Hold Sec`, `Fade In Sec`) |
 
 - 빈 틀은 받은 것을 보여 주기만 한다. 세계·혈당을 멈추거나 바꾸지 않는다.
 - 씬 연결은 [dev-scene.md](dev-scene.md) 6.9·6.10절, 확인 방법은 9.12절이다.

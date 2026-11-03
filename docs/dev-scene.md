@@ -298,7 +298,7 @@ Unity 에디터 기본 배치:
 2. Rect Transform 왼쪽 위 네모(Anchor Presets)를 누르고 Alt(Mac은 Option)를 누른 채 오른쪽 아래 `stretch`·`stretch`를 고른다. Left, Top, Right, Bottom이 모두 `0`이 되어 화면 전체를 덮는다.
 3. `Image`의 Color를 검은색, 알파(A) `0`으로 한다. `Raycast Target` 체크를 끈다(꺼야 아래 버튼이 눌린다).
 4. Hierarchy에서 `SleepTransition`을 `Canvas` 자식 중 **맨 아래**로 끌어 둔다(다른 UI 위에 그려진다).
-5. `Add Component` → `SleepTransitionView`. `Fade` 칸에 `SleepTransition` 자신(같은 오브젝트의 Image)을 끌어다 놓는다. `Fade Out Sec` `0.4`, `Hold Sec` `0.2`, `Fade In Sec` `0.6`은 기본값 그대로 둔다.
+5. `Add Component` → `SleepTransitionView`. `Fade` 칸에 `SleepTransition` 자신(같은 오브젝트의 Image)을 끌어다 놓는다. `Hold Sec` `0.2`, `Fade In Sec` `0.6`은 기본값 그대로 둔다.
 
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
@@ -538,7 +538,7 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 2형 화면에 1형 모습(화면 흔들림, 측정기)이 보이면 `Bootstrapper`의 `Build Config Type2` 연결과 고른 유형을 확인한다. 최고 점수는 1형 `best-score.json`, 2형 `best-score.type2.json`으로 따로 저장된다.
 
 ### 9.12 시나리오 J: 2구간 하루 흐름
-1형·2형 각각 한 번씩 한다. 개발 설정(실제 수치 아님) 기준: 1구간 300m, 운동장·놀이터·나들이 200m씩, 집 80m. 장애물은 피하고 대처가 나오면 정답으로 넘긴다.
+1형·2형 각각 한 번씩 한다. 개발 설정(실제 수치 아님) 기준: 1구간 300m, 운동장·놀이터·나들이 200m씩, 집 140m. 장애물은 피하고 대처가 나오면 정답으로 넘긴다.
 
 | 순서 | 할 일 | 결과 |
 | --- | --- | --- |
@@ -547,7 +547,7 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | 3 | 200m마다 | 놀이터(초록) → 나들이(파랑) → 집(보라) 색으로 바뀐다 |
 | 4 | 1형 나들이 | 간식이 3~4초 간격으로 자주 나온다(개발 설정의 덮어쓰기 값) |
 | 5 | 집 | 집에 들어가는 순간 앞의 장애물·간식·음식·쉬는 곳이 사라지고, 집에서는 새로 나오지 않는다 |
-| 6 | 집 끝(80m) | 화면이 약 1초 동안 어두워졌다 밝아지고 바닥이 운동장 색으로 돌아간다. 암전 중에도 캐릭터는 계속 달린다. 바로 앞에 장애물이 갑자기 생기지 않는다 |
+| 6 | 집 끝(140m) | 화면이 바로 검어졌다가 약 1초 안에 밝아지고, 밝아질 때 바닥은 이미 운동장 색이다(바뀌는 순간이 보이지 않는다). 암전 중에도 캐릭터는 계속 달린다. 바로 앞에 장애물이 갑자기 생기지 않는다 |
 | 7 | 계속 달린다 | 하루가 끝없이 되풀이된다. 속도는 하루가 넘어가도 처음으로 돌아가지 않는다 |
 | 8 | 결과 화면 → `다시 하기` | 바닥이 회색(1구간)으로 돌아가고 암전이 남아 있지 않다 |
 
