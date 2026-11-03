@@ -71,8 +71,8 @@
 | 팀원2(월드) | 트랙 음식 모델 7종: 물, 주스, 탄산음료, 사과, 치킨, 피자, 햄버거 | [type-select.md](type-select.md) 4.2절 | 시작 가능 |
 | 팀원2(월드) | 음식 7종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 시작 가능 |
 | 팀원2(월드) | `TrackItemLook` 채우기: 장애물·음식 id·쉬는 곳마다 프리팹 연결 | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
-| 팀원2(월드) | `SceneLook` 채우기: 장면별 맵 배경(운동장, 놀이터, 나들이, 집), 때별 조명·하늘 | `Assets/_Project/Scripts/Presentation/World/SceneLook.cs`, [section2.md](section2.md) 5절 | 대기(빈 틀 push) |
-| 팀원2(월드) | `TrackItemLook` 장면별 장애물 모양(운동장 축구공, 놀이터 미끄럼틀 등) | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [section2.md](section2.md) 5절 | 대기(빈 틀 push) |
+| 팀원2(월드) | `SceneLook` 채우기: 장면별 맵 배경(운동장, 놀이터, 나들이, 집), 때별 조명·하늘 | `Assets/_Project/Scripts/Presentation/World/SceneLook.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
+| 팀원2(월드) | `TrackItemLook` 장면별 장애물 모양(운동장 축구공, 놀이터 미끄럼틀 등) | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
 | 팀원3(화면) | UI 디자인 시안(타이틀, 유형 선택, 설정, 혈당바, 측정기 버튼, 점수, 선택 패널, 카운트다운, 결과 화면) | | 시작 가능 |
 | 팀원3(화면) | 타이틀·유형 선택·설정 UI: 시안을 바탕으로 `Canvas` 아래 화면 오브젝트와 버튼 그림 만들기. 씬 연결 방법은 `dev-scene.md` 6.6절 | [dev-scene.md](dev-scene.md) 6.6절 | 시작 가능 |
 | 팀원3(화면) | 한글 글꼴 후보(무료 상업 이용 가능한 라이선스) | | 시작 가능 |
@@ -80,7 +80,7 @@
 | 팀원3(화면) | `TitleScreenView`, `TypeSelectView`, `SettingsView` 채우기: 화면 배치, 버튼 그림·소리 | `Assets/_Project/Scripts/Presentation/Screen/TitleScreenView.cs`, `TypeSelectView.cs`, `SettingsView.cs`, [type-select.md](type-select.md) 2·11절 | 시작 가능 |
 | 팀원3(화면) | notice 그림: 갈증 말풍선, 화장실 아이콘(고혈당). 지금 글자(`목말라요`)는 개발용이며 출처 확인 결과에 따라 바뀔 수 있음. 저혈당 신호 그림은 출처 확인 뒤 | [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
-| 팀원3(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 대기(빈 틀 push) |
+| 팀원3(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
 
 ## 3. 완료한 작업
 
