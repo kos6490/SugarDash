@@ -61,7 +61,7 @@ namespace SugarDash.Bootstrap
 
             _bus = new DomainEventBus();
             string logDirectory = Path.Combine(Application.persistentDataPath, "logs");
-            var log = new LogRepository(logDirectory, _config.ConfigVersion);
+            var log = new LogRepository(logDirectory);
             _subscriptions.Add(log.Subscribe(_bus));
 
             _run = new RunController(_config.Runner, _config.Sections, CreateSession, log, _bus);
@@ -134,7 +134,7 @@ namespace SugarDash.Bootstrap
                 new SystemRandomSource(Environment.TickCount), _bus);
             var fsm = new HypoEventFsm(_config, model, director, _bus, () => _run.DistanceM);
             var scoring = new ScoringService(_config.Score);
-            return new RunSession(model, director, fsm, scoring, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+            return new RunSession(_config, model, director, fsm, scoring, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                 _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper), scoring.Subscribe(_bus));
         }
 

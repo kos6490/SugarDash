@@ -15,7 +15,7 @@
 | 필드 | 값 |
 | --- | --- |
 | `schemaVersion` | 레코드 형식 버전(`LogRepository.SchemaVersion`). 형식을 바꾸면 올린다. 무한 주행 변경(아래 3절의 새 레코드)에서 2로 올린다 |
-| `configVersion` | 주행에 쓴 설정의 `configVersion` |
+| `configVersion` | 주행에 쓴 설정의 `configVersion`. 주행 시작(`BeginRun`)에서 받으므로 주행마다 다를 수 있다 |
 | `runId` | 파일 이름과 같다 |
 | `seq` | 주행 안에서 1부터 1씩 늘어나는 줄 번호 |
 | `type` | 레코드 종류(아래 표) |
@@ -28,7 +28,7 @@
 
 | `type` | 고유 필드 |
 | --- | --- |
-| `RunStarted` | `atUtc` |
+| `RunStarted` | `atUtc`, `trackType`(`type1`, `type2`. 없거나 모르는 값이면 `type1`으로 읽는다) |
 | `RunEnded` | `atUtc` |
 | `HypoEventTriggered` | `isRecurrence`, `actual` |
 | `HyperEventTriggered` | `actual` |
@@ -45,12 +45,17 @@
 | `RunEliminated` | `step`, `errorCode`(탈락으로 이어진 오류. 대처 중 시간 초과에서 혈당으로 탈락하면 그 단계와 시간 초과 오류, 주행 중 장애물·혈당 탈락이면 둘 다 없음), `cause`, `distanceM` |
 | `GraceStarted`, `GraceEnded` | - |
 | `TrackSnackEaten` | `snackId`, `servings` |
+| `NoticeStarted` | `eventId`, `kind`(`high`, `low`), `actual`. 2형 notice 신호 시작. 이어지는 tell 이벤트와 `eventId`가 같다 |
+| `LowEventTriggered` | `actual`. 2형 저혈당 쪽 tell 발동 |
+| `LowResolved` | `allCorrect` |
+| `FoodEaten` | `foodId`, `actual`. 2형 트랙 음식. `eventId` 없음 |
+| `RestStarted`, `RestEnded` | `actual`. 2형 쉬는 구간. `eventId` 없음 |
 | `SectionEntered` | `section`(`signal`, `condition`, `complex`), `distanceM`. 주행 시작 시 첫 구간도 기록 |
 | `GlucoseRangeEntered`, `GlucoseRangeExited` | `actual`. 적정 범위(`normalRangeMin` 이상 `hyperThreshold` 미만) 들어감·나감. 점수 재계산용. 주행 시작 때 기록 순서는 `RunStarted` → `SectionEntered` → `GlucoseRangeEntered`(시작 시 범위 안일 때만) |
 
 - `atUtc`: `yyyy-MM-ddTHH:mm:ss.fffZ`
-- `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계), `hyper_notify`(고혈당 알리기, `docs/hyper-event.md`)
-- `errorCode`: CLAUDE.md 2절의 코드 그대로(`S_MISSED`, `RS_SLOW`, ..., `HELP_INSTEAD`, `HY_KEEP_RUNNING`, `HY_TIMEOUT`)
+- `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계), `hyper_notify`(고혈당 알리기, `docs/hyper-event.md`), `low_notify`(2형 저혈당 쪽 tell)
+- `errorCode`: CLAUDE.md 2절의 코드 그대로(`S_MISSED`, `RS_SLOW`, ..., `HELP_INSTEAD`, `HY_KEEP_RUNNING`, `HY_TIMEOUT`, 2형 `HY_JUICE`, `LO_KEEP_RUNNING`, `LO_TIMEOUT`)
 - `cause`: `declined`(알리기 대기에서 "다시 달리기"), `prompt_timeout`(알리기 제한 시간 초과), `obstacle_hit`(장애물에 부딪힘), `glucose_low`·`glucose_high`(실제 혈당이 안전 범위를 벗어남)
 - `RunCompleted`는 없앴다(한 판은 탈락으로만 끝난다).
 - 점수는 저장하지 않는다. `StepAnswered`의 선택, `GlucoseRangeEntered/Exited`, `RecheckFastForward`, `RunEliminated.distanceM`으로 ScoringService가 다시 계산한다.

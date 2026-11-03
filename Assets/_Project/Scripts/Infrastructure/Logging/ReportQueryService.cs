@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using SugarDash.Domain.Config;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Ports;
@@ -52,6 +53,7 @@ namespace SugarDash.Infrastructure.Logging
             DateTime? startedAt = null;
             DateTime? endedAt = null;
             int skipped = 0;
+            TrackType trackType = TrackType.Type1;
 
             foreach (string line in File.ReadAllLines(path))
             {
@@ -81,6 +83,7 @@ namespace SugarDash.Infrastructure.Logging
                     {
                         case "RunStarted":
                             startedAt = ParseTime(record.AtUtc);
+                            trackType = LogCodes.ParseTrackType(record.TrackType);
                             break;
                         case "RunEnded":
                             endedAt = ParseTime(record.AtUtc);
@@ -98,7 +101,7 @@ namespace SugarDash.Infrastructure.Logging
                 }
             }
 
-            return new RunRecord(runId, configVersion, startedAt, endedAt, events, skipped);
+            return new RunRecord(runId, configVersion, startedAt, endedAt, events, skipped, trackType);
         }
 
         /// <summary>모르는 type이면 null. 필요한 필드가 비어 있으면 FormatException.</summary>
@@ -154,6 +157,20 @@ namespace SugarDash.Infrastructure.Logging
                     return new GraceEnded(Req(r.EventId), Req(r.SimT), Req(r.T));
                 case "TrackSnackEaten":
                     return new TrackSnackEaten(r.SnackId, Req(r.Servings), Req(r.SimT), Req(r.T));
+                case "NoticeStarted":
+                    return new NoticeStarted(Req(r.EventId), LogCodes.ParseNoticeKind(r.Kind), Req(r.SimT),
+                        Req(r.T), Req(r.Actual));
+                case "LowEventTriggered":
+                    return new LowEventTriggered(Req(r.EventId), Req(r.SimT), Req(r.T), Req(r.Actual));
+                case "LowResolved":
+                    return new LowResolved(Req(r.EventId), Req(r.AllCorrect), Req(r.SimT), Req(r.T));
+                case "FoodEaten":
+                    return new FoodEaten(r.FoodId ?? throw new FormatException("foodId가 비었다"), Req(r.Actual),
+                        Req(r.SimT), Req(r.T));
+                case "RestStarted":
+                    return new RestStarted(Req(r.Actual), Req(r.SimT), Req(r.T));
+                case "RestEnded":
+                    return new RestEnded(Req(r.Actual), Req(r.SimT), Req(r.T));
                 default:
                     return null;
             }

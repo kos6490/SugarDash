@@ -49,5 +49,11 @@ namespace SugarDash.Infrastructure.Logging.Dto
         public double? DistanceM { get; set; }
 
         public string Section { get; set; }
+
+        /// <summary>RunStarted 전용. "type1" 또는 "type2".</summary>
+        public string TrackType { get; set; }
+        /// <summary>NoticeStarted 전용. "high" 또는 "low".</summary>
+        public string Kind { get; set; }
+        public string FoodId { get; set; }
     }
 }

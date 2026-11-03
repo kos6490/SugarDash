@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using SugarDash.Domain.Config;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Ports;
 using SugarDash.Infrastructure.Logging.Dto;
@@ -22,24 +23,20 @@ namespace SugarDash.Infrastructure.Logging
         private static readonly Encoding Utf8NoBom = new UTF8Encoding(false);
 
         private readonly string _directory;
-        private readonly string _configVersion;
         private readonly Func<DateTime> _utcNow;
 
+        private string _configVersion;
         private string _runId;
         private string _path;
         private int _seq;
 
         /// <param name="directory">기록 폴더. Bootstrap이 <c>Application.persistentDataPath</c> 아래 경로를 넘긴다.</param>
-        /// <param name="configVersion">불러온 설정의 버전.</param>
         /// <param name="utcNow">주행 시작·종료 시각과 runId에 쓰는 UTC 시계. 생략하면 시스템 시계.</param>
-        public LogRepository(string directory, string configVersion, Func<DateTime> utcNow = null)
+        public LogRepository(string directory, Func<DateTime> utcNow = null)
         {
             if (string.IsNullOrEmpty(directory)) throw new ArgumentException("기록 폴더가 비었다", nameof(directory));
-            if (string.IsNullOrEmpty(configVersion))
-                throw new ArgumentException("configVersion이 비었다", nameof(configVersion));
 
             _directory = directory;
-            _configVersion = configVersion;
             _utcNow = utcNow ?? (() => DateTime.UtcNow);
         }
 
@@ -127,6 +124,24 @@ namespace SugarDash.Infrastructure.Logging
                     r => r.Actual = e.Actual))),
                 bus.Subscribe<GraceStarted>(e => Append(Event("GraceStarted", e.EventId, e.SimT, e.T))),
                 bus.Subscribe<GraceEnded>(e => Append(Event("GraceEnded", e.EventId, e.SimT, e.T))),
+                bus.Subscribe<NoticeStarted>(e => Append(Event("NoticeStarted", e.EventId, e.SimT, e.T, r =>
+                {
+                    r.Kind = LogCodes.NoticeKind(e.Kind);
+                    r.Actual = e.Actual;
+                }))),
+                bus.Subscribe<LowEventTriggered>(e => Append(Event("LowEventTriggered", e.EventId, e.SimT, e.T,
+                    r => r.Actual = e.Actual))),
+                bus.Subscribe<LowResolved>(e => Append(Event("LowResolved", e.EventId, e.SimT, e.T,
+                    r => r.AllCorrect = e.AllCorrect))),
+                bus.Subscribe<FoodEaten>(e => Append(Event("FoodEaten", null, e.SimT, e.T, r =>
+                {
+                    r.FoodId = e.FoodId;
+                    r.Actual = e.Actual;
+                }))),
+                bus.Subscribe<RestStarted>(e => Append(Event("RestStarted", null, e.SimT, e.T,
+                    r => r.Actual = e.Actual))),
+                bus.Subscribe<RestEnded>(e => Append(Event("RestEnded", null, e.SimT, e.T,
+                    r => r.Actual = e.Actual))),
                 bus.Subscribe<TrackSnackEaten>(e => Append(Event("TrackSnackEaten", null, e.SimT, e.T, r =>
                 {
                     r.SnackId = e.SnackId;
@@ -135,9 +150,11 @@ namespace SugarDash.Infrastructure.Logging
             });
         }
 
-        public string BeginRun()
+        public string BeginRun(string configVersion, TrackType trackType)
         {
             if (_runId != null) throw new InvalidOperationException($"이미 열린 주행이 있다 ({_runId})");
+            if (string.IsNullOrEmpty(configVersion))
+                throw new ArgumentException("configVersion이 비었다", nameof(configVersion));
 
             DateTime now = _utcNow();
             Directory.CreateDirectory(_directory);
@@ -145,8 +162,9 @@ namespace SugarDash.Infrastructure.Logging
                      Guid.NewGuid().ToString("N").Substring(0, 8);
             _path = Path.Combine(_directory, _runId + ".jsonl");
             _seq = 0;
+            _configVersion = configVersion;
 
-            Append(new LogRecordDto { Type = "RunStarted", AtUtc = Iso(now) });
+            Append(new LogRecordDto { Type = "RunStarted", AtUtc = Iso(now), TrackType = LogCodes.TrackType(trackType) });
             return _runId;
         }
 
@@ -157,6 +175,7 @@ namespace SugarDash.Infrastructure.Logging
             Append(new LogRecordDto { Type = "RunEnded", AtUtc = Iso(_utcNow()) });
             _runId = null;
             _path = null;
+            _configVersion = null;
         }
 
         private static LogRecordDto Event(string type, int? eventId, double simT, double t,

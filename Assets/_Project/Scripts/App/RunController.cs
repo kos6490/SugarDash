@@ -90,7 +90,7 @@ namespace SugarDash.App
             if (State != RunState.Idle) throw new InvalidOperationException($"이미 주행 중이다 ({State})");
 
             _session = _sessionFactory() ?? throw new InvalidOperationException("세션 팩토리가 null을 반환했다");
-            CurrentRunId = _log.BeginRun();
+            CurrentRunId = _log.BeginRun(_session.Config.ConfigVersion, _session.Config.TrackType);
             _commands.Clear();
             WorldTime = 0;
             LastWorldDt = 0;

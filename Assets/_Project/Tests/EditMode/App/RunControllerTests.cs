@@ -26,7 +26,7 @@ namespace SugarDash.App.Tests
             public int Begun;
             public int Ended;
 
-            public string BeginRun()
+            public string BeginRun(string configVersion, SugarDash.Domain.Config.TrackType trackType)
             {
                 Begun++;
                 return "run-" + Begun;
@@ -85,7 +85,7 @@ namespace SugarDash.App.Tests
                     var flag = new Flag(Bus.Subscribe<HypoEventTriggered>(fsm.Begin));
                     Sessions.Add(flag);
                     var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
-                    return new RunSession(model, director, fsm, scoring, flag, scoring.Subscribe(Bus),
+                    return new RunSession(config, model, director, fsm, scoring, flag, scoring.Subscribe(Bus),
                         Bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
                 }, Log, Bus);
             }

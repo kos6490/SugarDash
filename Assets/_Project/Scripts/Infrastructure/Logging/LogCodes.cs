@@ -1,4 +1,6 @@
 using System;
+using SugarDash.Domain.Config;
+using SugarDash.Domain.Director;
 using SugarDash.Domain.Hypo;
 
 namespace SugarDash.Infrastructure.Logging
@@ -62,6 +64,26 @@ namespace SugarDash.Infrastructure.Logging
             }
         }
 
+        public static string TrackType(TrackType type)
+        {
+            switch (type)
+            {
+                case Domain.Config.TrackType.Type1: return "type1";
+                case Domain.Config.TrackType.Type2: return "type2";
+                default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
+        }
+
+        public static string NoticeKind(NoticeKind kind)
+        {
+            switch (kind)
+            {
+                case Domain.Director.NoticeKind.High: return "high";
+                case Domain.Director.NoticeKind.Low: return "low";
+                default: throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+            }
+        }
+
         // 조회(ReportQueryService)용 역변환. 모르는 코드면 FormatException.
 
         public static HypoStep ParseStep(string code) => Parse(code, StepValues, Step, "step");
@@ -72,6 +94,14 @@ namespace SugarDash.Infrastructure.Logging
 
         public static EliminationCause ParseCause(string code) => Parse(code, CauseValues, Cause, "cause");
 
+        /// <summary>없거나 모르는 값이면 1형. 2형 이전 기록에는 trackType이 없다.</summary>
+        public static TrackType ParseTrackType(string code) =>
+            code == "type2" ? Domain.Config.TrackType.Type2 : Domain.Config.TrackType.Type1;
+
+        public static NoticeKind ParseNoticeKind(string code) =>
+            Parse(code, NoticeKindValues, NoticeKind, "kind");
+
+        private static readonly NoticeKind[] NoticeKindValues = (NoticeKind[])Enum.GetValues(typeof(NoticeKind));
         private static readonly HypoStep[] StepValues = (HypoStep[])Enum.GetValues(typeof(HypoStep));
         private static readonly HypoErrorCode[] ErrorValues = (HypoErrorCode[])Enum.GetValues(typeof(HypoErrorCode));
         private static readonly EliminationCause[] CauseValues =

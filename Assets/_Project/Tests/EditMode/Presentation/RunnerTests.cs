@@ -27,7 +27,7 @@ namespace SugarDash.Presentation.Tests
 
         private sealed class NullLog : ILogRepository
         {
-            public string BeginRun() => "run";
+            public string BeginRun(string configVersion, SugarDash.Domain.Config.TrackType trackType) => "run";
             public void EndRun() { }
         }
 
@@ -49,7 +49,7 @@ namespace SugarDash.Presentation.Tests
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
                 var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
                 var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
-                return new RunSession(model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                return new RunSession(config, model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                     scoring.Subscribe(bus));
             }, new NullLog(), bus);
             _run.StartRun();

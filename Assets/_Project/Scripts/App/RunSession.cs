@@ -1,4 +1,5 @@
 using System;
+using SugarDash.Domain.Config;
 using SugarDash.Domain.Director;
 using SugarDash.Domain.Glucose;
 using SugarDash.Domain.Hypo;
@@ -15,9 +16,10 @@ namespace SugarDash.App
     {
         private IDisposable[] _subscriptions;
 
-        public RunSession(GlucoseModel model, EventDirector director, HypoEventFsm fsm,
+        public RunSession(GameConfig config, GlucoseModel model, EventDirector director, HypoEventFsm fsm,
             ScoringService scoring, params IDisposable[] subscriptions)
         {
+            Config = config ?? throw new ArgumentNullException(nameof(config));
             Model = model ?? throw new ArgumentNullException(nameof(model));
             Director = director ?? throw new ArgumentNullException(nameof(director));
             Fsm = fsm ?? throw new ArgumentNullException(nameof(fsm));
@@ -27,6 +29,7 @@ namespace SugarDash.App
                 throw new ArgumentNullException(nameof(subscriptions), "null인 구독이 있다");
         }
 
+        public GameConfig Config { get; }
         public GlucoseModel Model { get; }
         public EventDirector Director { get; }
         public HypoEventFsm Fsm { get; }

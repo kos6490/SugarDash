@@ -25,7 +25,7 @@ namespace SugarDash.App.Tests
             public int Begun;
             public int Ended;
 
-            public string BeginRun() => "run-" + ++Begun;
+            public string BeginRun(string configVersion, SugarDash.Domain.Config.TrackType trackType) => "run-" + ++Begun;
 
             public void EndRun() => Ended++;
         }
@@ -100,7 +100,7 @@ namespace SugarDash.App.Tests
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
                 var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
                 var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
-                return new RunSession(model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                return new RunSession(config, model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                     scoring.Subscribe(bus));
             }, _log, bus);
             _best = new FakeBest();

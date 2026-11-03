@@ -1,3 +1,5 @@
+using SugarDash.Domain.Config;
+
 namespace SugarDash.Domain.Ports
 {
     /// <summary>
@@ -7,8 +9,10 @@ namespace SugarDash.Domain.Ports
     public interface ILogRepository
     {
         /// <summary>새 주행 기록을 연다. 이미 열린 주행이 있으면 예외를 던진다.</summary>
+        /// <param name="configVersion">이 주행이 쓰는 설정의 버전. 주행마다 다를 수 있어 여기서 받는다.</param>
+        /// <param name="trackType">이 주행의 유형(1형·2형).</param>
         /// <returns>주행 식별자(runId).</returns>
-        string BeginRun();
+        string BeginRun(string configVersion, TrackType trackType);
 
         /// <summary>열린 주행 기록을 닫는다. 열린 주행이 없으면 아무것도 하지 않는다.</summary>
         void EndRun();

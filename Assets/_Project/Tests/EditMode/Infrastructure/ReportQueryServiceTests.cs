@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using SugarDash.Domain.Config;
+using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
 using SugarDash.Infrastructure.Logging;
@@ -25,7 +27,7 @@ namespace SugarDash.Infrastructure.Tests
             _dir = Path.Combine(Path.GetTempPath(), "SugarDashQueryTests-" + Guid.NewGuid().ToString("N"));
             _now = Start;
             _bus = new DomainEventBus();
-            _repo = new LogRepository(_dir, "cfg-test", () => _now);
+            _repo = new LogRepository(_dir, () => _now);
             _subscription = _repo.Subscribe(_bus);
             _query = new ReportQueryService(_dir);
         }
@@ -78,9 +80,52 @@ namespace SugarDash.Infrastructure.Tests
         }
 
         [Test]
+        public void Type2Records_RoundTrip()
+        {
+            string runId = _repo.BeginRun("v2", TrackType.Type2);
+            var published = new object[]
+            {
+                new NoticeStarted(1, NoticeKind.High, 10.5, 9.5, 250.5),
+                new HyperEventTriggered(1, 11, 10, 251),
+                new StepAnswered(1, HypoStep.HyperNotify, "juice", false, HypoErrorCode.HyJuice, false, 2, false, 12, 11),
+                new HyperResolved(1, false, 13, 12),
+                new NoticeStarted(2, NoticeKind.Low, 20, 19, 60.5),
+                new LowEventTriggered(2, 21, 20, 59.5),
+                new StepAnswered(2, HypoStep.LowNotify, null, false, HypoErrorCode.LoTimeout, false, 5, false, 22, 21),
+                new LowResolved(2, false, 23, 22),
+                new FoodEaten("water", 120.5, 24, 23),
+                new RestStarted(121.5, 25, 24),
+                new RestEnded(122.5, 26, 25),
+            };
+            foreach (var e in published) Publish(e);
+            _repo.EndRun();
+
+            var run = _query.LoadRun(runId);
+
+            Assert.That(run.SkippedLineCount, Is.EqualTo(0));
+            Assert.That(run.TrackType, Is.EqualTo(TrackType.Type2));
+            Assert.That(run.ConfigVersion, Is.EqualTo("v2"));
+            Assert.That(run.Events, Has.Count.EqualTo(published.Length));
+            for (int i = 0; i < published.Length; i++) AssertSameProperties(published[i], run.Events[i]);
+        }
+
+        [Test]
+        public void OldRunWithoutTrackType_ReadsAsType1()
+        {
+            Directory.CreateDirectory(_dir);
+            File.WriteAllText(Path.Combine(_dir, "old-run.jsonl"),
+                "{\"schemaVersion\":2,\"configVersion\":\"c\",\"runId\":\"old-run\",\"seq\":1,\"type\":\"RunStarted\",\"atUtc\":\"2026-10-29T09:00:00.000Z\"}\n" +
+                "{\"schemaVersion\":2,\"configVersion\":\"c\",\"runId\":\"old-run\",\"seq\":2,\"type\":\"RunStarted\",\"trackType\":\"weird\",\"atUtc\":\"2026-10-29T09:00:00.000Z\"}\n");
+
+            var run = _query.LoadRun("old-run");
+
+            Assert.That(run.TrackType, Is.EqualTo(TrackType.Type1));
+        }
+
+        [Test]
         public void LoadRun_RestoresEveryEventInOrder()
         {
-            string runId = _repo.BeginRun();
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
             var published = AllEvents();
             foreach (var e in published) Publish(e);
             _now = Start.AddMinutes(2);
@@ -100,7 +145,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void RoundTrip_NewRecordTypes()
         {
-            string runId = _repo.BeginRun();
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
             var published = new object[]
             {
                 new SectionEntered("signal", 12.5, 1, 1),
@@ -123,7 +168,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void SchemaVersion1Lines_AreSkipped()
         {
-            string runId = _repo.BeginRun();
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
             File.AppendAllText(Path.Combine(_dir, runId + ".jsonl"),
                 "{\"schemaVersion\":1,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":2,\"type\":\"SuddenDropStarted\",\"simT\":1,\"t\":1}\n");
 
@@ -136,7 +181,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void BrokenLastLine_IsSkipped()
         {
-            string runId = _repo.BeginRun();
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
             _bus.Publish(new SuddenDropStarted(1, 1));
             File.AppendAllText(Path.Combine(_dir, runId + ".jsonl"), "{\"schemaVersion\":2,\"ty");
 
@@ -150,7 +195,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void UnknownTypeOtherSchemaOrMissingField_AreSkipped()
         {
-            string runId = _repo.BeginRun();
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
             string path = Path.Combine(_dir, runId + ".jsonl");
             File.AppendAllText(path,
                 "{\"schemaVersion\":2,\"configVersion\":\"cfg-test\",\"runId\":\"x\",\"seq\":2,\"type\":\"Future\"}\n" +
@@ -170,10 +215,10 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(_query.ListRunIds(), Is.Empty, "기록 폴더가 없으면 빈 목록");
 
             _now = Start.AddHours(1);
-            string later = _repo.BeginRun();
+            string later = _repo.BeginRun("cfg-test", TrackType.Type1);
             _repo.EndRun();
             _now = Start;
-            string earlier = _repo.BeginRun();
+            string earlier = _repo.BeginRun("cfg-test", TrackType.Type1);
             _repo.EndRun();
 
             Assert.That(_query.ListRunIds(), Is.EqualTo(new[] { earlier, later }));

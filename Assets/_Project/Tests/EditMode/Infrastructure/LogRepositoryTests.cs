@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using SugarDash.Domain.Config;
+using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
 using SugarDash.Infrastructure.Logging;
@@ -25,7 +27,7 @@ namespace SugarDash.Infrastructure.Tests
             _dir = Path.Combine(Path.GetTempPath(), "SugarDashLogTests-" + Guid.NewGuid().ToString("N"));
             _now = Start;
             _bus = new DomainEventBus();
-            _repo = new LogRepository(_dir, "cfg-test", () => _now);
+            _repo = new LogRepository(_dir, () => _now);
             _subscription = _repo.Subscribe(_bus);
         }
 
@@ -44,7 +46,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void Writes_NewRecordTypes()
         {
-            _repo.BeginRun();
+            _repo.BeginRun("cfg-test", TrackType.Type1);
             _bus.Publish(new SectionEntered("signal", 12.5, 1, 1));
             _bus.Publish(new GlucoseRangeEntered(95.5, 3, 3));
             _bus.Publish(new GlucoseRangeExited(60.5, 4, 4));
@@ -76,9 +78,50 @@ namespace SugarDash.Infrastructure.Tests
         }
 
         [Test]
+        public void BeginRun_WritesTrackTypeAndConfigVersion()
+        {
+            _repo.BeginRun("v2", TrackType.Type2);
+            _bus.Publish(new SuddenDropStarted(1, 1));
+
+            var raw = RawLines();
+            Assert.That(raw[0], Does.Contain("\"type\":\"RunStarted\""));
+            Assert.That(raw[0], Does.Contain("\"trackType\":\"type2\""));
+            Assert.That(raw[0], Does.Contain("\"configVersion\":\"v2\""));
+            Assert.That(raw[1], Does.Contain("\"configVersion\":\"v2\""));
+            Assert.That(raw[1], Does.Not.Contain("trackType"));
+        }
+
+        [Test]
+        public void ConfigVersion_FollowsEachRun()
+        {
+            string first = _repo.BeginRun("v1", TrackType.Type1);
+            _repo.EndRun();
+            _repo.BeginRun("v2", TrackType.Type2);
+
+            Assert.That(Lines(Path.Combine(_dir, first + ".jsonl")).Last().ConfigVersion, Is.EqualTo("v1"));
+            Assert.That(Lines().Single().ConfigVersion, Is.EqualTo("v2"));
+        }
+
+        [Test]
+        public void Type2Records_WriteRawFields()
+        {
+            _repo.BeginRun("v2", TrackType.Type2);
+            _bus.Publish(new NoticeStarted(4, NoticeKind.Low, 10, 9, 70));
+            _bus.Publish(new FoodEaten("juice", 150, 11, 10));
+            _bus.Publish(new RestStarted(160, 12, 11));
+
+            var lines = Lines();
+            Assert.That(lines[1].Kind, Is.EqualTo("low"));
+            Assert.That(lines[1].EventId, Is.EqualTo(4));
+            Assert.That(lines[2].FoodId, Is.EqualTo("juice"));
+            Assert.That(RawLines()[2], Does.Not.Contain("eventId"));
+            Assert.That(lines[3].Type, Is.EqualTo("RestStarted"));
+        }
+
+        [Test]
         public void BeginRun_CreatesRunFileWithRunStarted()
         {
-            string runId = _repo.BeginRun();
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
 
             Assert.That(runId, Does.StartWith("20261027T093015Z-"));
             Assert.That(_repo.CurrentPath, Is.EqualTo(Path.Combine(_dir, runId + ".jsonl")));
@@ -95,7 +138,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void EveryRecord_CarriesVersionsAndIncreasingSeq()
         {
-            string runId = _repo.BeginRun();
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
             _bus.Publish(new HypoEventTriggered(1, true, 30, 26, 68));
             _bus.Publish(new MeterPressed(1, 68, false, false, 31, 27));
             _bus.Publish(new GaugeWarningRaised(32, 28, 79));
@@ -125,7 +168,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void StepAnswered_WritesCodesAndOmitsEmptyFields()
         {
-            _repo.BeginRun();
+            _repo.BeginRun("cfg-test", TrackType.Type1);
             _bus.Publish(new StepAnswered(1, HypoStep.Recognize, "meter", true, HypoErrorCode.None, false, 2.5, true,
                 30, 26));
             _bus.Publish(new StepAnswered(1, HypoStep.Respond, null, false, HypoErrorCode.RsTimeout, false, 5, false,
@@ -150,7 +193,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void HypoEventRecords_KeepRawFields()
         {
-            _repo.BeginRun();
+            _repo.BeginRun("cfg-test", TrackType.Type1);
             _bus.Publish(new GuardianPromptStarted(1, HypoStep.Dose, HypoErrorCode.DsOver, 40, 35));
             _bus.Publish(new GuardianNotified(1, HypoStep.Dose, 41, 36));
             _bus.Publish(new DoseApplied(1, "juice", 3, true, 41, 36));
@@ -193,7 +236,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void HyperEventRecords_KeepRawFieldsAndCodes()
         {
-            _repo.BeginRun();
+            _repo.BeginRun("cfg-test", TrackType.Type1);
             _bus.Publish(new HyperEventTriggered(2, 60, 50, 255));
             _bus.Publish(new StepAnswered(2, HypoStep.HyperNotify, null, false, HypoErrorCode.HyTimeout, false, 5, false,
                 61, 55));
@@ -215,7 +258,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void Append_KeepsExistingBytes()
         {
-            _repo.BeginRun();
+            _repo.BeginRun("cfg-test", TrackType.Type1);
             _bus.Publish(new GaugeWarningRaised(1, 1, 79));
             byte[] before = File.ReadAllBytes(_repo.CurrentPath);
 
@@ -230,10 +273,10 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void EachRun_GetsItsOwnFile()
         {
-            string first = _repo.BeginRun();
+            string first = _repo.BeginRun("cfg-test", TrackType.Type1);
             _repo.EndRun();
             _now = Start.AddMinutes(3);
-            string second = _repo.BeginRun();
+            string second = _repo.BeginRun("cfg-test", TrackType.Type1);
 
             Assert.That(second, Is.Not.EqualTo(first));
             Assert.That(Directory.GetFiles(_dir, "*.jsonl"), Has.Length.EqualTo(2));
@@ -244,9 +287,9 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void BeginRun_WhileOpen_Throws()
         {
-            _repo.BeginRun();
+            _repo.BeginRun("cfg-test", TrackType.Type1);
 
-            Assert.Throws<InvalidOperationException>(() => _repo.BeginRun());
+            Assert.Throws<InvalidOperationException>(() => _repo.BeginRun("cfg-test", TrackType.Type1));
         }
 
         [Test]
@@ -266,7 +309,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void AfterDispose_EventsAreNotRecorded()
         {
-            _repo.BeginRun();
+            _repo.BeginRun("cfg-test", TrackType.Type1);
             _subscription.Dispose();
 
             _bus.Publish(new SuddenDropStarted(1, 1));
@@ -277,7 +320,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void EmptyConfigVersion_IsRejected()
         {
-            Assert.Throws<ArgumentException>(() => new LogRepository(_dir, ""));
+            Assert.Throws<ArgumentException>(() => _repo.BeginRun("", TrackType.Type1));
         }
 
         [Test]
@@ -290,6 +333,10 @@ namespace SugarDash.Infrastructure.Tests
                 if (code == HypoErrorCode.None) Assert.That(LogCodes.Error(code), Is.Null);
                 else Assert.That(LogCodes.Error(code), Is.Not.Empty);
             }
+            foreach (TrackType type in Enum.GetValues(typeof(TrackType)))
+                Assert.That(LogCodes.ParseTrackType(LogCodes.TrackType(type)), Is.EqualTo(type));
+            foreach (NoticeKind kind in Enum.GetValues(typeof(NoticeKind)))
+                Assert.That(LogCodes.ParseNoticeKind(LogCodes.NoticeKind(kind)), Is.EqualTo(kind));
             foreach (EliminationCause cause in Enum.GetValues(typeof(EliminationCause)))
                 Assert.That(LogCodes.Cause(cause), Is.Not.Empty);
         }
