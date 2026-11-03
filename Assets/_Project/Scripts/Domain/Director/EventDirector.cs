@@ -51,6 +51,7 @@ namespace SugarDash.Domain.Director
         private bool _suppressed;
         private int _lastEventId;
         private bool _targetRangeEvaluated;
+        private double? _suddenDropChanceOverride;
 
         // 2형 판정 상태. type2가 null이면 쓰지 않는다.
         private LowState _lowState = LowState.Armed;
@@ -69,6 +70,9 @@ namespace SugarDash.Domain.Director
             _type2 = type2;
             IsGaugeWarningOn = type2 == null && IsDisplayedBelowWarning();
         }
+
+        /// <summary>장면 덮어쓰기. null이면 설정 값(suddenDrop.chancePerSec)으로 돌아간다.</summary>
+        public void SetSuddenDropChancePerSec(double? chancePerSec) => _suddenDropChanceOverride = chancePerSec;
 
         /// <summary>
         /// 2형에서 notice가 시작된 뒤 그 tell이 끝날 때(<see cref="NotifyHyperEventEnded"/>, <see cref="NotifyLowEventEnded"/>)까지 값이 있다.
@@ -244,7 +248,7 @@ namespace SugarDash.Domain.Director
                 _model.IsSuddenDropActive) return;
 
             // 1초당 확률을 simDt에 맞춰 환산해 프레임 길이와 무관하게 한다.
-            double p = 1 - Math.Pow(1 - _config.SuddenDrop.ChancePerSec, simDt);
+            double p = 1 - Math.Pow(1 - (_suddenDropChanceOverride ?? _config.SuddenDrop.ChancePerSec), simDt);
             if (p <= 0 || _random.NextDouble() >= p) return;
 
             _model.StartSuddenDrop();

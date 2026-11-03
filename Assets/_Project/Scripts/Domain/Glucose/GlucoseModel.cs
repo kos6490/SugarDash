@@ -19,6 +19,7 @@ namespace SugarDash.Domain.Glucose
         private readonly List<double> _breakpoints = new List<double>();
 
         private double _suddenDropEnd = double.NegativeInfinity;
+        private double? _runDecayOverride;
 
         public GlucoseModel(GlucoseConfig config)
         {
@@ -35,6 +36,9 @@ namespace SugarDash.Domain.Glucose
         /// <summary>decisionDt 누적. 단계 제한 시간과 판단 시간에 쓴다. 로그의 T.</summary>
         public double DecisionTime { get; private set; }
         public bool IsSuddenDropActive => SimTime < _suddenDropEnd;
+
+        /// <summary>장면 덮어쓰기. null이면 설정 값(glucose.runDecayPerSec)으로 돌아간다. 다음 Tick부터 적용한다.</summary>
+        public void SetRunDecayPerSec(double? perSec) => _runDecayOverride = perSec;
 
         /// <summary>
         /// 세 시계를 함께 진행한다(docs/superpowers/specs/2026-10-20-hypo-event-fsm-design.md 3절).
@@ -97,7 +101,7 @@ namespace SugarDash.Domain.Glucose
             _breakpoints.Sort();
 
             var levels = _config.Levels;
-            double decayPerSec = levels.BaseDecayPerSec + levels.RunDecayPerSec * activity;
+            double decayPerSec = levels.BaseDecayPerSec + (_runDecayOverride ?? levels.RunDecayPerSec) * activity;
             double segmentStart = from;
             foreach (double segmentEnd in _breakpoints)
             {

@@ -347,5 +347,19 @@ namespace SugarDash.Domain.Tests
             Assert.That(_exited[0].Actual, Is.EqualTo(250).Within(1e-9));
             Assert.That(_director.IsInTargetRange, Is.False);
         }
+
+        [Test]
+        public void SetSuddenDropChance_Zero_NeverStarts()
+        {
+            Setup(b => b.SuddenDropChancePerSec = 1, 0.5); // 확률 0이면 난수를 읽지 않는다
+
+            _director.SetSuddenDropChancePerSec(0);
+            Run(5);
+            Assert.That(_drops, Is.Empty);
+
+            _director.SetSuddenDropChancePerSec(null);
+            Run(1);
+            Assert.That(_drops, Has.Count.EqualTo(1));
+        }
     }
 }

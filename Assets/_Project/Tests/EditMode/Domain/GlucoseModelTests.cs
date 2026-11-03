@@ -190,5 +190,30 @@ namespace SugarDash.Domain.Tests
             model.StartSuddenDrop();
             Assert.Throws<InvalidOperationException>(() => model.StartSuddenDrop());
         }
+
+        [Test]
+        public void SetRunDecayPerSec_UsesOverride_ThenRestores()
+        {
+            var model = Model(b => { b.BaseDecayPerSec = 0; b.RunDecayPerSec = 1; });
+
+            model.SetRunDecayPerSec(3);
+            model.Tick(1, 1, 1, 1);
+            Assert.That(model.Actual, Is.EqualTo(117).Within(Eps));
+
+            model.SetRunDecayPerSec(null);
+            model.Tick(1, 1, 1, 1);
+            Assert.That(model.Actual, Is.EqualTo(116).Within(Eps));
+        }
+
+        [Test]
+        public void SetRunDecayPerSec_DoesNotAffectBaseDecay()
+        {
+            var model = Model(b => { b.BaseDecayPerSec = 0.5; b.RunDecayPerSec = 1; });
+
+            model.SetRunDecayPerSec(0);
+            model.Tick(2, 2, 2, 1);
+
+            Assert.That(model.Actual, Is.EqualTo(119).Within(Eps));
+        }
     }
 }
