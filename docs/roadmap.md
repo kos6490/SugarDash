@@ -58,24 +58,24 @@
 
 | 담당 | 할 일 | 빈 틀·자료 | 상태 |
 | --- | --- | --- | --- |
-| 구조 | 2형 설정·로더, notice·tell 판정, 점수·결과 요약, 기록, 유형별 주행(음식·쉬기), 유형 저장, 화면 흐름(계획 작업 1~9) | | 진행 중(구조) |
-| 구조 | 기존 화면의 2형 대응, 빈 틀 6개 만들기, 조립·개발 씬·문서, 작업 브랜치 push(계획 작업 10~12). 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.6~6.8, 9.10~9.11절 | | 진행 중(구조) |
-| 구조 | 팀원이 push한 스크립트 확인, 작업 브랜치를 `dev`에 머지 | | 대기(빈 틀 push) |
+| 구조 | 2형 설정·로더, notice·tell 판정, 점수·결과 요약, 기록, 유형별 주행(음식·쉬기), 유형 저장, 화면 흐름(계획 작업 1~9) | | 완료 |
+| 구조 | 기존 화면의 2형 대응, 빈 틀 6개 만들기, 조립·개발 씬·문서, 작업 브랜치 push(계획 작업 10~12). 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.6~6.8, 9.10~9.11절 | | 완료 |
+| 구조 | 팀원이 push한 스크립트 확인, 작업 브랜치를 `dev`에 머지 | | 대기(빈 틀 채우기) |
 | 팀원1(캐릭터) | 주인공 모델, 기본 애니메이션(달리기, 점프, 슬라이드, 옆 이동) | | 시작 가능 |
 | 팀원1(캐릭터) | 2형 상태 애니메이션: 지친 표정·느린 걸음·처진 자세(고혈당·저혈당), 앉아 쉬기. 체형은 바꾸지 않음. 연출 방향은 출처 확인 뒤 고칠 수 있음 | [type-tracks.md](type-tracks.md) 5절 | 시작 가능 |
-| 팀원1(캐릭터) | `CharacterStateView` 채우기: 보통·쉬는 중·지침(높음)·지침(낮음) 상태를 애니메이터에 연결 | `Assets/_Project/Scripts/Presentation/Character/CharacterStateView.cs`, [type-select.md](type-select.md) 11절 | 대기(빈 틀 push) |
+| 팀원1(캐릭터) | `CharacterStateView` 채우기: 보통·쉬는 중·지침(높음)·지침(낮음) 상태를 애니메이터에 연결 | `Assets/_Project/Scripts/Presentation/Character/CharacterStateView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원2(월드) | 1구간 트랙·배경, 장애물 3종(점프로 넘는 낮은 것, 슬라이드로 지나가는 높은 것, 옆으로 피하는 레인 막이) | | 시작 가능 |
 | 팀원2(월드) | 쉬는 곳 오브젝트(벤치, 게임기) | | 시작 가능 |
 | 팀원2(월드) | 트랙 음식 모델 7종: 물, 주스, 탄산음료, 사과, 치킨, 피자, 햄버거 | [type-select.md](type-select.md) 4.2절 | 시작 가능 |
 | 팀원2(월드) | 음식 7종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 시작 가능 |
-| 팀원2(월드) | `TrackItemLook` 채우기: 장애물·음식 id·쉬는 곳마다 프리팹 연결 | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [type-select.md](type-select.md) 11절 | 대기(빈 틀 push) |
+| 팀원2(월드) | `TrackItemLook` 채우기: 장애물·음식 id·쉬는 곳마다 프리팹 연결 | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | UI 디자인 시안(타이틀, 유형 선택, 설정, 혈당바, 측정기 버튼, 점수, 선택 패널, 카운트다운, 결과 화면) | | 시작 가능 |
 | 팀원3(화면) | 타이틀·유형 선택·설정 UI: 시안을 바탕으로 `Canvas` 아래 화면 오브젝트와 버튼 그림 만들기. 씬 연결 방법은 `dev-scene.md` 6.6절 | [dev-scene.md](dev-scene.md) 6.6절 | 시작 가능 |
 | 팀원3(화면) | 한글 글꼴 후보(무료 상업 이용 가능한 라이선스) | | 시작 가능 |
 | 팀원3(화면) | 화면 문구 초안: 유형 선택 안내, 타이틀, 2형 tell, 2형 결과 요약. `docs/handoff/`에 정리 | [type-select.md](type-select.md) 2.1·4.4·9.2절 | 시작 가능 |
-| 팀원3(화면) | `TitleScreenView`, `TypeSelectView`, `SettingsView` 채우기: 화면 배치, 버튼 그림·소리 | `Assets/_Project/Scripts/Presentation/Screen/TitleScreenView.cs`, `TypeSelectView.cs`, `SettingsView.cs`, [type-select.md](type-select.md) 2·11절 | 대기(빈 틀 push) |
+| 팀원3(화면) | `TitleScreenView`, `TypeSelectView`, `SettingsView` 채우기: 화면 배치, 버튼 그림·소리 | `Assets/_Project/Scripts/Presentation/Screen/TitleScreenView.cs`, `TypeSelectView.cs`, `SettingsView.cs`, [type-select.md](type-select.md) 2·11절 | 시작 가능 |
 | 팀원3(화면) | notice 그림: 갈증 말풍선, 화장실 아이콘(고혈당). 지금 글자(`목말라요`)는 개발용이며 출처 확인 결과에 따라 바뀔 수 있음. 저혈당 신호 그림은 출처 확인 뒤 | [type-select.md](type-select.md) 11절 | 시작 가능 |
-| 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 대기(빈 틀 push) |
+| 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 
 ## 3. 완료한 작업
 
