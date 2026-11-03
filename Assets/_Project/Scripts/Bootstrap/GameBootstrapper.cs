@@ -72,6 +72,19 @@ namespace SugarDash.Bootstrap
                 { TrackType.Type2, _config2 },
             };
 
+            if (_config.TrackType != TrackType.Type1)
+            {
+                Debug.LogError("buildConfig(1형 칸)의 trackType이 Type1이 아니다.");
+                enabled = false;
+                return;
+            }
+            if (_config2.TrackType != TrackType.Type2)
+            {
+                Debug.LogError("buildConfigType2(2형 칸)의 trackType이 Type2가 아니다.");
+                enabled = false;
+                return;
+            }
+
             _bus = new DomainEventBus();
             string logDirectory = Path.Combine(Application.persistentDataPath, "logs");
             var log = new LogRepository(logDirectory);
@@ -94,6 +107,7 @@ namespace SugarDash.Bootstrap
             _flow = new GameFlowController(_run, new ReportQueryService(logDirectory),
                 new SettingsRepository(Path.Combine(Application.persistentDataPath, "settings.json")), profiles);
 
+            // HUD 막대 범위는 1형 levels를 쓴다. 2형의 min/max가 다르면 주행마다 다시 묶어야 한다.
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks, Environment.TickCount));
             _subscriptions.Add(resultScreen.Bind(_flow));
@@ -101,6 +115,8 @@ namespace SugarDash.Bootstrap
                 _subscriptions.Add(symptomEffect.Bind(_run, _config.Symptom.ShakeStartGlucose, _config.Elimination.GlucoseLow));
 
             // 빈 틀 화면은 씬에 연결된 것만 묶는다. 해제는 구독 목록에서 한다.
+            if (titleScreen == null) Debug.LogWarning("titleScreen이 비어 있다. 화면이 보이지 않는다. docs/dev-scene.md 6.6절을 본다.");
+            if (typeSelect == null) Debug.LogWarning("typeSelect가 비어 있다. 유형 선택 화면이 보이지 않는다. docs/dev-scene.md 6.6절을 본다.");
             if (titleScreen != null) _subscriptions.Add(titleScreen.Bind(_flow));
             if (typeSelect != null) _subscriptions.Add(typeSelect.Bind(_flow));
             if (settings != null) _subscriptions.Add(settings.Bind(_flow));
@@ -205,6 +221,12 @@ namespace SugarDash.Bootstrap
             {
                 Debug.LogError(label + " 설정을 불러오지 못했다. 빈 값: " + string.Join(", ", e.MissingPaths) +
                                " / 위반: " + string.Join(" | ", e.Violations));
+                config = null;
+                return false;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(label + " 설정을 읽지 못했다: " + e.GetType().Name + " " + e.Message);
                 config = null;
                 return false;
             }

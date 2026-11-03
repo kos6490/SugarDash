@@ -31,12 +31,14 @@ namespace SugarDash.Presentation
         public IDisposable Bind(GameFlowController flow)
         {
             _flow = flow ?? throw new ArgumentNullException(nameof(flow));
-            startButton.onClick.AddListener(OnStart);
-            settingsButton.onClick.AddListener(OnSettings);
+            if (startButton != null) startButton.onClick.AddListener(OnStart);
+            else Debug.LogWarning("TitleScreenView: startButton이 비어 있다. 씬에서 연결해야 한다.");
+            if (settingsButton != null) settingsButton.onClick.AddListener(OnSettings);
+            else Debug.LogWarning("TitleScreenView: settingsButton이 비어 있다. 씬에서 연결해야 한다.");
             return new Unbinder(() =>
             {
-                startButton.onClick.RemoveListener(OnStart);
-                settingsButton.onClick.RemoveListener(OnSettings);
+                if (startButton != null) startButton.onClick.RemoveListener(OnStart);
+                if (settingsButton != null) settingsButton.onClick.RemoveListener(OnSettings);
                 _flow = null;
             });
         }

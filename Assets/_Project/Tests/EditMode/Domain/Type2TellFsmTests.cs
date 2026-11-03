@@ -197,6 +197,12 @@ namespace SugarDash.Domain.Tests
             promptTimeout.Frames(5);
             Assert.That(promptTimeout.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
             Assert.That(promptTimeout.All<DoseApplied>(), Is.Empty);
+
+            var belowLow = LowTell(false);
+            belowLow.Frames(5);
+            Assert.That(belowLow.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
+            Assert.That(belowLow.All<RunEliminated>(), Has.Count.EqualTo(1));
+            Assert.That(belowLow.All<DoseApplied>(), Is.Empty);
         }
 
         [Test]

@@ -26,6 +26,7 @@ namespace SugarDash.Presentation
                 case "over": return "많이 먹었어요";
                 case "recheck": return "다시 쟀어요";
                 case "run_again": return "다시 달리기를 골랐어요";
+                case "juice": return "주스를 마셨어요";
                 case "help": return Notified;
                 default: return $"{e.ChoiceId}을(를) 골랐어요"; // 간식 id
             }

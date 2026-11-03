@@ -27,12 +27,14 @@ namespace SugarDash.Presentation
             _flow = flow ?? throw new ArgumentNullException(nameof(flow));
             if (titleText != null) titleText.text = "어떤 당뇨인가요?";
             if (guideText != null) guideText.text = "보호자와 함께 골라 주세요";
-            type1Button.onClick.AddListener(OnType1);
-            type2Button.onClick.AddListener(OnType2);
+            if (type1Button != null) type1Button.onClick.AddListener(OnType1);
+            else Debug.LogWarning("TypeSelectView: type1Button이 비어 있다. 씬에서 연결해야 한다.");
+            if (type2Button != null) type2Button.onClick.AddListener(OnType2);
+            else Debug.LogWarning("TypeSelectView: type2Button이 비어 있다. 씬에서 연결해야 한다.");
             return new Unbinder(() =>
             {
-                type1Button.onClick.RemoveListener(OnType1);
-                type2Button.onClick.RemoveListener(OnType2);
+                if (type1Button != null) type1Button.onClick.RemoveListener(OnType1);
+                if (type2Button != null) type2Button.onClick.RemoveListener(OnType2);
                 _flow = null;
             });
         }

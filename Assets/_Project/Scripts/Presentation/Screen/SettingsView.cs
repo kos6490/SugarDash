@@ -34,14 +34,17 @@ namespace SugarDash.Presentation
         {
             _flow = flow ?? throw new ArgumentNullException(nameof(flow));
             if (titleText != null) titleText.text = "설정";
-            type1Button.onClick.AddListener(OnType1);
-            type2Button.onClick.AddListener(OnType2);
-            backButton.onClick.AddListener(OnBack);
+            if (type1Button != null) type1Button.onClick.AddListener(OnType1);
+            else Debug.LogWarning("SettingsView: type1Button이 비어 있다. 씬에서 연결해야 한다.");
+            if (type2Button != null) type2Button.onClick.AddListener(OnType2);
+            else Debug.LogWarning("SettingsView: type2Button이 비어 있다. 씬에서 연결해야 한다.");
+            if (backButton != null) backButton.onClick.AddListener(OnBack);
+            else Debug.LogWarning("SettingsView: backButton이 비어 있다. 씬에서 연결해야 한다.");
             return new Unbinder(() =>
             {
-                type1Button.onClick.RemoveListener(OnType1);
-                type2Button.onClick.RemoveListener(OnType2);
-                backButton.onClick.RemoveListener(OnBack);
+                if (type1Button != null) type1Button.onClick.RemoveListener(OnType1);
+                if (type2Button != null) type2Button.onClick.RemoveListener(OnType2);
+                if (backButton != null) backButton.onClick.RemoveListener(OnBack);
                 _flow = null;
             });
         }

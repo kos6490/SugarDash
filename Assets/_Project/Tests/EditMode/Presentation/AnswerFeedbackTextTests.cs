@@ -18,7 +18,7 @@ namespace SugarDash.Presentation.Tests
         [TestCase("recheck", "다시 쟀어요")]
         [TestCase("run_again", "다시 달리기를 골랐어요")]
         [TestCase("help", "어른에게 알렸어요")]
-        [TestCase("juice", "juice을(를) 골랐어요")]
+        [TestCase("juice", "주스를 마셨어요")]
         [TestCase("cracker", "cracker을(를) 골랐어요")]
         public void For_SaysWhatWasChosen(string choiceId, string expected)
         {
