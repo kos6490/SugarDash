@@ -30,5 +30,11 @@ namespace SugarDash.Domain.Hypo
         HyKeepRunning,
         /// <summary>HY_TIMEOUT: 고혈당 알리기 제한 시간 초과.</summary>
         HyTimeout,
+        /// <summary>HY_JUICE: 2형 고혈당 tell에서 주스 마시기를 골랐다.</summary>
+        HyJuice,
+        /// <summary>LO_KEEP_RUNNING: 2형 저혈당 tell에서 알리지 않고 계속 달리기를 골랐다.</summary>
+        LoKeepRunning,
+        /// <summary>LO_TIMEOUT: 2형 저혈당 tell 제한 시간 초과.</summary>
+        LoTimeout,
     }
 }

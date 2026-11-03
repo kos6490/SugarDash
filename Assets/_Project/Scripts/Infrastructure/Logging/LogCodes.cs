@@ -18,6 +18,7 @@ namespace SugarDash.Infrastructure.Logging
                 case HypoStep.Remeasure: return "remeasure";
                 case HypoStep.Notify: return "notify";
                 case HypoStep.HyperNotify: return "hyper_notify";
+                case HypoStep.LowNotify: return "low_notify";
                 default: throw new ArgumentOutOfRangeException(nameof(step), step, null);
             }
         }
@@ -41,6 +42,9 @@ namespace SugarDash.Infrastructure.Logging
                 case HypoErrorCode.HelpInstead: return "HELP_INSTEAD";
                 case HypoErrorCode.HyKeepRunning: return "HY_KEEP_RUNNING";
                 case HypoErrorCode.HyTimeout: return "HY_TIMEOUT";
+                case HypoErrorCode.HyJuice: return "HY_JUICE";
+                case HypoErrorCode.LoKeepRunning: return "LO_KEEP_RUNNING";
+                case HypoErrorCode.LoTimeout: return "LO_TIMEOUT";
                 default: throw new ArgumentOutOfRangeException(nameof(code), code, null);
             }
         }

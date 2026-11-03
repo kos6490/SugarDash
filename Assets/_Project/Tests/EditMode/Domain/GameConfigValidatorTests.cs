@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SugarDash.Domain.Config;
 using SugarDash.Domain.Hypo;
 using NUnit.Framework;
@@ -12,6 +13,75 @@ namespace SugarDash.Domain.Tests
         public void ValidConfig_HasNoErrors()
         {
             Assert.That(GameConfigValidator.Validate(new ConfigBuilder().Build()), Is.Empty);
+        }
+
+        [Test]
+        public void Type2_DefaultBuilder_IsValid()
+        {
+            Assert.That(GameConfigValidator.Validate(new ConfigBuilder().BuildType2()), Is.Empty);
+        }
+
+        [Test]
+        public void Type1_DoesNotRequireType2ScoreKeys()
+        {
+            var source = new ConfigBuilder().Build();
+            var correct = source.Score.CorrectWeights.Where(p => p.Key != HypoStep.LowNotify)
+                .ToDictionary(p => p.Key, p => p.Value);
+            var errors = source.Score.ErrorWeights
+                .Where(p => p.Key != HypoErrorCode.HyJuice && p.Key != HypoErrorCode.LoKeepRunning &&
+                            p.Key != HypoErrorCode.LoTimeout)
+                .ToDictionary(p => p.Key, p => p.Value);
+            var score = new ScoreConfig(source.Score.InRangePerSec, source.Score.PerMeter, correct, errors);
+            var config = new GameConfig(source.ConfigVersion, source.Unit, source.Glucose, source.Hypo, source.Hyper,
+                source.Runner, source.Elimination, source.Symptom, score, source.Sections);
+
+            Assert.That(GameConfigValidator.Validate(config), Is.Empty);
+        }
+
+        [Test]
+        public void Type2_DoesNotCheckType1OnlyRules()
+        {
+            var config = new ConfigBuilder().BuildType2();
+
+            Assert.That(config.Hypo.Step1TimeLimitSec, Is.EqualTo(0));
+            Assert.That(string.Join("\n", GameConfigValidator.Validate(config)), Does.Not.Contain("step1TimeLimitSec"));
+        }
+
+        private static IEnumerable<TestCaseData> Type2Violations()
+        {
+            TestCaseData Case(string name, string key, Action<ConfigBuilder> mutate) =>
+                new TestCaseData(mutate, key).SetName("Type2_Violation_" + name);
+
+            yield return Case("GlucoseLowAtHypo", "elimination.glucoseLow", b => b.GlucoseLow = 70);
+            yield return Case("GlucoseHighAtHyper", "elimination.glucoseHigh", b => b.GlucoseHigh = 250);
+            yield return Case("ReleaseBandsOverlap", "hyperReleaseMargin", b => b.HyperReleaseMargin = 175);
+            yield return Case("NormalRangeBelowHypo", "normalRangeMin", b => b.NormalRangeMin = 60);
+            yield return Case("HighHoldNegative", "type2.highHoldSec", b => b.HighHoldSec = -1);
+            yield return Case("NoticeNegative", "type2.noticeSec", b => b.NoticeSec = -1);
+            yield return Case("TellLimitZero", "type2.tellTimeLimitSec", b => b.TellTimeLimitSec = 0);
+            yield return Case("GuardianPromptZero", "type2.guardianPromptTimeLimitSec", b => b.GuardianPromptTimeLimitSec = 0);
+            yield return Case("RestDurationZero", "type2.restDurationSec", b => b.RestDurationSec = 0);
+            yield return Case("FoodRowMinAboveMax", "type2.foodRowIntervalMinSec", b => { b.FoodRowIntervalMinSec = 5; b.FoodRowIntervalMaxSec = 4; });
+            yield return Case("RestIntervalMinZero", "type2.restIntervalMinSec", b => b.RestIntervalMinSec = 0);
+            yield return Case("GuardianSnackMissing", "type2.guardianSnackId", b => b.GuardianSnackId = "nope");
+            yield return Case("JuiceChoiceMissing", "type2.juiceChoiceFoodId", b => b.JuiceChoiceFoodId = "nope");
+            yield return Case("SingleFood", "foods: 2개 이상", b => b.Snacks.RemoveAt(1));
+            yield return Case("DuplicateFoodId", "foods: id가 중복", b => b.SnackById("cracker").Id = "juice");
+            yield return Case("AbsorbZero", "absorbSec", b => b.SnackById("cracker").AbsorbSec = 0);
+            yield return Case("TimeScaleZero", "time.timeScale", b => b.TimeScale = 0);
+            yield return Case("LowKeepRunningWeight", "LoKeepRunning", b => b.ErrorWeightOverrides[HypoErrorCode.LoKeepRunning] = 1);
+        }
+
+        [TestCaseSource(nameof(Type2Violations))]
+        public void Type2_Violations(Action<ConfigBuilder> mutate, string key)
+        {
+            var builder = new ConfigBuilder();
+            mutate(builder);
+
+            var errors = GameConfigValidator.Validate(builder.BuildType2());
+
+            Assert.That(errors, Is.Not.Empty);
+            Assert.That(string.Join("\n", errors), Does.Contain(key));
         }
 
         [Test]

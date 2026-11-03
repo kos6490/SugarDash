@@ -16,6 +16,8 @@ namespace SugarDash.Domain.Hypo
         Notify,
         /// <summary>고혈당 "어른에게 알리기". 세계가 멈춘다.</summary>
         HyperNotify,
+        /// <summary>2형 저혈당 tell. 세계가 멈춘다.</summary>
+        LowNotify,
         /// <summary>오류 뒤 "어른에게 알리기"를 기다린다.</summary>
         GuardianPrompt,
         /// <summary>다시 달리기 전 카운트다운.</summary>

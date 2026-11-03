@@ -12,5 +12,7 @@ namespace SugarDash.Domain.Hypo
         Remeasure,
         Notify,
         HyperNotify,
+        /// <summary>2형 저혈당 tell 한 단계.</summary>
+        LowNotify,
     }
 }

@@ -13,6 +13,11 @@ namespace SugarDash.Domain.Config
         public static IReadOnlyList<string> Validate(GameConfig config)
         {
             var errors = new List<string>();
+            if (config.TrackType == TrackType.Type2)
+            {
+                ValidateType2(errors, config);
+                return errors;
+            }
             var g = config.Glucose;
             var levels = g.Levels;
 
@@ -133,7 +138,8 @@ namespace SugarDash.Domain.Config
                            $"(glucoseLow={elimination.GlucoseLow}, shakeStartGlucose={shakeStart}, max={levels.Max})");
 
             // 22. 점수
-            ValidateScore(errors, config.Score);
+            ValidateScore(errors, config.Score, Type1Steps, Type1Codes,
+                new[] { HypoErrorCode.RsKeepRunning, HypoErrorCode.HyKeepRunning });
 
             // 23. 구간
             ValidateSections(errors, config.Sections);
@@ -141,31 +147,145 @@ namespace SugarDash.Domain.Config
             return errors;
         }
 
-        private static void ValidateScore(List<string> errors, ScoreConfig score)
+        private static readonly HypoStep[] Type1Steps =
+        {
+            HypoStep.Recognize, HypoStep.Respond, HypoStep.Dose, HypoStep.Remeasure, HypoStep.Notify,
+            HypoStep.HyperNotify,
+        };
+
+        private static readonly HypoErrorCode[] Type1Codes =
+        {
+            HypoErrorCode.SMissed, HypoErrorCode.RsSlow, HypoErrorCode.RsKeepRunning, HypoErrorCode.RsNone,
+            HypoErrorCode.RsTimeout, HypoErrorCode.DsUnder, HypoErrorCode.DsOver, HypoErrorCode.DsTimeout,
+            HypoErrorCode.RcNoRecheck, HypoErrorCode.RcNoNotify, HypoErrorCode.HelpInstead,
+            HypoErrorCode.HyKeepRunning, HypoErrorCode.HyTimeout,
+        };
+
+        private static readonly HypoStep[] Type2Steps = { HypoStep.HyperNotify, HypoStep.LowNotify };
+
+        private static readonly HypoErrorCode[] Type2Codes =
+        {
+            HypoErrorCode.HyKeepRunning, HypoErrorCode.HyJuice, HypoErrorCode.HyTimeout,
+            HypoErrorCode.LoKeepRunning, HypoErrorCode.LoTimeout,
+        };
+
+        private static readonly HypoErrorCode[] Type2ZeroCodes = { HypoErrorCode.HyKeepRunning, HypoErrorCode.LoKeepRunning };
+
+        // 22. 유형마다 필요한 단계·오류 코드와 0 고정 코드가 다르다.
+        private static void ValidateScore(List<string> errors, ScoreConfig score, IReadOnlyList<HypoStep> steps,
+            IReadOnlyList<HypoErrorCode> codes, IReadOnlyList<HypoErrorCode> zeroCodes)
         {
             NonNegative(errors, "score.inRangePerSec", score.InRangePerSec);
             NonNegative(errors, "score.perMeter", score.PerMeter);
-            foreach (HypoStep step in Enum.GetValues(typeof(HypoStep)))
+            foreach (var step in steps)
             {
                 if (!score.CorrectWeights.TryGetValue(step, out var weight))
                     errors.Add($"score.correct: {step} 없음");
                 else
                     NonNegative(errors, $"score.correct.{step}", weight);
             }
-            foreach (HypoErrorCode code in Enum.GetValues(typeof(HypoErrorCode)))
+            foreach (var code in codes)
             {
-                if (code == HypoErrorCode.None) continue;
                 if (!score.ErrorWeights.TryGetValue(code, out var weight))
                     errors.Add($"score.errors: {code} 없음");
                 else
                     NonNegative(errors, $"score.errors.{code}", weight);
             }
             // 위험한 선택은 0점이다.
-            foreach (var code in new[] { HypoErrorCode.RsKeepRunning, HypoErrorCode.HyKeepRunning })
+            foreach (var code in zeroCodes)
             {
                 if (score.ErrorWeights.TryGetValue(code, out var weight) && weight != 0)
                     errors.Add($"score.errors.{code}는 0 이어야 한다 ({weight})");
             }
+        }
+
+        // 2형 불변식(설계 8.3절). 1형 전용 규칙(측정기, 표시 지연, 4단계, 급하강, 흔들림)은 검사하지 않는다.
+        private static void ValidateType2(List<string> errors, GameConfig config)
+        {
+            var levels = config.Glucose.Levels;
+            var t2 = config.Type2;
+            if (t2 == null)
+            {
+                errors.Add("type2 설정이 없다");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(config.ConfigVersion))
+                errors.Add("configVersion이 비어 있다");
+            if (config.Unit != GameConfig.RequiredUnit)
+                errors.Add($"unit은 {GameConfig.RequiredUnit} 이어야 한다 ({config.Unit})");
+            Positive(errors, "time.timeScale", config.Glucose.Time.TimeScale);
+
+            if (!(levels.Min < levels.HypoThreshold && levels.HypoThreshold < levels.Initial &&
+                  levels.Initial < levels.HyperThreshold && levels.HyperThreshold <= levels.Max))
+                errors.Add($"glucose: min < hypoThreshold < initial < hyperThreshold ≤ max 이어야 한다 " +
+                           $"(min={levels.Min}, hypoThreshold={levels.HypoThreshold}, initial={levels.Initial}, " +
+                           $"hyperThreshold={levels.HyperThreshold}, max={levels.Max})");
+            if (!(levels.HypoReleaseMargin > 0))
+                errors.Add($"glucose.hypoReleaseMargin > 0 이어야 한다 ({levels.HypoReleaseMargin})");
+            if (!(levels.HyperReleaseMargin > 0))
+                errors.Add($"glucose.hyperReleaseMargin > 0 이어야 한다 ({levels.HyperReleaseMargin})");
+            NonNegative(errors, "glucose.baseDecayPerSec", levels.BaseDecayPerSec);
+            NonNegative(errors, "glucose.runDecayPerSec", levels.RunDecayPerSec);
+
+            // 1
+            var elimination = config.Elimination;
+            if (!(levels.Min <= elimination.GlucoseLow && elimination.GlucoseLow < levels.HypoThreshold))
+                errors.Add($"glucose.min ≤ elimination.glucoseLow < glucose.hypoThreshold 이어야 한다 " +
+                           $"(min={levels.Min}, glucoseLow={elimination.GlucoseLow}, hypoThreshold={levels.HypoThreshold})");
+            if (!(levels.HyperThreshold < elimination.GlucoseHigh && elimination.GlucoseHigh <= levels.Max))
+                errors.Add($"glucose.hyperThreshold < elimination.glucoseHigh ≤ glucose.max 이어야 한다 " +
+                           $"(hyperThreshold={levels.HyperThreshold}, glucoseHigh={elimination.GlucoseHigh}, max={levels.Max})");
+            // 2
+            if (!(levels.HypoReleaseLevel < levels.HyperReleaseLevel))
+                errors.Add($"glucose: hypoThreshold + hypoReleaseMargin < hyperThreshold − hyperReleaseMargin 이어야 한다 " +
+                           $"({levels.HypoReleaseLevel} ≥ {levels.HyperReleaseLevel})");
+            // 3
+            if (!(levels.HypoThreshold <= levels.NormalRangeMin && levels.NormalRangeMin < levels.HyperThreshold))
+                errors.Add($"glucose: hypoThreshold ≤ normalRangeMin < hyperThreshold 이어야 한다 " +
+                           $"(hypoThreshold={levels.HypoThreshold}, normalRangeMin={levels.NormalRangeMin}, " +
+                           $"hyperThreshold={levels.HyperThreshold})");
+
+            // 4
+            NonNegative(errors, "type2.highHoldSec", t2.HighHoldSec);
+            NonNegative(errors, "type2.lowHoldSec", t2.LowHoldSec);
+            NonNegative(errors, "type2.noticeSec", t2.NoticeSec);
+            NonNegative(errors, "type2.answerFeedbackSec", t2.AnswerFeedbackSec);
+            Positive(errors, "type2.tellTimeLimitSec", t2.TellTimeLimitSec);
+            Positive(errors, "type2.guardianPromptTimeLimitSec", t2.GuardianPromptTimeLimitSec);
+            Positive(errors, "type2.resumeCountdownSec", t2.ResumeCountdownSec);
+            Positive(errors, "type2.graceSec", t2.GraceSec);
+            Positive(errors, "type2.restDurationSec", t2.RestDurationSec);
+
+            // 5
+            if (!(0 < t2.FoodRowIntervalMinSec && t2.FoodRowIntervalMinSec <= t2.FoodRowIntervalMaxSec))
+                errors.Add($"0 < type2.foodRowIntervalMinSec ≤ type2.foodRowIntervalMaxSec 이어야 한다 " +
+                           $"(min={t2.FoodRowIntervalMinSec}, max={t2.FoodRowIntervalMaxSec})");
+            if (!(0 < t2.RestIntervalMinSec && t2.RestIntervalMinSec <= t2.RestIntervalMaxSec))
+                errors.Add($"0 < type2.restIntervalMinSec ≤ type2.restIntervalMaxSec 이어야 한다 " +
+                           $"(min={t2.RestIntervalMinSec}, max={t2.RestIntervalMaxSec})");
+
+            // 6, 7
+            var foods = config.Glucose.Snacks;
+            if (foods.Count < 2)
+                errors.Add($"foods: 2개 이상이어야 한다 ({foods.Count})");
+            var duplicateIds = foods.GroupBy(f => f.Id).Where(group => group.Count() > 1).Select(group => group.Key)
+                .ToList();
+            if (duplicateIds.Count > 0)
+                errors.Add("foods: id가 중복된다 (" + string.Join(", ", duplicateIds) + ")");
+            if (!foods.Any(f => f.Id == t2.GuardianSnackId))
+                errors.Add($"type2.guardianSnackId는 foods에 있어야 한다 ({t2.GuardianSnackId})");
+            if (!foods.Any(f => f.Id == t2.JuiceChoiceFoodId))
+                errors.Add($"type2.juiceChoiceFoodId는 foods에 있어야 한다 ({t2.JuiceChoiceFoodId})");
+            for (int i = 0; i < foods.Count; i++)
+            {
+                NonNegative(errors, $"foods[{i}].totalRise", foods[i].TotalRise);
+                NonNegative(errors, $"foods[{i}].onsetSec", foods[i].OnsetSec);
+                Positive(errors, $"foods[{i}].absorbSec", foods[i].AbsorbSec);
+            }
+
+            ValidateScore(errors, config.Score, Type2Steps, Type2Codes, Type2ZeroCodes);
+            ValidateSections(errors, config.Sections);
         }
 
         private static readonly string[] SectionIds = { "signal", "condition", "complex" };

@@ -228,7 +228,9 @@ namespace SugarDash.Infrastructure.Tests
                     .ConstructorArguments[0].Value as string)
                 .ToList();
             var codes = Enum.GetValues(typeof(HypoErrorCode)).Cast<HypoErrorCode>()
-                .Where(code => code != HypoErrorCode.None)
+                // 2형 전용 코드는 2형 설정 DTO가 생기면 다시 포함한다.
+                .Where(code => code != HypoErrorCode.None && code != HypoErrorCode.HyJuice &&
+                               code != HypoErrorCode.LoKeepRunning && code != HypoErrorCode.LoTimeout)
                 .Select(LogCodes.Error)
                 .ToList();
 

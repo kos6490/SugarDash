@@ -80,6 +80,18 @@ namespace SugarDash.Domain.Tests
         /// <summary>ErrorWeight 기본값 위에 덮어쓰는 오류별 가중치.</summary>
         public Dictionary<HypoErrorCode, double> ErrorWeightOverrides = new Dictionary<HypoErrorCode, double>();
 
+        // 2형 설정(BuildType2). 나머지 공유 값은 위 필드를 쓴다.
+        public double HighHoldSec = 2;
+        public double LowHoldSec = 2;
+        public double NoticeSec = 1;
+        public double TellTimeLimitSec = 5;
+        public string JuiceChoiceFoodId = "juice";
+        public double FoodRowIntervalMinSec = 4;
+        public double FoodRowIntervalMaxSec = 4;
+        public double RestIntervalMinSec = 10;
+        public double RestIntervalMaxSec = 10;
+        public double RestDurationSec = 3;
+
         public List<SectionConfig> Sections = new List<SectionConfig> { new SectionConfig("signal", null) };
 
         public List<Snack> Snacks = new List<Snack>
@@ -107,6 +119,20 @@ namespace SugarDash.Domain.Tests
             new RunnerConfig(TrackSnackServings, TrackSnackIntervalMinSec, TrackSnackIntervalMaxSec),
             new EliminationConfig(GlucoseLow, GlucoseHigh),
             new SymptomConfig(ShakeStartGlucose),
+            BuildScore(),
+            Sections.ToList());
+
+        /// <summary>2형 설정. 음식은 기존 Snacks 목록을 그대로 쓴다.</summary>
+        public GameConfig BuildType2() => GameConfig.ForType2(ConfigVersion, Unit, TimeScale,
+            new GlucoseLevelConfig(Initial, Min, Max, HypoThreshold, HypoReleaseMargin, HyperThreshold,
+                HyperReleaseMargin, BaseDecayPerSec, RunDecayPerSec, NormalRangeMin),
+            Snacks.Select(s => new SnackConfig(s.Id, s.Kind, s.TotalRise, s.OnsetSec, s.AbsorbSec, s.Source))
+                .ToList(),
+            new Type2Config(HighHoldSec, LowHoldSec, NoticeSec, TellTimeLimitSec, GuardianPromptTimeLimitSec,
+                AnswerFeedbackSec, ResumeCountdownSec, GraceSec, GuardianSnackId, JuiceChoiceFoodId,
+                FoodRowIntervalMinSec, FoodRowIntervalMaxSec, RestIntervalMinSec, RestIntervalMaxSec,
+                RestDurationSec),
+            new EliminationConfig(GlucoseLow, GlucoseHigh),
             BuildScore(),
             Sections.ToList());
 
