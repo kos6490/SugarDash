@@ -198,6 +198,7 @@ git mergetool
 
 ## 4. 협업 규칙
 
+- **작업 전에 [docs/team-rules.md](docs/team-rules.md)를 읽을 것.** AI 에이전트(Claude Code, Codex) 설정 방법도 이 문서 0절에 있음
 - **`main` 직접 push 불가**, `dev` → `main`으로 PR (배포 시점) → 팀원 1명 승인 → Merge
 - **`dev` 직접 push 불가**, 작업 브랜치(`feat`, `fix` 등) → `dev`로 PR → 팀원 1명 승인 → Merge
 - 브랜치 전략: `main`은 항상 배포 가능한 상태 유지, `dev`는 잘 동작하는 개발 코드 상태 유지, `dev`에서 `feat`, `fix` 등 브랜치 생성 후 기능 추가, 버그 수정 등 작업 수행

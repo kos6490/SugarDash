@@ -179,6 +179,7 @@
 
 | 문서 | 내용 |
 | --- | --- |
+| [team-rules.md](team-rules.md) | 팀원·AI 에이전트가 지킬 작업 규칙, 팀원 작업 범위 |
 | [type-tracks.md](type-tracks.md) | 1형·2형 주행 확장 방향, 공유하는 것과 유형별로 다른 것, 2형 4단계, 남은 결정 |
 | [architecture.md](architecture.md) | 계층 구조, 참조 규칙, 테스트 실행 |
 | [glucose-model.md](glucose-model.md) | 1형 혈당 모델과 4단계 대처 규칙, 설정 구조, 남은 결정 사항(10절) |
