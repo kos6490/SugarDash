@@ -521,9 +521,28 @@ namespace SugarDash.Domain.Config
             var hypo = config.Hypo;
             double baseDecay = levels.BaseDecayPerSec;
             return levels.HypoThreshold - g.SuddenDrop.Amount
-                   - (baseDecay + levels.RunDecayPerSec) * hypo.Step1TimeLimitSec
+                   - (baseDecay + MaxRunDecay(config)) * hypo.Step1TimeLimitSec
                    - baseDecay * (3 * hypo.GuardianPromptTimeLimitSec + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec
                                   + FeedbackWindowsBeforeDose * ValidFeedbackSec(hypo));
+        }
+
+        /// <summary>
+        /// 1단계(주행 계속) 동안의 달리기 감소. 저혈당은 어느 장면에서든 시작될 수 있으므로
+        /// 전역 값과 장면 덮어쓰기 중 가장 큰 값을 쓴다.
+        /// </summary>
+        private static double MaxRunDecay(GameConfig config)
+        {
+            double max = config.Glucose.Levels.RunDecayPerSec;
+            foreach (var section in config.Sections)
+            {
+                if (!section.HasScenes) continue;
+                foreach (var scene in section.Scenes)
+                {
+                    double? o = scene.Overrides.RunDecayPerSec;
+                    if (o.HasValue && o.Value > max) max = o.Value;
+                }
+            }
+            return max;
         }
 
         // NaN도 위반으로 잡도록 부정형으로 비교한다.

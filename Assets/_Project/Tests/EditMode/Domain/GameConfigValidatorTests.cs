@@ -360,6 +360,23 @@ namespace SugarDash.Domain.Tests
         }
 
         [Test]
+        public void Override_RunDecay_IncludedInWorstCaseRecovery()
+        {
+            // Recovery_BoundaryIsInclusive와 같은 경계(전역 달리기 감소 1에서 normalRangeMin 72가 딱 맞음).
+            // min은 낮춰 회복 조건 하나만 보게 한다.
+            var builder = new ConfigBuilder { BaseDecayPerSec = 0.5, RunDecayPerSec = 1, NormalRangeMin = 72, Min = 15 };
+
+            builder.WithScenes(Scene("a", overrides: new SceneOverrides(runDecayPerSec: 1)));
+            Assert.That(GameConfigValidator.Validate(builder.Build()), Is.Empty);
+
+            // 어느 장면에서든 저혈당이 시작될 수 있으므로 가장 큰 달리기 감소로 최악의 경우를 본다.
+            builder.WithScenes(Scene("a"), Scene("b", overrides: new SceneOverrides(runDecayPerSec: 1.1)));
+            var errors = GameConfigValidator.Validate(builder.Build());
+            Assert.That(errors, Has.Count.EqualTo(1), string.Join("\n", errors));
+            Assert.That(errors[0], Does.Contain("normalRangeMin"));
+        }
+
+        [Test]
         public void Override_MinAboveGlobalMax_Fails()
         {
             var builder = new ConfigBuilder { TrackSnackIntervalMinSec = 8, TrackSnackIntervalMaxSec = 10 };

@@ -840,6 +840,14 @@ namespace SugarDash.App.Tests
 
         // 장면 테스트 구성: signal 10m → condition(A 아침 5m, B 밤 3m, 물체 없음). 하루 = 8m.
         private static SceneConfig SceneA(SceneOverrides o = null) => new SceneConfig("A", TimeOfDay.Morning, 5, true, o);
+        /// <summary>장면 달리기 감소 5에서도 최악의 경우 회복 불변식을 지키게 한다(주스 흡수량을 키우고 min을 낮춤).</summary>
+        private static ConfigBuilder Recoverable(ConfigBuilder b)
+        {
+            b.Min = 10;
+            b.SnackById("juice").TotalRise = 60;
+            return b;
+        }
+
         private static SceneConfig SceneB(SceneOverrides o = null) => new SceneConfig("B", TimeOfDay.Night, 3, false, o);
 
         [Test]
@@ -892,7 +900,7 @@ namespace SugarDash.App.Tests
         public void Scene_AppliesAndClearsOverrides()
         {
             // Rig 기본: 달리기 감소 2/s, 기본 하강 0.
-            var rig = new Rig(b => b.WithScenes(SceneA(new SceneOverrides(runDecayPerSec: 5)), SceneB()));
+            var rig = new Rig(b => Recoverable(b).WithScenes(SceneA(new SceneOverrides(runDecayPerSec: 5)), SceneB()));
             rig.Run.StartRun(TrackType.Type1);
 
             rig.Run.AdvanceDistance(10);
@@ -926,7 +934,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void SceneChange_DuringRecognize_SwitchesOverrides()
         {
-            var rig = new Rig(b => b.WithScenes(SceneA(new SceneOverrides(runDecayPerSec: 5)), SceneB())).Triggered();
+            var rig = new Rig(b => Recoverable(b).WithScenes(SceneA(new SceneOverrides(runDecayPerSec: 5)), SceneB())).Triggered();
             double before = rig.Run.Actual;
 
             rig.Run.AdvanceDistance(10);
@@ -974,7 +982,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void NewRun_ResetsSceneAndDay()
         {
-            var rig = new Rig(b => b.WithScenes(SceneA(), SceneB(new SceneOverrides(runDecayPerSec: 5))));
+            var rig = new Rig(b => Recoverable(b).WithScenes(SceneA(), SceneB(new SceneOverrides(runDecayPerSec: 5))));
             rig.Run.StartRun(TrackType.Type1);
             rig.Run.AdvanceDistance(30);
             rig.Run.Tick(1);

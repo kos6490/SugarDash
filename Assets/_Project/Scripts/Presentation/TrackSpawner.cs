@@ -83,12 +83,14 @@ namespace SugarDash.Presentation
         /// <summary>
         /// 배치 값을 지금 주행에 바로 바꾼다(장면이 바뀔 때). 이미 놓인 물체는 그대로 두고 앞으로 놓을 물체부터 새 값을 쓴다.
         /// 간식·쉬는 곳 타이머는 처음부터 다시 잰다. 물체는 계속 spawnAheadDistance 앞에만 놓는다.
+        /// 물체를 놓지 않는 배치(집 장면)면 앞에 놓인 장애물·간식·쉬는 곳도 치운다.
         /// </summary>
         public void ChangeLayout(TrackLayout layout)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             layout.Validate();
             _layout = layout;
+            if (!layout.SpawnsItems) RemoveItemsAhead();
             _snackTimer = 0;
             _nextSnackIntervalSec = NextSnackInterval();
             _restTimer = 0;
@@ -274,6 +276,17 @@ namespace SugarDash.Presentation
 
         /// <summary>달린 거리 기준 위치를 캐릭터 기준 z로 바꾼다.</summary>
         private double Ahead(double atDistance) => atDistance - _distance;
+
+        private void RemoveItemsAhead()
+        {
+            for (int i = _items.Count - 1; i >= 0; i--)
+            {
+                var item = _items[i];
+                if (item.Kind == TrackItemKind.Marker || !(item.Z > 0)) continue;
+                DestroyView(item);
+                _items.RemoveAt(i);
+            }
+        }
 
         private void RemoveObstacles()
         {

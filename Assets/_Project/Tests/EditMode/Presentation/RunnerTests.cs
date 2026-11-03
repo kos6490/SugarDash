@@ -457,6 +457,18 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void ChangeLayout_NoSpawns_RemovesItemsAhead()
+        {
+            Run(10);
+            Assert.That(_track.Items.Any(x => x.Kind != TrackItemKind.Marker && x.Z > 0), Is.True);
+
+            _track.ChangeLayout(NoSpawns());
+
+            Assert.That(_track.Items.Where(x => x.Z > 0).Select(x => x.Kind), Is.All.EqualTo(TrackItemKind.Marker),
+                "물체를 놓지 않는 장면에는 앞 장면의 물체도 남기지 않는다");
+        }
+
+        [Test]
         public void ResumeSpawns_PlacesNothingNearerThanSpawnAhead()
         {
             _track.ChangeLayout(NoSpawns());
