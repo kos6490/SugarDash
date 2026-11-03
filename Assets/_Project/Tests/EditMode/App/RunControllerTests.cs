@@ -25,10 +25,14 @@ namespace SugarDash.App.Tests
         {
             public int Begun;
             public int Ended;
+            public string LastVersion;
+            public SugarDash.Domain.Config.TrackType? LastType;
 
             public string BeginRun(string configVersion, SugarDash.Domain.Config.TrackType trackType)
             {
                 Begun++;
+                LastVersion = configVersion;
+                LastType = trackType;
                 return "run-" + Begun;
             }
 
@@ -77,7 +81,7 @@ namespace SugarDash.App.Tests
                 Collect<SectionEntered>();
                 Collect<GlucoseRangeEntered>();
 
-                Run = new RunController(config.Runner, config.Sections, () =>
+                Run = new RunController(_ =>
                 {
                     var model = new GlucoseModel(config.Glucose);
                     var director = new EventDirector(config.Glucose, model, new NoRandom(), Bus);
@@ -102,7 +106,7 @@ namespace SugarDash.App.Tests
             /// <summary>주행을 시작해 저혈당 발동(26초)까지 진행한다.</summary>
             public Rig Triggered()
             {
-                Run.StartRun();
+                Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
                 Ticks(26);
                 Assert.That(Run.Phase, Is.EqualTo(HypoPhase.Recognize));
                 return this;
@@ -114,19 +118,19 @@ namespace SugarDash.App.Tests
         {
             var rig = new Rig();
 
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             Assert.That(rig.Run.State, Is.EqualTo(RunState.Running));
             Assert.That(rig.Log.Begun, Is.EqualTo(1));
             Assert.That(rig.Run.Actual, Is.EqualTo(120));
-            Assert.Throws<InvalidOperationException>(() => rig.Run.StartRun());
+            Assert.Throws<InvalidOperationException>(() => rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1));
         }
 
         [Test]
         public void Score_GrowsWhileInRangeAndRunning()
         {
             var rig = new Rig(b => { b.Initial = 120; b.RunDecayPerSec = 0; b.BaseDecayPerSec = 0; });
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             for (int i = 0; i < 5; i++)
             {
                 rig.Run.AdvanceDistance(10);
@@ -139,7 +143,7 @@ namespace SugarDash.App.Tests
         public void Tick_AdvancesThreeClocksAndRunDecay()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             rig.Ticks(10);
 
@@ -168,9 +172,9 @@ namespace SugarDash.App.Tests
             var rig = new Rig();
             Assert.That(rig.Run.RunCount, Is.EqualTo(0));
 
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             rig.Run.EndRun();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             Assert.That(rig.Run.RunCount, Is.EqualTo(2));
         }
@@ -179,7 +183,7 @@ namespace SugarDash.App.Tests
         public void InvalidDt_Throws()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => rig.Run.Tick(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => rig.Run.Tick(double.NaN));
@@ -272,7 +276,7 @@ namespace SugarDash.App.Tests
         public void PickUpSnack_RaisesGlucoseByTrackServings()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             rig.Run.PickUpSnack("juice");
             rig.Ticks(3);
@@ -354,7 +358,7 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Log.Ended, Is.EqualTo(1));
             Assert.That(rig.Sessions[0].Disposed, Is.True);
 
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             Assert.That(rig.Log.Begun, Is.EqualTo(2));
             Assert.That(rig.Run.Actual, Is.EqualTo(120));
             Assert.That(rig.Run.WorldTime, Is.EqualTo(0));
@@ -367,7 +371,7 @@ namespace SugarDash.App.Tests
             var rig = new Rig();
             Assert.That(rig.Run.CurrentSectionId, Is.Null, "주행이 없으면 구간도 없다");
 
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             var section = rig.All<SectionEntered>().Single();
             Assert.That(section.Section, Is.EqualTo("signal"));
@@ -386,7 +390,7 @@ namespace SugarDash.App.Tests
         public void OneHit_Eliminates()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             rig.Run.AdvanceDistance(7);
             rig.Run.HitObstacle();
@@ -419,7 +423,7 @@ namespace SugarDash.App.Tests
         public void AdvanceDistance_InvalidMeters_Throws()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => rig.Run.AdvanceDistance(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => rig.Run.AdvanceDistance(double.NaN));
@@ -447,7 +451,7 @@ namespace SugarDash.App.Tests
             {
                 new SectionConfig("signal", 10), new SectionConfig("condition", null),
             });
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             rig.Run.AdvanceDistance(6);
             rig.Run.Tick(1);
@@ -470,7 +474,7 @@ namespace SugarDash.App.Tests
             {
                 new SectionConfig("signal", 10), new SectionConfig("condition", 10), new SectionConfig("complex", null),
             });
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             rig.Run.AdvanceDistance(100);
             rig.Run.Tick(1);
@@ -492,7 +496,7 @@ namespace SugarDash.App.Tests
         public void ObstacleAndGlucoseSameTick_PublishesOneElimination()
         {
             var rig = new Rig(b => b.GlucoseLow = 65);
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             rig.Ticks(30); // 26초에 발동(68), 30초에 60: 아직 1단계 제한 시간 안
             Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Recognize), "1단계에서는 세계가 흐른다");
             Assert.That(rig.Run.Actual, Is.LessThan(65), "기준 아래여도 제한 시간 안에서는 탈락하지 않는다");
@@ -507,7 +511,7 @@ namespace SugarDash.App.Tests
 
             // 대조: 부딪히지 않으면 같은 Tick에서 혈당 탈락이 난다(두 원인이 모두 살아 있었다).
             var control = new Rig(b => b.GlucoseLow = 65);
-            control.Run.StartRun();
+            control.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             control.Ticks(30);
             control.Run.Tick(1); // 31초: 1단계 시간 초과
             Assert.That(control.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.GlucoseLow));
@@ -517,7 +521,7 @@ namespace SugarDash.App.Tests
         public void CommandsAfterElimination_AreIgnored()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             rig.Run.AdvanceDistance(3);
             rig.Run.HitObstacle();
             rig.Run.Tick(1);
@@ -540,7 +544,7 @@ namespace SugarDash.App.Tests
         public void CommandsQueuedBehindElimination_AreDropped()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             rig.Run.HitObstacle();
             rig.Run.AdvanceDistance(5);
@@ -555,7 +559,7 @@ namespace SugarDash.App.Tests
         public void Run_DoesNotEndWithoutElimination()
         {
             var rig = new Rig(b => b.RunDecayPerSec = 0);
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             rig.Ticks(1000);
 
@@ -567,14 +571,14 @@ namespace SugarDash.App.Tests
         public void EndRun_ClearsSection_AndNewRunResetsDistance()
         {
             var rig = new Rig();
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             rig.Run.AdvanceDistance(4);
             rig.Run.HitObstacle();
             rig.Run.Tick(1);
 
             rig.Run.EndRun();
             Assert.That(rig.Run.CurrentSectionId, Is.Null);
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             Assert.That(rig.Run.DistanceM, Is.EqualTo(0));
             Assert.That(rig.All<SectionEntered>(), Has.Count.EqualTo(2));
@@ -584,7 +588,7 @@ namespace SugarDash.App.Tests
         public void HyperEvent_FreezesWorld_AndCommandsReachHyperStep()
         {
             var rig = new Rig(b => b.HyperThreshold = 125); // 해제 수준 105
-            rig.Run.StartRun();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             rig.Run.PickUpSnack("juice");
             rig.Run.PickUpSnack("juice"); // 0.5 × 2 = 1인분(+30)
 
@@ -657,6 +661,180 @@ namespace SugarDash.App.Tests
 
             rig.Run.Tick(1);
             Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(2).Within(Eps));
+        }
+
+        /// <summary>2형 실제 설정(BuildType2)으로 세션을 만드는 조립. RunController.Tick까지 끝까지 도는지 확인하는 스모크이기도 하다.</summary>
+        private sealed class Rig2
+        {
+            public readonly DomainEventBus Bus = new DomainEventBus();
+            public readonly FakeLog Log = new FakeLog();
+            public readonly List<object> Events = new List<object>();
+            public readonly RunController Run;
+            public readonly GameConfig Config;
+
+            public Rig2(Action<ConfigBuilder> configure = null)
+            {
+                var builder = new ConfigBuilder { RunDecayPerSec = 2, BaseDecayPerSec = 0 };
+                configure?.Invoke(builder);
+                Config = builder.BuildType2();
+                Assert.That(GameConfigValidator.Validate(Config), Is.Empty, "테스트 설정도 불변식을 지켜야 한다");
+
+                Collect<FoodEaten>();
+                Collect<TrackSnackEaten>();
+                Collect<RestStarted>();
+                Collect<RestEnded>();
+                Collect<StepAnswered>();
+                Collect<HyperEventTriggered>();
+                Collect<LowEventTriggered>();
+
+                Run = new RunController(type =>
+                {
+                    var config = Config;
+                    var model = new GlucoseModel(config.Glucose);
+                    var director = new EventDirector(config.Glucose, model, new NoRandom(), Bus, config.Type2);
+                    var fsm = new HypoEventFsm(config, model, director, Bus, () => Run.DistanceM);
+                    var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
+                    return new RunSession(config, model, director, fsm, scoring, scoring.Subscribe(Bus),
+                        Bus.Subscribe<LowEventTriggered>(fsm.BeginLow),
+                        Bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
+                }, Log, Bus);
+            }
+
+            private void Collect<T>() => Bus.Subscribe<T>(e => Events.Add(e));
+
+            public IReadOnlyList<T> All<T>() => Events.OfType<T>().ToList();
+
+            public void Ticks(int count, double dt = 1)
+            {
+                for (int i = 0; i < count; i++) Run.Tick(dt);
+            }
+
+            /// <summary>높은 혈당이 유지되어 고혈당 tell이 시작될 때까지 진행한다.</summary>
+            public void RunToHyperTell()
+            {
+                for (int i = 0; i < 20 && Run.Phase != HypoPhase.HyperNotify; i++) Run.Tick(1);
+                Assert.That(Run.Phase, Is.EqualTo(HypoPhase.HyperNotify));
+            }
+        }
+
+        private static void HighStart(ConfigBuilder b)
+        {
+            b.HyperThreshold = 125; // 주스 1인분(+30)을 먹으면 넘는다
+            b.RunDecayPerSec = 0;
+        }
+
+        [Test]
+        public void StartRun_Type2_UsesType2ConfigAndLogsTrackType()
+        {
+            var rig = new Rig2();
+
+            rig.Run.StartRun(TrackType.Type2);
+
+            Assert.That(rig.Log.LastVersion, Is.EqualTo(rig.Config.ConfigVersion));
+            Assert.That(rig.Log.LastType, Is.EqualTo(TrackType.Type2));
+            Assert.That(rig.Run.TrackType, Is.EqualTo(TrackType.Type2));
+            rig.Ticks(3); // 실제 2형 설정으로 Tick이 끝까지 돈다
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running));
+        }
+
+        [Test]
+        public void Type2_PickUpSnack_EatsOneServing_PublishesFoodEaten()
+        {
+            var rig = new Rig2(b => { b.RunDecayPerSec = 0; });
+            rig.Run.StartRun(TrackType.Type2);
+
+            rig.Run.PickUpSnack("juice");
+            rig.Ticks(1);
+
+            var eaten = rig.All<FoodEaten>().Single();
+            Assert.That(eaten.FoodId, Is.EqualTo("juice"));
+            Assert.That(eaten.Actual, Is.EqualTo(120).Within(Eps));
+            Assert.That(rig.All<TrackSnackEaten>(), Is.Empty);
+            rig.Ticks(3); // onset 1 + absorb 2 = 1인분 +30
+            Assert.That(rig.Run.Actual, Is.EqualTo(150).Within(Eps));
+        }
+
+        [Test]
+        public void Rest_StopsRunDecay_ForRestDuration()
+        {
+            var rig = new Rig2();
+            rig.Run.StartRun(TrackType.Type2);
+
+            rig.Run.StartRest();
+            rig.Ticks(1);
+            Assert.That(rig.Run.IsResting, Is.True);
+            Assert.That(rig.All<RestStarted>(), Has.Count.EqualTo(1));
+            rig.Ticks(2);
+            Assert.That(rig.Run.Actual, Is.EqualTo(120).Within(Eps)); // 쉬는 3초 동안 기본 하강(0)만큼
+            Assert.That(rig.Run.IsResting, Is.False);
+            Assert.That(rig.All<RestEnded>(), Has.Count.EqualTo(1));
+
+            rig.Ticks(1);
+            Assert.That(rig.Run.Actual, Is.EqualTo(118).Within(Eps)); // 다시 달리기 하강
+        }
+
+        [Test]
+        public void Rest_EndsWhenTellStarts()
+        {
+            var rig = new Rig2(b => { HighStart(b); b.RestDurationSec = 100; });
+            rig.Run.StartRun(TrackType.Type2);
+            rig.Run.PickUpSnack("juice");
+            rig.Run.StartRest();
+            rig.Ticks(1);
+            Assert.That(rig.Run.IsResting, Is.True);
+
+            rig.RunToHyperTell();
+
+            Assert.That(rig.Run.IsResting, Is.False);
+            Assert.That(rig.All<RestEnded>(), Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void StartRest_Type1_IsIgnored()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(TrackType.Type1);
+
+            rig.Run.StartRest();
+            rig.Ticks(1);
+
+            Assert.That(rig.Run.IsResting, Is.False);
+            Assert.That(rig.Run.Actual, Is.EqualTo(118).Within(Eps));
+        }
+
+        [Test]
+        public void StartRest_WhileFrozenOrResting_IsIgnored()
+        {
+            var rig = new Rig2(b => { HighStart(b); b.RestDurationSec = 100; });
+            rig.Run.StartRun(TrackType.Type2);
+            rig.Run.PickUpSnack("juice");
+            rig.Run.StartRest();
+            rig.Run.StartRest();
+            rig.Ticks(1);
+            Assert.That(rig.All<RestStarted>(), Has.Count.EqualTo(1));
+
+            rig.RunToHyperTell();
+            rig.Run.StartRest();
+            rig.Ticks(1);
+
+            Assert.That(rig.Run.IsResting, Is.False);
+            Assert.That(rig.All<RestStarted>(), Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void ChooseJuice_ForwardsToFsm()
+        {
+            var rig = new Rig2(HighStart);
+            rig.Run.StartRun(TrackType.Type2);
+            rig.Run.PickUpSnack("juice");
+            rig.RunToHyperTell();
+
+            rig.Run.ChooseJuice();
+            rig.Ticks(1);
+
+            var answer = rig.All<StepAnswered>().Single();
+            Assert.That(answer.ErrorCode, Is.EqualTo(HypoErrorCode.HyJuice));
+            Assert.That(answer.ChoiceId, Is.EqualTo("juice"));
         }
     }
 }

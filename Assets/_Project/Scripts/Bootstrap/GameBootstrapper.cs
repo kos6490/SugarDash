@@ -64,7 +64,7 @@ namespace SugarDash.Bootstrap
             var log = new LogRepository(logDirectory);
             _subscriptions.Add(log.Subscribe(_bus));
 
-            _run = new RunController(_config.Runner, _config.Sections, CreateSession, log, _bus);
+            _run = new RunController(type => CreateSession(), log, _bus);
             _flow = new GameFlowController(_run, new ReportQueryService(logDirectory), _config.Score,
                 new BestScoreRepository(Path.Combine(Application.persistentDataPath, "best-score.json")),
                 _config.ConfigVersion);

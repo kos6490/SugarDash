@@ -94,7 +94,7 @@ namespace SugarDash.App.Tests
             bus.Subscribe<GlucoseRangeExited>(e => _query.Published.Add(e));
             bus.Subscribe<RecheckFastForward>(e => _query.Published.Add(e));
             bus.Subscribe<SectionEntered>(e => _query.Published.Add(e));
-            _run = new RunController(config.Runner, config.Sections, () =>
+            _run = new RunController(_ =>
             {
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);

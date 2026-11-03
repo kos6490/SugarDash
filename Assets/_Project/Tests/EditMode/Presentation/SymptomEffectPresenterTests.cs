@@ -30,7 +30,7 @@ namespace SugarDash.Presentation.Tests
             var config = new ConfigBuilder { Initial = initialGlucose }.Build();
             var bus = new DomainEventBus();
             RunController run = null;
-            run = new RunController(config.Runner, config.Sections, () =>
+            run = new RunController(_ =>
             {
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
@@ -39,7 +39,7 @@ namespace SugarDash.Presentation.Tests
                 return new RunSession(config, model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                     scoring.Subscribe(bus));
             }, new NullLog(), bus);
-            run.StartRun();
+            run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
             return run;
         }
 

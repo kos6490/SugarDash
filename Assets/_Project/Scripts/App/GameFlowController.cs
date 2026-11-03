@@ -50,7 +50,7 @@ namespace SugarDash.App
 
         public void Begin()
         {
-            if (_run.State == RunState.Idle && !IsShowingResult) _run.StartRun();
+            if (_run.State == RunState.Idle && !IsShowingResult) _run.StartRun(TrackType.Type1);
         }
 
         /// <summary>GameBootstrapper가 RunController.Tick 뒤 매 프레임 부른다.</summary>
@@ -86,7 +86,7 @@ namespace SugarDash.App
             LastScore = null;
             BestScore = null;
             IsNewBest = false;
-            _run.StartRun();
+            _run.StartRun(TrackType.Type1);
         }
 
         /// <summary>씬 파괴·앱 종료 시 열린 주행의 기록을 닫는다.</summary>

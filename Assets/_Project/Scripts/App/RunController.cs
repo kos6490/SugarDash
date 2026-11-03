@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SugarDash.Domain.Config;
+using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Ports;
@@ -19,9 +20,7 @@ namespace SugarDash.App
         // 달리는 동안 달리기 감소를 그대로 적용한다. 점프·슬라이드도 같다(동작별 차등 없음).
         private const double RunningActivity = 1;
 
-        private readonly RunnerConfig _runner;
-        private readonly IReadOnlyList<SectionConfig> _sections;
-        private readonly Func<RunSession> _sessionFactory;
+        private readonly Func<TrackType, RunSession> _sessionFactory;
         private readonly ILogRepository _log;
         private readonly DomainEventBus _bus;
         private readonly Queue<Action<RunSession>> _commands = new Queue<Action<RunSession>>();
@@ -30,21 +29,30 @@ namespace SugarDash.App
         private int _sectionIndex;
         // 지금 구간이 끝나는 누적 거리(m). 마지막 구간(lengthM 없음)이면 양의 무한대.
         private double _sectionEndM;
+        // 쉬는 중이 끝나는 worldDt 누적 시각.
+        private double _restEnd;
 
-        /// <param name="sections">구간 순서. 마지막 구간만 lengthM이 없다(설정 검증에서 확인).</param>
-        /// <param name="sessionFactory">주행마다 새 도메인 객체 묶음을 만든다. GameBootstrapper가 주입한다.</param>
-        public RunController(RunnerConfig runner, IReadOnlyList<SectionConfig> sections,
-            Func<RunSession> sessionFactory, ILogRepository log, DomainEventBus bus)
+        /// <param name="sessionFactory">유형에 맞는 새 도메인 객체 묶음을 만든다. GameBootstrapper가 주입한다.
+        /// runner·구간은 세션의 설정에서 읽는다(구간 0개 검사는 설정 검증이 맡는다).</param>
+        public RunController(Func<TrackType, RunSession> sessionFactory, ILogRepository log, DomainEventBus bus)
         {
-            _runner = runner ?? throw new ArgumentNullException(nameof(runner));
-            _sections = sections ?? throw new ArgumentNullException(nameof(sections));
-            if (_sections.Count == 0) throw new ArgumentException("구간이 하나 이상 있어야 한다", nameof(sections));
             _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
             _log = log ?? throw new ArgumentNullException(nameof(log));
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         }
 
         public RunState State { get; private set; } = RunState.Idle;
+
+        /// <summary>마지막으로 시작한 주행의 유형. 처음엔 Type1.</summary>
+        public TrackType TrackType { get; private set; } = TrackType.Type1;
+
+        /// <summary>2형 쉬는 중. 달리기 감소가 멈춘다.</summary>
+        public bool IsResting { get; private set; }
+
+        /// <summary>지금 떠 있는 2형 신호(갈증·지침 등). 없으면 null.</summary>
+        public NoticeKind? ActiveSignal => _session?.Director.ActiveSignal;
+
+        private IReadOnlyList<SectionConfig> Sections => _session.Config.Sections;
 
         /// <summary>열린 주행의 runId(기록 파일 이름). 열린 주행이 없으면 null.</summary>
         public string CurrentRunId { get; private set; }
@@ -65,7 +73,7 @@ namespace SugarDash.App
         public double DistanceM { get; private set; }
 
         /// <summary>지금 구간의 id. 열린 주행이 없으면 null.</summary>
-        public string CurrentSectionId => _session == null ? null : _sections[_sectionIndex].Id;
+        public string CurrentSectionId => _session == null ? null : Sections[_sectionIndex].Id;
 
         // HUD·패널이 읽는 값. 주행이 없으면 기본값.
         public double Displayed => _session?.Model.Displayed ?? 0;
@@ -85,12 +93,14 @@ namespace SugarDash.App
             ? 0
             : _session.Scoring.Total(_session.Model.SimTime, DistanceM);
 
-        public void StartRun()
+        public void StartRun(TrackType type)
         {
             if (State != RunState.Idle) throw new InvalidOperationException($"이미 주행 중이다 ({State})");
 
-            _session = _sessionFactory() ?? throw new InvalidOperationException("세션 팩토리가 null을 반환했다");
+            _session = _sessionFactory(type) ?? throw new InvalidOperationException("세션 팩토리가 null을 반환했다");
             CurrentRunId = _log.BeginRun(_session.Config.ConfigVersion, _session.Config.TrackType);
+            TrackType = _session.Config.TrackType;
+            IsResting = false;
             _commands.Clear();
             WorldTime = 0;
             LastWorldDt = 0;
@@ -101,7 +111,7 @@ namespace SugarDash.App
             _sectionIndex = 0;
             _sectionEndM = SectionLength(0);
             var model = _session.Model;
-            _bus.Publish(new SectionEntered(_sections[0].Id, 0, model.SimTime, model.DecisionTime));
+            _bus.Publish(new SectionEntered(Sections[0].Id, 0, model.SimTime, model.DecisionTime));
             _session.Director.EvaluateTargetRange();
         }
 
@@ -115,6 +125,7 @@ namespace SugarDash.App
 
             _session.Dispose();
             _session = null;
+            IsResting = false;
             _commands.Clear();
             _log.EndRun();
             CurrentRunId = null;
@@ -147,11 +158,12 @@ namespace SugarDash.App
             }
 
             double worldDt = s.Fsm.IsWorldFrozen ? 0 : dt;
-            s.Model.Tick(dt, worldDt, dt, RunningActivity);
+            s.Model.Tick(dt, worldDt, dt, IsResting ? 0 : RunningActivity);
             WorldTime += worldDt;
             LastWorldDt = worldDt;
             s.Director.Evaluate(dt);
             s.Fsm.Update();
+            if (IsResting && (WorldTime >= _restEnd || s.Fsm.IsWorldFrozen)) EndRest(s);
 
             CheckEliminated();
         }
@@ -163,6 +175,22 @@ namespace SugarDash.App
         public void ChooseSnack(string snackId) => Enqueue(s => s.Fsm.ChooseSnack(snackId));
 
         public void ChooseKeepRunning() => Enqueue(s => s.Fsm.ChooseKeepRunning());
+
+        /// <summary>2형 tell의 "주스 마시기".</summary>
+        public void ChooseJuice() => Enqueue(s => s.Fsm.ChooseJuice());
+
+        /// <summary>
+        /// 2형 쉬는 구간에서 앉아서 쉬기를 골랐다. 정해진 시간 동안 달리기 감소가 멈춘다.
+        /// 1형이거나 세계가 멈췄거나 이미 쉬는 중이면 무시한다.
+        /// </summary>
+        public void StartRest() => Enqueue(s =>
+        {
+            if (s.Config.TrackType != TrackType.Type2 || s.Fsm.IsWorldFrozen || IsResting) return;
+
+            IsResting = true;
+            _restEnd = WorldTime + s.Config.Type2.RestDurationSec;
+            _bus.Publish(new RestStarted(s.Model.Actual, s.Model.SimTime, s.Model.DecisionTime));
+        });
 
         public void ChooseNoSugar() => Enqueue(s => s.Fsm.ChooseNoSugar());
 
@@ -184,7 +212,14 @@ namespace SugarDash.App
         {
             if (s.Fsm.IsWorldFrozen) return;
 
-            double servings = _runner.TrackSnackServings;
+            double servings = s.Config.Runner.TrackSnackServings;
+            if (s.Config.TrackType == TrackType.Type2)
+            {
+                double before = s.Model.Actual;
+                s.Model.EatSnack(snackId, servings);
+                _bus.Publish(new FoodEaten(snackId, before, s.Model.SimTime, s.Model.DecisionTime));
+                return;
+            }
             s.Model.EatSnack(snackId, servings);
             _bus.Publish(new TrackSnackEaten(snackId, servings, s.Model.SimTime, s.Model.DecisionTime));
         });
@@ -204,11 +239,11 @@ namespace SugarDash.App
                 if (s.Fsm.IsWorldFrozen) return;
 
                 DistanceM += meters;
-                while (DistanceM >= _sectionEndM && _sectionIndex < _sections.Count - 1)
+                while (DistanceM >= _sectionEndM && _sectionIndex < Sections.Count - 1)
                 {
                     _sectionIndex++;
                     _sectionEndM += SectionLength(_sectionIndex);
-                    _bus.Publish(new SectionEntered(_sections[_sectionIndex].Id, DistanceM, s.Model.SimTime,
+                    _bus.Publish(new SectionEntered(Sections[_sectionIndex].Id, DistanceM, s.Model.SimTime,
                         s.Model.DecisionTime));
                 }
             });
@@ -226,11 +261,17 @@ namespace SugarDash.App
         });
 
         /// <summary>i번째 구간의 길이. 마지막 구간(lengthM 없음)이면 양의 무한대라 그 뒤 경계는 없다.</summary>
-        private double SectionLength(int index) => _sections[index].LengthM ?? double.PositiveInfinity;
+        private double SectionLength(int index) => Sections[index].LengthM ?? double.PositiveInfinity;
 
         private void Enqueue(Action<RunSession> command)
         {
             if (State == RunState.Running || State == RunState.Paused) _commands.Enqueue(command);
+        }
+
+        private void EndRest(RunSession s)
+        {
+            IsResting = false;
+            _bus.Publish(new RestEnded(s.Model.Actual, s.Model.SimTime, s.Model.DecisionTime));
         }
 
         private bool CheckEliminated()

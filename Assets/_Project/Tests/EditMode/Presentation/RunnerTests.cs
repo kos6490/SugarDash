@@ -43,7 +43,7 @@ namespace SugarDash.Presentation.Tests
             var bus = new DomainEventBus();
             _eaten = new List<TrackSnackEaten>();
             bus.Subscribe<TrackSnackEaten>(e => _eaten.Add(e));
-            _run = new RunController(config.Runner, config.Sections, () =>
+            _run = new RunController(_ =>
             {
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
@@ -52,7 +52,7 @@ namespace SugarDash.Presentation.Tests
                 return new RunSession(config, model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
                     scoring.Subscribe(bus));
             }, new NullLog(), bus);
-            _run.StartRun();
+            _run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
 
             _go = new GameObject("Player");
             _player = _go.AddComponent<PlayerController>();
