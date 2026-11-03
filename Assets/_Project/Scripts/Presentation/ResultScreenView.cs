@@ -27,12 +27,13 @@ namespace SugarDash.Presentation
 
             root.SetActive(false);
             retryButton.onClick.AddListener(OnRetry);
-            titleButton.onClick.AddListener(OnTitle);
+            // 씬에서 타이틀 버튼을 아직 연결하지 않았을 수 있다.
+            if (titleButton != null) titleButton.onClick.AddListener(OnTitle);
 
             return new Unbinder(() =>
             {
                 retryButton.onClick.RemoveListener(OnRetry);
-                titleButton.onClick.RemoveListener(OnTitle);
+                if (titleButton != null) titleButton.onClick.RemoveListener(OnTitle);
                 _flow = null;
             });
         }

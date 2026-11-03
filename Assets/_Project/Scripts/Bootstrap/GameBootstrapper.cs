@@ -41,10 +41,17 @@ namespace SugarDash.Bootstrap
         [SerializeField] private TrackSpawner track;
         [SerializeField] private InputAdapter input;
         [SerializeField] private SymptomEffectPresenter symptomEffect;
+        [Header("빈 틀 화면(씬에 아직 없으면 비워 둔다)")]
+        [SerializeField] private TitleScreenView titleScreen;
+        [SerializeField] private TypeSelectView typeSelect;
+        [SerializeField] private SettingsView settings;
+        [SerializeField] private CharacterStateView characterState;
+        [SerializeField] private NoticeSignalView noticeSignal;
 
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private GameConfig _config;
         private GameConfig _config2;
+        private Dictionary<TrackType, GameConfig> _configs;
         private DomainEventBus _bus;
         private RunController _run;
         private GameFlowController _flow;
@@ -59,12 +66,18 @@ namespace SugarDash.Bootstrap
                 return;
             }
 
+            _configs = new Dictionary<TrackType, GameConfig>
+            {
+                { TrackType.Type1, _config },
+                { TrackType.Type2, _config2 },
+            };
+
             _bus = new DomainEventBus();
             string logDirectory = Path.Combine(Application.persistentDataPath, "logs");
             var log = new LogRepository(logDirectory);
             _subscriptions.Add(log.Subscribe(_bus));
 
-            _run = new RunController(type => CreateSession(), log, _bus);
+            _run = new RunController(CreateSession, log, _bus);
             var profiles = new Dictionary<TrackType, TrackTypeProfile>
             {
                 {
@@ -87,10 +100,15 @@ namespace SugarDash.Bootstrap
             if (symptomEffect != null)
                 _subscriptions.Add(symptomEffect.Bind(_run, _config.Symptom.ShakeStartGlucose, _config.Elimination.GlucoseLow));
 
+            // 빈 틀 화면은 씬에 연결된 것만 묶는다. 해제는 구독 목록에서 한다.
+            if (titleScreen != null) _subscriptions.Add(titleScreen.Bind(_flow));
+            if (typeSelect != null) _subscriptions.Add(typeSelect.Bind(_flow));
+            if (settings != null) _subscriptions.Add(settings.Bind(_flow));
+            if (characterState != null) _subscriptions.Add(characterState.Bind(_run));
+            if (noticeSignal != null) _subscriptions.Add(noticeSignal.Bind(_run));
+
             player.Init(_run, true);
-            track.Init(new TrackLayout(_config.Glucose.Snacks.Select(s => s.Id).ToList(),
-                    _config.Runner.TrackSnackIntervalMinSec, _config.Runner.TrackSnackIntervalMaxSec, false, 0, 0),
-                Environment.TickCount, true);
+            track.Init(BuildLayout(_config), Environment.TickCount, true);
             input.Init(_run, player);
         }
 
@@ -109,6 +127,7 @@ namespace SugarDash.Bootstrap
             {
                 _shownRunCount = _run.RunCount;
                 player.ResetRun();
+                track.SetLayout(BuildLayout(_configs[_run.TrackType]));
                 track.ResetRun(Environment.TickCount);
             }
 
@@ -119,7 +138,10 @@ namespace SugarDash.Bootstrap
             bool obstaclesAllowed = phase != HypoPhase.ResumeCountdown && phase != HypoPhase.Grace;
             foreach (var item in track.Advance(worldDt, player.CurrentSpeed, obstaclesAllowed))
             {
-                if (player.Resolve(item) != PlayerController.Outcome.Passed) track.Remove(item);
+                var outcome = player.Resolve(item);
+                // 쉬는 곳(Rested)은 지나갈 때까지 트랙에 남긴다.
+                if (outcome == PlayerController.Outcome.Collected || outcome == PlayerController.Outcome.Hit)
+                    track.Remove(item);
             }
         }
 
@@ -138,23 +160,45 @@ namespace SugarDash.Bootstrap
             _subscriptions.Clear();
         }
 
-        /// <summary>주행마다 새 도메인 객체를 만들고 저혈당·고혈당 발동을 상태 기계에 연결한다.</summary>
-        private RunSession CreateSession()
+        /// <summary>설정에서 트랙 배치 값을 만든다. 2형은 음식 줄과 쉬는 곳을 놓고 1형은 간식만 놓는다.</summary>
+        public static TrackLayout BuildLayout(GameConfig config)
         {
-            var model = new GlucoseModel(_config.Glucose);
-            var director = new EventDirector(_config.Glucose, model,
-                new SystemRandomSource(Environment.TickCount), _bus);
-            var fsm = new HypoEventFsm(_config, model, director, _bus, () => _run.DistanceM);
-            var scoring = new ScoringService(_config.Score);
-            return new RunSession(_config, model, director, fsm, scoring, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
-                _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper), scoring.Subscribe(_bus));
+            var ids = config.Glucose.Snacks.Select(s => s.Id).ToList();
+            var t2 = config.Type2;
+            if (t2 == null)
+                return new TrackLayout(ids, config.Runner.TrackSnackIntervalMinSec,
+                    config.Runner.TrackSnackIntervalMaxSec, false, 0, 0);
+            return new TrackLayout(ids, t2.FoodRowIntervalMinSec, t2.FoodRowIntervalMaxSec, true,
+                t2.RestIntervalMinSec, t2.RestIntervalMaxSec);
+        }
+
+        /// <summary>주행마다 그 유형의 설정으로 새 도메인 객체를 만들고 이벤트 발동을 상태 기계에 연결한다.</summary>
+        private RunSession CreateSession(TrackType type)
+        {
+            var config = _configs[type];
+            var model = new GlucoseModel(config.Glucose);
+            var director = new EventDirector(config.Glucose, model,
+                new SystemRandomSource(Environment.TickCount), _bus, config.Type2);
+            var fsm = new HypoEventFsm(config, model, director, _bus, () => _run.DistanceM);
+            var scoring = new ScoringService(config.Score);
+            return new RunSession(config, model, director, fsm, scoring, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper), _bus.Subscribe<LowEventTriggered>(fsm.BeginLow),
+                scoring.Subscribe(_bus));
         }
 
         private bool TryLoadConfig(string label, TextAsset buildAsset, string devPath, out GameConfig config)
         {
+            config = null;
             try
             {
-                config = new ConfigProvider(ReadConfigJson(buildAsset, devPath)).Load();
+                string json = ReadConfigJson(buildAsset, devPath);
+                if (json == null)
+                {
+                    Debug.LogError(label + " 설정 TextAsset이 연결되지 않았다. Bootstrapper의 " +
+                                   (label == "1형" ? "buildConfig" : "buildConfigType2") + "에 설정 파일을 연결해야 한다.");
+                    return false;
+                }
+                config = new ConfigProvider(json).Load();
                 return true;
             }
             catch (ConfigValidationException e)
@@ -173,7 +217,7 @@ namespace SugarDash.Bootstrap
                 Debug.LogWarning("개발용 임시 설정(실제 수치 아님)으로 실행한다: " + devPath);
                 return ReadDevConfig(devPath);
             }
-            return buildAsset.text;
+            return buildAsset != null ? buildAsset.text : null;
         }
 
         private static string ReadDevConfig(string devPath)
