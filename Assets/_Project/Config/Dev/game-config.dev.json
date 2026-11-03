@@ -37,5 +37,16 @@
       "RC_NO_RECHECK": 0, "RC_NO_NOTIFY": 0, "HY_KEEP_RUNNING": 0, "HY_TIMEOUT": 0
     }
   },
-  "sections": [ { "id": "signal" } ]
+  "sections": [
+    { "id": "signal", "lengthM": 300 },
+    {
+      "id": "condition",
+      "scenes": [
+        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "overrides": {} },
+        { "id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {} },
+        { "id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": { "trackSnackIntervalMinSec": 3, "trackSnackIntervalMaxSec": 4 } },
+        { "id": "home", "timeOfDay": "night", "lengthM": 80, "spawns": false }
+      ]
+    }
+  ]
 }

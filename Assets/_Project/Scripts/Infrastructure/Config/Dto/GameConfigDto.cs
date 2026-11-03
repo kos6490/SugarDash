@@ -179,5 +179,31 @@ namespace SugarDash.Infrastructure.Config.Dto
     {
         public string Id { get; set; }
         public double? LengthM { get; set; }
+        public List<SceneDto> Scenes { get; set; }
+    }
+
+    [Preserve]
+    public sealed class SceneDto
+    {
+        public string Id { get; set; }
+        public string TimeOfDay { get; set; }
+        public double? LengthM { get; set; }
+        public bool? Spawns { get; set; }
+        public SceneOverridesDto Overrides { get; set; }
+    }
+
+    /// <summary>null인 키는 덮어쓰지 않는다. 유형에 맞지 않는 키는 GameConfigValidator가 잡는다.</summary>
+    [Preserve]
+    public sealed class SceneOverridesDto
+    {
+        public double? RunDecayPerSec { get; set; }
+        public double? SuddenDropChancePerSec { get; set; }
+        public List<string> TrackSnackIds { get; set; }
+        public double? TrackSnackIntervalMinSec { get; set; }
+        public double? TrackSnackIntervalMaxSec { get; set; }
+        public double? FoodRowIntervalMinSec { get; set; }
+        public double? FoodRowIntervalMaxSec { get; set; }
+        public double? RestIntervalMinSec { get; set; }
+        public double? RestIntervalMaxSec { get; set; }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using SugarDash.Domain.Hypo;
 using SugarDash.Infrastructure.Config.Dto;
 using SugarDash.Infrastructure.Logging;
@@ -491,6 +492,119 @@ namespace SugarDash.Infrastructure.Tests
             }
 
             Assert.That(config.TrackType, Is.EqualTo(TrackType.Type2));
+        }
+
+        private const string SignalOnly = "\"sections\": [ { \"id\": \"signal\" } ]";
+
+        private static string WithScenes(string json, string scenes) => With(json, SignalOnly,
+            "\"sections\": [ { \"id\": \"signal\", \"lengthM\": 10 }, { \"id\": \"condition\", \"scenes\": [ " + scenes + " ] } ]");
+
+        [Test]
+        public void Load_Scenes_MapsAllFields()
+        {
+            var json = WithScenes(ValidJson,
+                "{ \"id\": \"a\", \"timeOfDay\": \"morning\", \"lengthM\": 100, " +
+                "\"overrides\": { \"trackSnackIntervalMinSec\": 3, \"trackSnackIntervalMaxSec\": null, \"trackSnackIds\": [\"juice\", \"juice\"] } }, " +
+                "{ \"id\": \"b\", \"timeOfDay\": \"night\", \"lengthM\": 50, \"spawns\": false }");
+
+            var config = new ConfigProvider(json).Load();
+
+            Assert.That(config.Sections[0].LengthM, Is.EqualTo(10));
+            Assert.That(config.Sections[0].HasScenes, Is.False);
+            var scenes = config.Sections[1].Scenes;
+            Assert.That(scenes.Select(x => x.Id), Is.EqualTo(new[] { "a", "b" }));
+            Assert.That(scenes[0].TimeOfDay, Is.EqualTo(TimeOfDay.Morning));
+            Assert.That(scenes[1].TimeOfDay, Is.EqualTo(TimeOfDay.Night));
+            Assert.That(scenes[0].LengthM, Is.EqualTo(100));
+            Assert.That(scenes[1].LengthM, Is.EqualTo(50));
+            Assert.That(scenes[0].Spawns, Is.True);
+            Assert.That(scenes[1].Spawns, Is.False);
+            Assert.That(scenes[0].Overrides.TrackSnackIntervalMinSec, Is.EqualTo(3));
+            Assert.That(scenes[0].Overrides.TrackSnackIntervalMaxSec, Is.Null);
+            Assert.That(scenes[0].Overrides.TrackSnackIds, Is.EqualTo(new[] { "juice", "juice" }));
+            Assert.That(scenes[1].Overrides.RunDecayPerSec, Is.Null);
+        }
+
+        [Test]
+        public void Load_Type2Scenes_MapsOverrides()
+        {
+            var json = WithScenes(ValidType2Json,
+                "{ \"id\": \"a\", \"timeOfDay\": \"evening\", \"lengthM\": 100, " +
+                "\"overrides\": { \"runDecayPerSec\": 2, \"restIntervalMinSec\": 20 } }");
+
+            var scene = new ConfigProvider(json).Load().Sections[1].Scenes.Single();
+
+            Assert.That(scene.TimeOfDay, Is.EqualTo(TimeOfDay.Evening));
+            Assert.That(scene.Overrides.RunDecayPerSec, Is.EqualTo(2));
+            Assert.That(scene.Overrides.RestIntervalMinSec, Is.EqualTo(20));
+        }
+
+        [Test]
+        public void Load_SceneLengthNull_ReportsPath()
+        {
+            var json = WithScenes(ValidJson, "{ \"id\": \"a\", \"timeOfDay\": \"morning\", \"lengthM\": null }");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths, Is.EqualTo(new[] { "sections[1].scenes[0].lengthM" }));
+        }
+
+        [Test]
+        public void Load_SceneUnknownTimeOfDay_Fails()
+        {
+            var json = WithScenes(ValidJson, "{ \"id\": \"a\", \"timeOfDay\": \"noon\", \"lengthM\": 100 }");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.Violations, Has.Count.EqualTo(1));
+            Assert.That(e.Violations[0], Does.Contain("timeOfDay"));
+        }
+
+        [Test]
+        public void Load_SceneUnknownOverrideKey_Fails()
+        {
+            var json = WithScenes(ValidJson,
+                "{ \"id\": \"a\", \"timeOfDay\": \"morning\", \"lengthM\": 100, \"overrides\": { \"speed\": 1 } }");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.Violations, Has.Count.EqualTo(1));
+            Assert.That(e.Violations[0], Does.Contain("JSON 형식 오류"));
+        }
+
+        // 테스트 어셈블리는 Newtonsoft를 참조하지 않으므로 빈 경로 목록과 원문으로 확인한다.
+        [TestCase(BuildConfigPath)]
+        [TestCase(BuildType2ConfigPath)]
+        public void BuildConfig_Sections_HaveDayScenes(string path)
+        {
+            string json = File.ReadAllText(Path.Combine(Application.dataPath, path));
+
+            var e = LoadFails(json);
+            Assert.That(e.MissingPaths, Is.SupersetOf(new[]
+            {
+                "sections[0].lengthM", "sections[1].scenes[0].lengthM", "sections[1].scenes[1].lengthM",
+                "sections[1].scenes[2].lengthM", "sections[1].scenes[3].lengthM",
+            }));
+            Assert.That(e.MissingPaths, Has.None.Contains("sections[1].scenes[4]"));
+
+            var scenes = Regex.Matches(json, "\"id\":\\s*\"(\\w+)\",\\s*\"timeOfDay\":\\s*\"(\\w+)\"")
+                .Cast<Match>().ToList();
+            Assert.That(scenes.Select(m => m.Groups[1].Value), Is.EqualTo(new[] { "schoolyard", "playground", "outing", "home" }));
+            Assert.That(scenes.Select(m => m.Groups[2].Value), Is.EqualTo(new[] { "morning", "afternoon", "evening", "night" }));
+            Assert.That(json, Does.Match("\"id\":\\s*\"home\"[^}]*\"spawns\":\\s*false"));
+            Assert.That(json, Does.Not.Match("\"overrides\":\\s*\\{\\s*[^}\\s]"), "빌드 설정의 overrides는 비어 있어야 한다");
+        }
+
+        [TestCase(DevConfigPath)]
+        [TestCase(DevType2ConfigPath)]
+        public void DevConfig_Sections_HaveDayScenes(string path)
+        {
+            var config = new ConfigProvider(File.ReadAllText(Path.Combine(Application.dataPath, path))).Load();
+
+            Assert.That(config.Sections[0].LengthM, Is.EqualTo(300));
+            Assert.That(config.Sections[1].Scenes.Select(x => x.Id), Is.EqualTo(new[] { "schoolyard", "playground", "outing", "home" }));
+            Assert.That(config.Sections[1].Scenes.Select(x => x.LengthM), Is.EqualTo(new double?[] { 200, 200, 200, 80 }));
+            Assert.That(config.Sections[1].Scenes[3].Spawns, Is.False);
         }
     }
 }

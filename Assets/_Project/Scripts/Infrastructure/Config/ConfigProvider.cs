@@ -290,11 +290,52 @@ namespace SugarDash.Infrastructure.Config
                     var section = Section(sectionDtos[i], path);
                     bool last = i == sectionDtos.Count - 1;
                     double? length = section?.LengthM;
-                    // 마지막 구간만 길이가 없다(끝없이 이어진다).
-                    if (!last && !length.HasValue && section != null) Missing.Add(path + ".lengthM");
-                    sections.Add(new SectionConfig(Text(section?.Id, path + ".id", section), length));
+                    // 마지막 구간과 장면이 있는 구간은 길이가 없다(끝없이 이어진다).
+                    bool hasScenes = section?.Scenes != null;
+                    if (!last && !hasScenes && !length.HasValue && section != null) Missing.Add(path + ".lengthM");
+                    var scenes = hasScenes ? MapScenes(section.Scenes, path + ".scenes") : null;
+                    sections.Add(new SectionConfig(Text(section?.Id, path + ".id", section), length, scenes));
                 }
                 return sections;
+            }
+
+            private List<SceneConfig> MapScenes(List<SceneDto> sceneDtos, string sectionPath)
+            {
+                var scenes = new List<SceneConfig>();
+                for (int j = 0; j < sceneDtos.Count; j++)
+                {
+                    string path = $"{sectionPath}[{j}]";
+                    var scene = Section(sceneDtos[j], path);
+                    if (scene == null) continue;
+                    var o = scene.Overrides;
+                    var overrides = o == null
+                        ? SceneOverrides.None
+                        : new SceneOverrides(o.RunDecayPerSec, o.SuddenDropChancePerSec, o.TrackSnackIds,
+                            o.TrackSnackIntervalMinSec, o.TrackSnackIntervalMaxSec, o.FoodRowIntervalMinSec,
+                            o.FoodRowIntervalMaxSec, o.RestIntervalMinSec, o.RestIntervalMaxSec);
+                    if (!scene.LengthM.HasValue) Missing.Add(path + ".lengthM");
+                    scenes.Add(new SceneConfig(Text(scene.Id, path + ".id", scene),
+                        TimeOfDayOf(scene.TimeOfDay, path + ".timeOfDay", scene), scene.LengthM,
+                        scene.Spawns ?? true, overrides));
+                }
+                return scenes;
+            }
+
+            private TimeOfDay TimeOfDayOf(string value, string path, object section)
+            {
+                switch (value)
+                {
+                    case "morning": return TimeOfDay.Morning;
+                    case "afternoon": return TimeOfDay.Afternoon;
+                    case "evening": return TimeOfDay.Evening;
+                    case "night": return TimeOfDay.Night;
+                    case null:
+                        if (section != null) Missing.Add(path);
+                        return default;
+                    default:
+                        Violations.Add($"{path}는 morning, afternoon, evening, night 중 하나여야 한다 ({value})");
+                        return default;
+                }
             }
 
             private ScoreConfig MapScore(ScoreDto score)

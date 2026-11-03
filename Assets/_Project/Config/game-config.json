@@ -57,5 +57,16 @@
       "RC_NO_RECHECK": null, "RC_NO_NOTIFY": null, "HY_KEEP_RUNNING": 0, "HY_TIMEOUT": null
     }
   },
-  "sections": [ { "id": "signal" } ]
+  "sections": [
+    { "id": "signal", "lengthM": null },
+    {
+      "id": "condition",
+      "scenes": [
+        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": null, "overrides": {} },
+        { "id": "playground", "timeOfDay": "afternoon", "lengthM": null, "overrides": {} },
+        { "id": "outing", "timeOfDay": "evening", "lengthM": null, "overrides": {} },
+        { "id": "home", "timeOfDay": "night", "lengthM": null, "spawns": false }
+      ]
+    }
+  ]
 }

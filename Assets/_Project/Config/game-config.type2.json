@@ -44,5 +44,16 @@
     "errors": { "HY_KEEP_RUNNING": 0, "HY_JUICE": null, "HY_TIMEOUT": null,
                 "LO_KEEP_RUNNING": 0, "LO_TIMEOUT": null }
   },
-  "sections": [ { "id": "signal" } ]
+  "sections": [
+    { "id": "signal", "lengthM": null },
+    {
+      "id": "condition",
+      "scenes": [
+        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": null, "overrides": {} },
+        { "id": "playground", "timeOfDay": "afternoon", "lengthM": null, "overrides": {} },
+        { "id": "outing", "timeOfDay": "evening", "lengthM": null, "overrides": {} },
+        { "id": "home", "timeOfDay": "night", "lengthM": null, "spawns": false }
+      ]
+    }
+  ]
 }
