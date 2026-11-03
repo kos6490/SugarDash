@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using SugarDash.Domain.Events;
+using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Ports;
 using SugarDash.Domain.Records;
 using SugarDash.Infrastructure.Logging.Dto;
@@ -137,16 +138,22 @@ namespace SugarDash.Infrastructure.Logging
                 case "HyperResolved":
                     return new HyperResolved(Req(r.EventId), Req(r.AllCorrect), Req(r.SimT), Req(r.T));
                 case "RunEliminated":
-                    return new RunEliminated(Req(r.EventId), LogCodes.ParseStep(r.Step),
-                        LogCodes.ParseError(r.ErrorCode), LogCodes.ParseCause(r.Cause), Req(r.SimT), Req(r.T));
+                    return new RunEliminated(Req(r.EventId), r.Step == null ? (HypoStep?)null : LogCodes.ParseStep(r.Step),
+                        LogCodes.ParseError(r.ErrorCode), LogCodes.ParseCause(r.Cause), Req(r.DistanceM),
+                        Req(r.SimT), Req(r.T));
+                case "SectionEntered":
+                    return new SectionEntered(r.Section ?? throw new FormatException("section이 비었다"),
+                        Req(r.DistanceM), Req(r.SimT), Req(r.T));
+                case "GlucoseRangeEntered":
+                    return new GlucoseRangeEntered(Req(r.Actual), Req(r.SimT), Req(r.T));
+                case "GlucoseRangeExited":
+                    return new GlucoseRangeExited(Req(r.Actual), Req(r.SimT), Req(r.T));
                 case "GraceStarted":
                     return new GraceStarted(Req(r.EventId), Req(r.SimT), Req(r.T));
                 case "GraceEnded":
                     return new GraceEnded(Req(r.EventId), Req(r.SimT), Req(r.T));
                 case "TrackSnackEaten":
                     return new TrackSnackEaten(r.SnackId, Req(r.Servings), Req(r.SimT), Req(r.T));
-                case "RunCompleted":
-                    return new RunCompleted(Req(r.WorldT), Req(r.SimT), Req(r.T));
                 default:
                     return null;
             }

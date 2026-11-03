@@ -41,6 +41,7 @@ namespace SugarDash.Domain.Director
         private bool _rearmedDuringCooldown;
         private bool _suppressed;
         private int _lastEventId;
+        private bool _targetRangeEvaluated;
 
         public EventDirector(GlucoseConfig config, GlucoseModel model, IRandomSource random, DomainEventBus bus)
         {
@@ -64,6 +65,12 @@ namespace SugarDash.Domain.Director
         /// <summary>표시 혈당이 경고선 아래인 동안 true. 히스테리시스는 두지 않는다.</summary>
         public bool IsGaugeWarningOn { get; private set; }
 
+        /// <summary>
+        /// 실제 혈당이 적정 범위(normalRangeMin 이상, hyperThreshold 미만) 안이면 true.
+        /// <see cref="EvaluateTargetRange"/>를 처음 부르기 전에는 false.
+        /// </summary>
+        public bool IsInTargetRange { get; private set; }
+
         /// <summary>RunController가 GlucoseModel.Tick 직후 호출한다.</summary>
         /// <param name="simDt">이번 Tick에서 흐른 simTime.</param>
         public void Evaluate(double simDt)
@@ -74,6 +81,26 @@ namespace SugarDash.Domain.Director
             EvaluateHypo();
             EvaluateHyper();
             EvaluateGaugeWarning();
+            EvaluateTargetRange();
+        }
+
+        /// <summary>
+        /// 적정 범위 안팎을 판정한다. 처음 판정에서 범위 안이면 GlucoseRangeEntered를 내고 범위 밖이면 아무것도 내지 않는다.
+        /// 그 뒤에는 안팎이 바뀔 때만 들어감·나감을 낸다. <see cref="Evaluate"/> 끝에서도 호출한다.
+        /// </summary>
+        public void EvaluateTargetRange()
+        {
+            var levels = _config.Levels;
+            double actual = _model.Actual;
+            bool inRange = levels.NormalRangeMin <= actual && actual < levels.HyperThreshold;
+
+            bool first = !_targetRangeEvaluated;
+            _targetRangeEvaluated = true;
+            if (!first && inRange == IsInTargetRange) return;
+
+            IsInTargetRange = inRange;
+            if (inRange) _bus.Publish(new GlucoseRangeEntered(actual, _model.SimTime, _model.DecisionTime));
+            else if (!first) _bus.Publish(new GlucoseRangeExited(actual, _model.SimTime, _model.DecisionTime));
         }
 
         /// <summary>

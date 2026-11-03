@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using SugarDash.Domain.Config;
+using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Ports;
+using SugarDash.Infrastructure.Logging;
 using SugarDash.Infrastructure.Config.Dto;
 using Newtonsoft.Json;
 
@@ -101,6 +103,7 @@ namespace SugarDash.Infrastructure.Config
                     Number(hypo?.GuardianPromptTimeLimitSec, "hypo.guardianPromptTimeLimitSec", hypo),
                     Number(hypo?.ResumeCountdownSec, "hypo.resumeCountdownSec", hypo),
                     Number(hypo?.GraceSec, "hypo.graceSec", hypo),
+                    Number(hypo?.AnswerFeedbackSec, "hypo.answerFeedbackSec", hypo),
                     Text(hypo?.GuardianSnackId, "hypo.guardianSnackId", hypo),
                     new DoseConfig(
                         Number(doses?.Under, "hypo.doses.under", doses),
@@ -135,14 +138,78 @@ namespace SugarDash.Infrastructure.Config
                 var runner = Section(dto.Runner, "runner");
                 var runnerConfig = new RunnerConfig(
                     Number(runner?.TrackSnackServings, "runner.trackSnackServings", runner),
-                    Number(runner?.RunDurationSec, "runner.runDurationSec", runner),
-                    Number(runner?.TrackSnackIntervalSec, "runner.trackSnackIntervalSec", runner));
+                    Number(runner?.TrackSnackIntervalMinSec, "runner.trackSnackIntervalMinSec", runner),
+                    Number(runner?.TrackSnackIntervalMaxSec, "runner.trackSnackIntervalMaxSec", runner));
+
+                var elimination = Section(dto.Elimination, "elimination");
+                var eliminationConfig = new EliminationConfig(
+                    Number(elimination?.GlucoseLow, "elimination.glucoseLow", elimination),
+                    Number(elimination?.GlucoseHigh, "elimination.glucoseHigh", elimination));
+
+                var symptom = Section(dto.Symptom, "symptom");
+                var symptomConfig = new SymptomConfig(
+                    Number(symptom?.ShakeStartGlucose, "symptom.shakeStartGlucose", symptom));
+
+                var scoreConfig = MapScore(Section(dto.Score, "score"));
+
+                var sections = new List<SectionConfig>();
+                var sectionDtos = Section(dto.Sections, "sections");
+                for (int i = 0; sectionDtos != null && i < sectionDtos.Count; i++)
+                {
+                    string path = $"sections[{i}]";
+                    var section = Section(sectionDtos[i], path);
+                    bool last = i == sectionDtos.Count - 1;
+                    double? length = section?.LengthM;
+                    // 마지막 구간만 길이가 없다(끝없이 이어진다).
+                    if (!last && !length.HasValue && section != null) Missing.Add(path + ".lengthM");
+                    sections.Add(new SectionConfig(Text(section?.Id, path + ".id", section), length));
+                }
 
                 var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
                     snacks);
                 return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, hyperConfig,
-                    runnerConfig);
+                    runnerConfig, eliminationConfig, symptomConfig, scoreConfig, sections);
             }
+
+            private ScoreConfig MapScore(ScoreDto score)
+            {
+                var correct = score == null ? null : Section(score.Correct, "score.correct");
+                var correctWeights = new Dictionary<HypoStep, double>
+                {
+                    { HypoStep.Recognize, Number(correct?.Recognize, "score.correct.recognize", correct) },
+                    { HypoStep.Respond, Number(correct?.Respond, "score.correct.respond", correct) },
+                    { HypoStep.Dose, Number(correct?.Dose, "score.correct.dose", correct) },
+                    { HypoStep.Remeasure, Number(correct?.Remeasure, "score.correct.remeasure", correct) },
+                    { HypoStep.Notify, Number(correct?.Notify, "score.correct.notify", correct) },
+                    { HypoStep.HyperNotify, Number(correct?.HyperNotify, "score.correct.hyperNotify", correct) },
+                };
+
+                var errors = score == null ? null : Section(score.Errors, "score.errors");
+                var errorWeights = new Dictionary<HypoErrorCode, double>
+                {
+                    { HypoErrorCode.SMissed, Error(errors?.SMissed, HypoErrorCode.SMissed, errors) },
+                    { HypoErrorCode.RsSlow, Error(errors?.RsSlow, HypoErrorCode.RsSlow, errors) },
+                    { HypoErrorCode.RsKeepRunning, Error(errors?.RsKeepRunning, HypoErrorCode.RsKeepRunning, errors) },
+                    { HypoErrorCode.RsNone, Error(errors?.RsNone, HypoErrorCode.RsNone, errors) },
+                    { HypoErrorCode.RsTimeout, Error(errors?.RsTimeout, HypoErrorCode.RsTimeout, errors) },
+                    { HypoErrorCode.HelpInstead, Error(errors?.HelpInstead, HypoErrorCode.HelpInstead, errors) },
+                    { HypoErrorCode.DsUnder, Error(errors?.DsUnder, HypoErrorCode.DsUnder, errors) },
+                    { HypoErrorCode.DsOver, Error(errors?.DsOver, HypoErrorCode.DsOver, errors) },
+                    { HypoErrorCode.DsTimeout, Error(errors?.DsTimeout, HypoErrorCode.DsTimeout, errors) },
+                    { HypoErrorCode.RcNoRecheck, Error(errors?.RcNoRecheck, HypoErrorCode.RcNoRecheck, errors) },
+                    { HypoErrorCode.RcNoNotify, Error(errors?.RcNoNotify, HypoErrorCode.RcNoNotify, errors) },
+                    { HypoErrorCode.HyKeepRunning, Error(errors?.HyKeepRunning, HypoErrorCode.HyKeepRunning, errors) },
+                    { HypoErrorCode.HyTimeout, Error(errors?.HyTimeout, HypoErrorCode.HyTimeout, errors) },
+                };
+
+                return new ScoreConfig(
+                    Number(score?.InRangePerSec, "score.inRangePerSec", score),
+                    Number(score?.PerMeter, "score.perMeter", score),
+                    correctWeights, errorWeights);
+            }
+
+            private double Error(double? value, HypoErrorCode code, object section) =>
+                Number(value, "score.errors." + LogCodes.Error(code), section);
 
             private T Section<T>(T section, string path) where T : class
             {
@@ -152,6 +219,13 @@ namespace SugarDash.Infrastructure.Config
 
             // section이 이미 없으면 하위 경로는 따로 보고하지 않는다.
             private double Number(double? value, string path, object section)
+            {
+                if (value.HasValue) return value.Value;
+                if (section != null) Missing.Add(path);
+                return 0;
+            }
+
+            private int Integer(int? value, string path, object section)
             {
                 if (value.HasValue) return value.Value;
                 if (section != null) Missing.Add(path);

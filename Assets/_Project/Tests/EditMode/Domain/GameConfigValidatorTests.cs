@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SugarDash.Domain.Config;
+using SugarDash.Domain.Hypo;
 using NUnit.Framework;
 
 namespace SugarDash.Domain.Tests
@@ -26,10 +27,10 @@ namespace SugarDash.Domain.Tests
             TestCaseData Case(string name, Action<ConfigBuilder> mutate, int expectedCount = 1) =>
                 new TestCaseData(mutate, expectedCount).SetName("Violation_" + name);
 
-            yield return Case("MinNotBelowHypo", b => b.Min = 70, 2); // 1 + 18(G0 = 40 < min)
+            yield return Case("MinNotBelowHypo", b => b.Min = 70, 3); // 1 + 18(G0 = 40 < min) + 21(glucoseLow 40 < min)
             yield return Case("InitialNotAboveHypo", b => b.Initial = 60);
             yield return Case("InitialNotBelowHyper", b => b.Initial = 250);
-            yield return Case("HyperAboveMax", b => b.Max = 200);
+            yield return Case("HyperAboveMax", b => b.Max = 200, 2); // 1 + 21(glucoseHigh 300 > max)
             yield return Case("ReleaseMarginZero", b => b.HypoReleaseMargin = 0);
             yield return Case("ReleaseLevelNotBelowHyper", b => b.HypoReleaseMargin = 200);
             yield return Case("HyperReleaseMarginZero", b => b.HyperReleaseMargin = 0);
@@ -65,6 +66,8 @@ namespace SugarDash.Domain.Tests
             yield return Case("GuardianPromptZero", b => b.GuardianPromptTimeLimitSec = 0);
             yield return Case("ResumeCountdownZero", b => b.ResumeCountdownSec = 0);
             yield return Case("GraceZero", b => b.GraceSec = 0);
+            yield return Case("AnswerFeedbackNegative", b => b.AnswerFeedbackSec = -1);
+            yield return Case("AnswerFeedbackNaN", b => b.AnswerFeedbackSec = double.NaN);
             yield return Case("DoseUnderZero", b => b.DoseUnder = 0, 2); // 16 + 19(trackSnack 0.5 ≥ under)
             yield return Case("DoseProperNotAboveUnder", b => b.DoseUnder = 2);
             yield return Case("DoseOverNotAboveProper", b => b.DoseOver = 2);
@@ -75,8 +78,22 @@ namespace SugarDash.Domain.Tests
             yield return Case("RecoveryDisplayInsufficient", b => b.SnackById("juice").AbsorbSec = 4);
             yield return Case("TrackSnackZero", b => b.TrackSnackServings = 0);
             yield return Case("TrackSnackNotBelowDoseUnder", b => b.TrackSnackServings = 1);
-            yield return Case("RunDurationZero", b => b.RunDurationSec = 0);
-            yield return Case("TrackSnackIntervalZero", b => b.TrackSnackIntervalSec = 0);
+            yield return Case("IntervalMinZero", b => b.TrackSnackIntervalMinSec = 0);
+            yield return Case("IntervalMinAboveMax", b => { b.TrackSnackIntervalMinSec = 9; b.TrackSnackIntervalMaxSec = 8; });
+            yield return Case("GlucoseLowAtHypoThreshold", b => b.GlucoseLow = 70);
+            yield return Case("GlucoseLowBelowMin", b => b.GlucoseLow = 19);
+            yield return Case("GlucoseHighAtHyperThreshold", b => b.GlucoseHigh = 250);
+            yield return Case("GlucoseHighAboveMax", b => b.GlucoseHigh = 401);
+            yield return Case("ShakeStartAtGlucoseLow", b => b.ShakeStartGlucose = 40);
+            yield return Case("ShakeStartAboveMax", b => b.ShakeStartGlucose = 401);
+            yield return Case("NegativeInRangePerSec", b => b.InRangePerSec = -1);
+            yield return Case("KeepRunningNotZero", b => b.ErrorWeightOverrides[HypoErrorCode.RsKeepRunning] = 1);
+            yield return Case("HyperKeepRunningNotZero", b => b.ErrorWeightOverrides[HypoErrorCode.HyKeepRunning] = 1);
+            yield return Case("NoSections", b => b.Sections.Clear());
+            yield return Case("LastSectionHasLength", b => b.Sections = new List<SectionConfig> { new SectionConfig("signal", 100) });
+            yield return Case("MiddleSectionNoLength", b => b.Sections = new List<SectionConfig> { new SectionConfig("signal", null), new SectionConfig("condition", null) });
+            yield return Case("DuplicateSectionId", b => b.Sections = new List<SectionConfig> { new SectionConfig("signal", 100), new SectionConfig("signal", null) });
+            yield return Case("UnknownSectionId", b => b.Sections = new List<SectionConfig> { new SectionConfig("forest", null) });
         }
 
         [TestCaseSource(nameof(SingleViolations))]
@@ -100,10 +117,38 @@ namespace SugarDash.Domain.Tests
         }
 
         [Test]
+        public void AnswerFeedbackZero_IsValid()
+        {
+            Assert.That(GameConfigValidator.Validate(new ConfigBuilder { AnswerFeedbackSec = 0 }.Build()), Is.Empty);
+        }
+
+        [Test]
+        public void Recovery_IncludesAnswerFeedbackWindows()
+        {
+            // 처치 전 문구 창 5번, 처치 뒤 재측정까지 2번이 기본 하강으로 혈당을 깎는다.
+            // G0 = 70 − 30 − 1.5×5 − 0.5×(25 + 5×1) = 17.5, A = 35×2 = 70, D = 0.5×(5+5+6 + 2×1) = 9 → 78.5
+            var builder = new ConfigBuilder
+            {
+                BaseDecayPerSec = 0.5, RunDecayPerSec = 1, AnswerFeedbackSec = 1, Min = 17.5, NormalRangeMin = 78.5,
+            };
+            builder.SnackById("juice").TotalRise = 35;
+            Assert.That(GameConfigValidator.Validate(builder.Build()), Is.Empty);
+
+            builder.NormalRangeMin = 78.501;
+            Assert.That(GameConfigValidator.Validate(builder.Build()), Has.Count.EqualTo(1));
+
+            builder.NormalRangeMin = 78.5;
+            builder.Min = 17.501;
+            var errors = GameConfigValidator.Validate(builder.Build());
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("min"));
+        }
+
+        [Test]
         public void WorstCaseBelowMin_IsReported()
         {
             // G0 = 70 − 30 = 40 < min 45. 흡수량이 커서 회복 조건은 통과한다.
-            var builder = new ConfigBuilder { Min = 45 };
+            var builder = new ConfigBuilder { Min = 45, GlucoseLow = 45 };
 
             var errors = GameConfigValidator.Validate(builder.Build());
 

@@ -5,7 +5,7 @@ namespace SugarDash.Domain.Config
     {
         public HypoConfig(double step1TimeLimitSec, double step2TimeLimitSec, double step3TimeLimitSec,
             double step4TimeLimitSec, double guardianPromptTimeLimitSec, double resumeCountdownSec, double graceSec,
-            string guardianSnackId, DoseConfig doses)
+            double answerFeedbackSec, string guardianSnackId, DoseConfig doses)
         {
             Step1TimeLimitSec = step1TimeLimitSec;
             Step2TimeLimitSec = step2TimeLimitSec;
@@ -14,6 +14,7 @@ namespace SugarDash.Domain.Config
             GuardianPromptTimeLimitSec = guardianPromptTimeLimitSec;
             ResumeCountdownSec = resumeCountdownSec;
             GraceSec = graceSec;
+            AnswerFeedbackSec = answerFeedbackSec;
             GuardianSnackId = guardianSnackId;
             Doses = doses;
         }
@@ -32,6 +33,11 @@ namespace SugarDash.Domain.Config
         public double ResumeCountdownSec { get; }
         /// <summary>재개 뒤 저혈당 발동·급하강·장애물이 없는 시간(simDt 기준).</summary>
         public double GraceSec { get; }
+        /// <summary>
+        /// 대처 중 선택(또는 시간 초과) 뒤 무엇을 골랐는지 보여 주는 결과 문구 창(decisionDt 기준 초).
+        /// 다음 단계의 판단 시간과 마감은 이 창이 끝난 뒤부터 잰다. 0이면 창 없이 바로 다음 단계로 간다.
+        /// </summary>
+        public double AnswerFeedbackSec { get; }
         /// <summary>아동이 간식을 고르지 못했을 때 어른이 건네는 빠른 당.</summary>
         public string GuardianSnackId { get; }
         public DoseConfig Doses { get; }

@@ -8,9 +8,11 @@ using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Glucose;
 using SugarDash.Domain.Hypo;
+using SugarDash.Domain.Scoring;
 using SugarDash.Infrastructure;
 using SugarDash.Infrastructure.Config;
 using SugarDash.Infrastructure.Logging;
+using SugarDash.Infrastructure.Progress;
 using SugarDash.Presentation;
 using UnityEngine;
 
@@ -34,6 +36,7 @@ namespace SugarDash.Bootstrap
         [SerializeField] private PlayerController player;
         [SerializeField] private TrackSpawner track;
         [SerializeField] private InputAdapter input;
+        [SerializeField] private SymptomEffectPresenter symptomEffect;
 
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private GameConfig _config;
@@ -61,15 +64,20 @@ namespace SugarDash.Bootstrap
             var log = new LogRepository(logDirectory, _config.ConfigVersion);
             _subscriptions.Add(log.Subscribe(_bus));
 
-            _run = new RunController(_config.Runner, CreateSession, log, _bus);
-            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory));
+            _run = new RunController(_config.Runner, _config.Sections, CreateSession, log, _bus);
+            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory), _config.Score,
+                new BestScoreRepository(Path.Combine(Application.persistentDataPath, "best-score.json")),
+                _config.ConfigVersion);
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
-            _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks));
+            _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks, Environment.TickCount));
             _subscriptions.Add(resultScreen.Bind(_flow));
+            if (symptomEffect != null)
+                _subscriptions.Add(symptomEffect.Bind(_run, _config.Symptom.ShakeStartGlucose, _config.Elimination.GlucoseLow));
 
             player.Init(_run, true);
-            track.Init(_config.Runner.TrackSnackIntervalSec, _config.Glucose.Snacks.Select(s => s.Id).ToList(),
+            track.Init(_config.Runner.TrackSnackIntervalMinSec, _config.Runner.TrackSnackIntervalMaxSec,
+                _config.Glucose.Snacks.Select(s => s.Id).ToList(),
                 Environment.TickCount, true);
             input.Init(_run, player);
         }
@@ -94,6 +102,7 @@ namespace SugarDash.Bootstrap
 
             double worldDt = _run.LastWorldDt;
             player.Advance(worldDt);
+            _run.AdvanceDistance(player.CurrentSpeed * worldDt);
             var phase = _run.Phase;
             bool obstaclesAllowed = phase != HypoPhase.ResumeCountdown && phase != HypoPhase.Grace;
             foreach (var item in track.Advance(worldDt, player.CurrentSpeed, obstaclesAllowed))
@@ -123,9 +132,10 @@ namespace SugarDash.Bootstrap
             var model = new GlucoseModel(_config.Glucose);
             var director = new EventDirector(_config.Glucose, model,
                 new SystemRandomSource(Environment.TickCount), _bus);
-            var fsm = new HypoEventFsm(_config, model, director, _bus);
-            return new RunSession(model, director, fsm, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
-                _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
+            var fsm = new HypoEventFsm(_config, model, director, _bus, () => _run.DistanceM);
+            var scoring = new ScoringService(_config.Score);
+            return new RunSession(model, director, fsm, scoring, _bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper), scoring.Subscribe(_bus));
         }
 
         private string ReadConfigJson()

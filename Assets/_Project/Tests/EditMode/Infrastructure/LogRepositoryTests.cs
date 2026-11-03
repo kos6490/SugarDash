@@ -42,6 +42,40 @@ namespace SugarDash.Infrastructure.Tests
             RawLines(path).Select(LogRecordJson.Deserialize).ToArray();
 
         [Test]
+        public void Writes_NewRecordTypes()
+        {
+            _repo.BeginRun();
+            _bus.Publish(new SectionEntered("signal", 12.5, 1, 1));
+            _bus.Publish(new GlucoseRangeEntered(95.5, 3, 3));
+            _bus.Publish(new GlucoseRangeExited(60.5, 4, 4));
+            _bus.Publish(new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.ObstacleHit, 55.5, 5, 5));
+
+            var raw = RawLines();
+            var lines = Lines();
+            Assert.That(lines.Select(l => l.Type), Is.EqualTo(new[]
+            {
+                "RunStarted", "SectionEntered", "GlucoseRangeEntered", "GlucoseRangeExited",
+                "RunEliminated"
+            }));
+            Assert.That(lines[1].Section, Is.EqualTo("signal"));
+            Assert.That(lines[1].DistanceM, Is.EqualTo(12.5));
+            Assert.That(lines[2].Actual, Is.EqualTo(95.5));
+            Assert.That(lines[3].Actual, Is.EqualTo(60.5));
+            for (int i = 1; i <= 3; i++)
+            {
+                Assert.That(raw[i], Does.Not.Contain("eventId"), lines[i].Type);
+                Assert.That(lines[i].SchemaVersion, Is.EqualTo(2));
+            }
+
+            Assert.That(raw[4], Does.Not.Contain("\"step\""));
+            Assert.That(raw[4], Does.Not.Contain("errorCode"));
+            Assert.That(lines[4].Cause, Is.EqualTo("obstacle_hit"));
+            Assert.That(lines[4].DistanceM, Is.EqualTo(55.5));
+            Assert.That(lines[4].SchemaVersion, Is.EqualTo(2));
+            Assert.That(LogRepository.SchemaVersion, Is.EqualTo(2));
+        }
+
+        [Test]
         public void BeginRun_CreatesRunFileWithRunStarted()
         {
             string runId = _repo.BeginRun();
@@ -127,9 +161,8 @@ namespace SugarDash.Infrastructure.Tests
             _bus.Publish(new MeterPressed(0, 90, true, true, 50, 39));
             _bus.Publish(new SuddenDropStarted(60, 49));
             _bus.Publish(new RunEliminated(2, HypoStep.Recognize, HypoErrorCode.SMissed,
-                EliminationCause.PromptTimeout, 90, 79));
+                EliminationCause.PromptTimeout, 0, 90, 79));
             _bus.Publish(new TrackSnackEaten("juice", 0.5, 95, 84));
-            _bus.Publish(new RunCompleted(80, 120, 110));
 
             var lines = Lines();
             Assert.That(lines[1].ErrorCode, Is.EqualTo("DS_OVER"));
@@ -155,9 +188,6 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(lines[11].SnackId, Is.EqualTo("juice"));
             Assert.That(lines[11].Servings, Is.EqualTo(0.5));
             Assert.That(RawLines()[11], Does.Not.Contain("\"eventId\""));
-            Assert.That(lines[12].Type, Is.EqualTo("RunCompleted"));
-            Assert.That(lines[12].WorldT, Is.EqualTo(80));
-            Assert.That(lines[12].SimT, Is.EqualTo(120));
         }
 
         [Test]

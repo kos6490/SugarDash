@@ -8,9 +8,7 @@ namespace SugarDash.App
         Running,
         /// <summary>메뉴 일시정지·앱 백그라운드. 세 시계가 모두 멈춘다.</summary>
         Paused,
-        /// <summary>오류 뒤 어른에게 알리지 않아 탈락했다. 더 진행하지 않는다.</summary>
+        /// <summary>탈락했다(알리기 거절·시간 초과, 혈당 안전 범위 이탈, 장애물 충돌). 더 진행하지 않는다.</summary>
         Eliminated,
-        /// <summary>주행 길이만큼 달려 마쳤다. 더 진행하지 않는다.</summary>
-        Completed,
     }
 }

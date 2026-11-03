@@ -12,6 +12,7 @@ namespace SugarDash.App
     /// (docs/glucose-model.md 2.1절).
     /// 화면의 명령은 큐에 쌓았다가 다음 <see cref="Tick"/> 맨 앞에서 처리한다. 명령은 지난 프레임의
     /// HypoEventFsm.Update가 끝난 시각에 처리되므로, 마감이 지난 답이 정상 답으로 받아지지 않는다.
+    /// 주행은 탈락할 때까지 끝없이 이어진다. 거리에 따라 설정의 구간이 차례로 열리고, 장애물에 한 번 부딪히면 탈락한다.
     /// </summary>
     public sealed class RunController
     {
@@ -19,18 +20,25 @@ namespace SugarDash.App
         private const double RunningActivity = 1;
 
         private readonly RunnerConfig _runner;
+        private readonly IReadOnlyList<SectionConfig> _sections;
         private readonly Func<RunSession> _sessionFactory;
         private readonly ILogRepository _log;
         private readonly DomainEventBus _bus;
         private readonly Queue<Action<RunSession>> _commands = new Queue<Action<RunSession>>();
 
         private RunSession _session;
+        private int _sectionIndex;
+        // 지금 구간이 끝나는 누적 거리(m). 마지막 구간(lengthM 없음)이면 양의 무한대.
+        private double _sectionEndM;
 
+        /// <param name="sections">구간 순서. 마지막 구간만 lengthM이 없다(설정 검증에서 확인).</param>
         /// <param name="sessionFactory">주행마다 새 도메인 객체 묶음을 만든다. GameBootstrapper가 주입한다.</param>
-        public RunController(RunnerConfig runner, Func<RunSession> sessionFactory, ILogRepository log,
-            DomainEventBus bus)
+        public RunController(RunnerConfig runner, IReadOnlyList<SectionConfig> sections,
+            Func<RunSession> sessionFactory, ILogRepository log, DomainEventBus bus)
         {
             _runner = runner ?? throw new ArgumentNullException(nameof(runner));
+            _sections = sections ?? throw new ArgumentNullException(nameof(sections));
+            if (_sections.Count == 0) throw new ArgumentException("구간이 하나 이상 있어야 한다", nameof(sections));
             _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
             _log = log ?? throw new ArgumentNullException(nameof(log));
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
@@ -41,7 +49,7 @@ namespace SugarDash.App
         /// <summary>열린 주행의 runId(기록 파일 이름). 열린 주행이 없으면 null.</summary>
         public string CurrentRunId { get; private set; }
 
-        /// <summary>worldDt 누적. 주행 길이를 잰다.</summary>
+        /// <summary>worldDt 누적. 세계가 흐른 시간이다.</summary>
         public double WorldTime { get; private set; }
 
         /// <summary>
@@ -53,14 +61,29 @@ namespace SugarDash.App
         /// <summary><see cref="StartRun"/>을 부를 때마다 1씩 는다. 화면이 새 주행을 알아채 초기화하는 데 쓴다.</summary>
         public int RunCount { get; private set; }
 
+        /// <summary>이번 주행에서 달린 거리(m). <see cref="AdvanceDistance"/>로만 는다. 주행을 닫은 뒤에도 마지막 값을 둔다.</summary>
+        public double DistanceM { get; private set; }
+
+        /// <summary>지금 구간의 id. 열린 주행이 없으면 null.</summary>
+        public string CurrentSectionId => _session == null ? null : _sections[_sectionIndex].Id;
+
         // HUD·패널이 읽는 값. 주행이 없으면 기본값.
         public double Displayed => _session?.Model.Displayed ?? 0;
         public double Actual => _session?.Model.Actual ?? 0;
         public bool IsGaugeWarningOn => _session?.Director.IsGaugeWarningOn ?? false;
         public HypoPhase Phase => _session?.Fsm.Phase ?? HypoPhase.Idle;
         public bool IsWorldFrozen => _session?.Fsm.IsWorldFrozen ?? false;
+        /// <summary>선택 뒤 결과 문구 창이 열려 있다. 이 동안 패널은 문구만 보여 주고 선택 명령은 무시된다.</summary>
+        public bool IsShowingAnswerFeedback => _session?.Fsm.IsShowingAnswerFeedback ?? false;
+        /// <summary>재개 카운트다운의 남은 시간(초). 카운트다운 중이 아니면 0.</summary>
+        public double ResumeCountdownRemaining => _session?.Fsm.ResumeCountdownRemaining ?? 0;
         /// <summary>3단계에서 양을 고를 간식.</summary>
         public string DoseSnackId => _session?.Fsm.DoseSnackId;
+
+        /// <summary>지금 점수. 주행 중(일시정지 포함)이 아니면 0.</summary>
+        public double Score => State == RunState.Idle || _session == null
+            ? 0
+            : _session.Scoring.Total(_session.Model.SimTime, DistanceM);
 
         public void StartRun()
         {
@@ -73,10 +96,17 @@ namespace SugarDash.App
             LastWorldDt = 0;
             RunCount++;
             State = RunState.Running;
+
+            DistanceM = 0;
+            _sectionIndex = 0;
+            _sectionEndM = SectionLength(0);
+            var model = _session.Model;
+            _bus.Publish(new SectionEntered(_sections[0].Id, 0, model.SimTime, model.DecisionTime));
+            _session.Director.EvaluateTargetRange();
         }
 
         /// <summary>
-        /// 주행을 닫고 기록 파일을 마감한다. 탈락·완주 뒤 결과 화면으로 갈 때, 그리고 앱 종료 시 부른다.
+        /// 주행을 닫고 기록 파일을 마감한다. 탈락 뒤 결과 화면으로 갈 때, 그리고 앱 종료 시 부른다.
         /// 열린 주행이 없으면 아무것도 하지 않는다.
         /// </summary>
         public void EndRun()
@@ -123,8 +153,7 @@ namespace SugarDash.App
             s.Director.Evaluate(dt);
             s.Fsm.Update();
 
-            if (CheckEliminated()) return;
-            CheckCompleted();
+            CheckEliminated();
         }
 
         // 화면 명령. 주행이 열려 있을 때만 받아 다음 Tick에서 처리한다.
@@ -160,6 +189,45 @@ namespace SugarDash.App
             _bus.Publish(new TrackSnackEaten(snackId, servings, s.Model.SimTime, s.Model.DecisionTime));
         });
 
+        /// <summary>
+        /// 캐릭터가 앞으로 간 거리를 더한다. 구간 경계를 넘으면 다음 구간에 들어간다(한 번에 여러 경계를 넘으면 차례로 모두).
+        /// 명령은 처리되는 시점에 판정한다. 세계가 멈춘 뒤 처리되면 무시하므로, 멈추기 직전 프레임에 쌓인 거리는 버려진다(관대하게 처리).
+        /// </summary>
+        /// <param name="meters">0 이상의 유한수(m).</param>
+        public void AdvanceDistance(double meters)
+        {
+            if (!(meters >= 0) || double.IsInfinity(meters))
+                throw new ArgumentOutOfRangeException(nameof(meters), meters, "0 이상의 유한수여야 한다");
+
+            Enqueue(s =>
+            {
+                if (s.Fsm.IsWorldFrozen) return;
+
+                DistanceM += meters;
+                while (DistanceM >= _sectionEndM && _sectionIndex < _sections.Count - 1)
+                {
+                    _sectionIndex++;
+                    _sectionEndM += SectionLength(_sectionIndex);
+                    _bus.Publish(new SectionEntered(_sections[_sectionIndex].Id, DistanceM, s.Model.SimTime,
+                        s.Model.DecisionTime));
+                }
+            });
+        }
+
+        /// <summary>
+        /// 장애물에 부딪혔다(PlayerController 충돌 판정). 바로 탈락한다.
+        /// 명령은 처리되는 시점에 판정한다. 세계가 멈춘 뒤 처리되면 무시하므로, 멈추기 직전 프레임에 쌓인 충돌은 버려진다(관대하게 처리).
+        /// </summary>
+        public void HitObstacle() => Enqueue(s =>
+        {
+            if (s.Fsm.IsWorldFrozen) return;
+
+            s.Fsm.EliminateObstacleHit();
+        });
+
+        /// <summary>i번째 구간의 길이. 마지막 구간(lengthM 없음)이면 양의 무한대라 그 뒤 경계는 없다.</summary>
+        private double SectionLength(int index) => _sections[index].LengthM ?? double.PositiveInfinity;
+
         private void Enqueue(Action<RunSession> command)
         {
             if (State == RunState.Running || State == RunState.Paused) _commands.Enqueue(command);
@@ -172,21 +240,6 @@ namespace SugarDash.App
             _commands.Clear();
             State = RunState.Eliminated;
             return true;
-        }
-
-        /// <summary>
-        /// 대처 중과 유예 중에는 끝내지 않는다. 진행 중인 이벤트의 기록이 잘리지 않게 대처를 마친 뒤 끝내고,
-        /// 유예가 끝나 고혈당이 발동할 차례면 그 알리기까지 마친 뒤 끝낸다(docs/hyper-event.md 2절).
-        /// </summary>
-        private void CheckCompleted()
-        {
-            if (WorldTime < _runner.RunDurationSec) return;
-            if (_session.Fsm.Phase != HypoPhase.Idle || _session.Director.IsHyperTriggerPending) return;
-
-            var model = _session.Model;
-            _bus.Publish(new RunCompleted(WorldTime, model.SimTime, model.DecisionTime));
-            _commands.Clear();
-            State = RunState.Completed;
         }
     }
 }

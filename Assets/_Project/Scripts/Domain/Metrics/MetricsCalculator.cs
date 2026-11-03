@@ -28,9 +28,7 @@ namespace SugarDash.Domain.Metrics
         {
             if (run == null) throw new ArgumentNullException(nameof(run));
 
-            var outcome = run.Events.OfType<RunEliminated>().Any() ? RunOutcome.Eliminated
-                : run.Events.OfType<RunCompleted>().Any() ? RunOutcome.Completed
-                : RunOutcome.Unfinished;
+            var outcome = run.Events.OfType<RunEliminated>().Any() ? RunOutcome.Eliminated : RunOutcome.Unfinished;
             return new RunSummary(run.RunId, outcome, Events(run), HyperEvents(run), Calculate(new[] { run }));
         }
 

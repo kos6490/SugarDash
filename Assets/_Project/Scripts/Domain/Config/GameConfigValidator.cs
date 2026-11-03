@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SugarDash.Domain.Hypo;
 
 namespace SugarDash.Domain.Config
 {
@@ -109,13 +110,93 @@ namespace SugarDash.Domain.Config
             if (!(0 < runner.TrackSnackServings && runner.TrackSnackServings < config.Hypo.Doses.Under))
                 errors.Add($"0 < runner.trackSnackServings < hypo.doses.under 이어야 한다 " +
                            $"(trackSnackServings={runner.TrackSnackServings}, under={config.Hypo.Doses.Under})");
-            Positive(errors, "runner.runDurationSec", runner.RunDurationSec);
-            Positive(errors, "runner.trackSnackIntervalSec", runner.TrackSnackIntervalSec);
+            if (!(0 < runner.TrackSnackIntervalMinSec && runner.TrackSnackIntervalMinSec <= runner.TrackSnackIntervalMaxSec))
+                errors.Add($"0 < runner.trackSnackIntervalMinSec ≤ runner.trackSnackIntervalMaxSec 이어야 한다 " +
+                           $"(min={runner.TrackSnackIntervalMinSec}, max={runner.TrackSnackIntervalMaxSec})");
 
             // 20. 고혈당 알리기(docs/hyper-event.md)
             Positive(errors, "hyper.notifyTimeLimitSec", config.Hyper.NotifyTimeLimitSec);
 
+            // 21. 혈당 안전 범위 탈락 기준
+            var elimination = config.Elimination;
+            if (!(levels.Min <= elimination.GlucoseLow && elimination.GlucoseLow < levels.HypoThreshold))
+                errors.Add($"glucose.min ≤ elimination.glucoseLow < glucose.hypoThreshold 이어야 한다 " +
+                           $"(min={levels.Min}, glucoseLow={elimination.GlucoseLow}, hypoThreshold={levels.HypoThreshold})");
+            if (!(levels.HyperThreshold < elimination.GlucoseHigh && elimination.GlucoseHigh <= levels.Max))
+                errors.Add($"glucose.hyperThreshold < elimination.glucoseHigh ≤ glucose.max 이어야 한다 " +
+                           $"(hyperThreshold={levels.HyperThreshold}, glucoseHigh={elimination.GlucoseHigh}, max={levels.Max})");
+
+            // 24. 증상 연출: 흔들림은 탈락 기준 위에서 시작해야 하고 혈당 범위를 벗어나지 않는다
+            double shakeStart = config.Symptom.ShakeStartGlucose;
+            if (!(elimination.GlucoseLow < shakeStart && shakeStart <= levels.Max))
+                errors.Add($"elimination.glucoseLow < symptom.shakeStartGlucose ≤ glucose.max 이어야 한다 " +
+                           $"(glucoseLow={elimination.GlucoseLow}, shakeStartGlucose={shakeStart}, max={levels.Max})");
+
+            // 22. 점수
+            ValidateScore(errors, config.Score);
+
+            // 23. 구간
+            ValidateSections(errors, config.Sections);
+
             return errors;
+        }
+
+        private static void ValidateScore(List<string> errors, ScoreConfig score)
+        {
+            NonNegative(errors, "score.inRangePerSec", score.InRangePerSec);
+            NonNegative(errors, "score.perMeter", score.PerMeter);
+            foreach (HypoStep step in Enum.GetValues(typeof(HypoStep)))
+            {
+                if (!score.CorrectWeights.TryGetValue(step, out var weight))
+                    errors.Add($"score.correct: {step} 없음");
+                else
+                    NonNegative(errors, $"score.correct.{step}", weight);
+            }
+            foreach (HypoErrorCode code in Enum.GetValues(typeof(HypoErrorCode)))
+            {
+                if (code == HypoErrorCode.None) continue;
+                if (!score.ErrorWeights.TryGetValue(code, out var weight))
+                    errors.Add($"score.errors: {code} 없음");
+                else
+                    NonNegative(errors, $"score.errors.{code}", weight);
+            }
+            // 위험한 선택은 0점이다.
+            foreach (var code in new[] { HypoErrorCode.RsKeepRunning, HypoErrorCode.HyKeepRunning })
+            {
+                if (score.ErrorWeights.TryGetValue(code, out var weight) && weight != 0)
+                    errors.Add($"score.errors.{code}는 0 이어야 한다 ({weight})");
+            }
+        }
+
+        private static readonly string[] SectionIds = { "signal", "condition", "complex" };
+
+        private static void ValidateSections(List<string> errors, IReadOnlyList<SectionConfig> sections)
+        {
+            if (sections.Count == 0)
+            {
+                errors.Add("sections: 1개 이상이어야 한다");
+                return;
+            }
+            var seen = new HashSet<string>();
+            for (int i = 0; i < sections.Count; i++)
+            {
+                var section = sections[i];
+                if (Array.IndexOf(SectionIds, section.Id) < 0)
+                    errors.Add($"sections[{i}].id는 signal, condition, complex 중 하나여야 한다 ({section.Id})");
+                else if (!seen.Add(section.Id))
+                    errors.Add($"sections[{i}].id가 중복된다 ({section.Id})");
+
+                bool last = i == sections.Count - 1;
+                if (last)
+                {
+                    if (section.LengthM != null)
+                        errors.Add($"sections[{i}].lengthM은 마지막 구간에서 비어 있어야 한다 ({section.LengthM})");
+                }
+                else if (!(section.LengthM.HasValue && section.LengthM.Value > 0))
+                {
+                    errors.Add($"sections[{i}].lengthM > 0 이어야 한다 ({section.LengthM})");
+                }
+            }
         }
 
         // 13~18. 저혈당 이벤트(HypoEventFsm) 설정.
@@ -151,6 +232,7 @@ namespace SugarDash.Domain.Config
             Positive(errors, "hypo.guardianPromptTimeLimitSec", hypo.GuardianPromptTimeLimitSec);
             Positive(errors, "hypo.resumeCountdownSec", hypo.ResumeCountdownSec);
             Positive(errors, "hypo.graceSec", hypo.GraceSec);
+            NonNegative(errors, "hypo.answerFeedbackSec", hypo.AnswerFeedbackSec);
 
             // 16
             if (!(0 < doses.Under && doses.Under < doses.Proper && doses.Proper < doses.Over))
@@ -193,12 +275,30 @@ namespace SugarDash.Domain.Config
             double worstAtDose = WorstGlucoseAtDose(config);
             double absorbedRatio = Math.Max(0, Math.Min(1, (absorbWindow - snack.OnsetSec) / snack.AbsorbSec));
             double absorbed = snack.TotalRise * hypo.Doses.Proper * absorbedRatio;
-            double decayAfterDose = baseDecay * (hypo.Step4TimeLimitSec + guardian + recheck);
+            double decayAfterDose = baseDecay * (hypo.Step4TimeLimitSec + guardian + recheck
+                                                 + FeedbackWindowsAfterDose * ValidFeedbackSec(hypo));
             return worstAtDose + absorbed - decayAfterDose;
         }
 
         /// <summary>
+        /// 처치 전 결과 문구 창의 최대 횟수. 1단계 시간 초과 → 알리기 대기(1) → 2단계(2) → 오류 → 알리기 대기(3)
+        /// → 3단계(4) → 오류·시간 초과 → 알리기 대기(5) → 처치. 발동 직후 1단계에는 문구 창이 없다.
+        /// </summary>
+        private const int FeedbackWindowsBeforeDose = 5;
+
+        /// <summary>
+        /// 처치 뒤 재측정 빨리 감기까지 결과 문구 창의 최대 횟수. 처치 → 4단계 ①(1) → 오류·시간 초과
+        /// → 알리기 대기(2) → 어른이 재측정.
+        /// </summary>
+        private const int FeedbackWindowsAfterDose = 2;
+
+        /// <summary>문구 창 길이. 15번이 이미 보고한 잘못된 값(음수·NaN)이면 18번 계산에는 0으로 둔다.</summary>
+        private static double ValidFeedbackSec(HypoConfig hypo) =>
+            hypo.AnswerFeedbackSec >= 0 ? hypo.AnswerFeedbackSec : 0;
+
+        /// <summary>
         /// 발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우의 처치 시점 혈당.
+        /// 결과 문구 창(세계는 멈추고 혈당 시간은 흐른다)도 최대 횟수만큼 기본 하강으로 깎는다.
         /// </summary>
         private static double WorstGlucoseAtDose(GameConfig config)
         {
@@ -208,7 +308,8 @@ namespace SugarDash.Domain.Config
             double baseDecay = levels.BaseDecayPerSec;
             return levels.HypoThreshold - g.SuddenDrop.Amount
                    - (baseDecay + levels.RunDecayPerSec) * hypo.Step1TimeLimitSec
-                   - baseDecay * (3 * hypo.GuardianPromptTimeLimitSec + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec);
+                   - baseDecay * (3 * hypo.GuardianPromptTimeLimitSec + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec
+                                  + FeedbackWindowsBeforeDose * ValidFeedbackSec(hypo));
         }
 
         // NaN도 위반으로 잡도록 부정형으로 비교한다.

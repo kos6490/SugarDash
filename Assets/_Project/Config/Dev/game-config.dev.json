@@ -11,15 +11,30 @@
   "recurrence": { "cooldownSec": 10 },
   "display": { "delaySec": 3, "warningThreshold": 80 },
   "hypo": {
-    "step1TimeLimitSec": 5, "step2TimeLimitSec": 5, "step3TimeLimitSec": 5, "step4TimeLimitSec": 5,
-    "guardianPromptTimeLimitSec": 5, "resumeCountdownSec": 1, "graceSec": 3,
+    "step1TimeLimitSec": 8, "step2TimeLimitSec": 8, "step3TimeLimitSec": 8, "step4TimeLimitSec": 8,
+    "guardianPromptTimeLimitSec": 5, "resumeCountdownSec": 3, "graceSec": 3, "answerFeedbackSec": 1,
     "guardianSnackId": "juice", "doses": { "under": 1, "proper": 2, "over": 3 }
   },
-  "hyper": { "notifyTimeLimitSec": 5 },
-  "suddenDrop": { "chancePerSec": 0.01, "amount": 30, "durationSec": 5 },
+  "hyper": { "notifyTimeLimitSec": 8 },
+  "suddenDrop": { "chancePerSec": 0.01, "amount": 20, "durationSec": 5 },
   "snacks": [
-    { "id": "juice", "kind": "fast", "totalRise": 30, "onsetSec": 1, "absorbSec": 2, "source": "dev-not-real" },
+    { "id": "juice", "kind": "fast", "totalRise": 32, "onsetSec": 1, "absorbSec": 2, "source": "dev-not-real" },
     { "id": "cracker", "kind": "slow", "totalRise": 30, "onsetSec": 4, "absorbSec": 8, "source": "dev-not-real" }
   ],
-  "runner": { "trackSnackServings": 0.5, "runDurationSec": 40, "trackSnackIntervalSec": 8 }
+  "runner": {
+    "trackSnackServings": 0.5,
+    "trackSnackIntervalMinSec": 6, "trackSnackIntervalMaxSec": 10
+  },
+  "elimination": { "glucoseLow": 40, "glucoseHigh": 200 },
+  "symptom": { "shakeStartGlucose": 80 },
+  "score": {
+    "inRangePerSec": 1, "perMeter": 0.1,
+    "correct": { "recognize": 10, "respond": 10, "dose": 10, "remeasure": 10, "notify": 10, "hyperNotify": 10 },
+    "errors": {
+      "S_MISSED": 0, "RS_SLOW": 2, "RS_KEEP_RUNNING": 0, "RS_NONE": 0, "RS_TIMEOUT": 0,
+      "HELP_INSTEAD": 2, "DS_UNDER": 2, "DS_OVER": 2, "DS_TIMEOUT": 0,
+      "RC_NO_RECHECK": 0, "RC_NO_NOTIFY": 0, "HY_KEEP_RUNNING": 0, "HY_TIMEOUT": 0
+    }
+  },
+  "sections": [ { "id": "signal" } ]
 }

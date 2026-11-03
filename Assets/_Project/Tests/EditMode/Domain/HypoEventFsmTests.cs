@@ -391,7 +391,8 @@ namespace SugarDash.Domain.Tests
         [Test]
         public void HugeFrame_AdvancesOnlyOneDeadline()
         {
-            var h = Triggered();
+            // 100초 달리면 혈당이 min까지 내려간다. 안전 범위 탈락과 섞이지 않게 하한을 min으로 둔다.
+            var h = Triggered(b => b.GlucoseLow = b.Min);
 
             h.Frame(100);
 

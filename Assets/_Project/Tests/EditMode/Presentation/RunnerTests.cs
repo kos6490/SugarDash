@@ -43,12 +43,14 @@ namespace SugarDash.Presentation.Tests
             var bus = new DomainEventBus();
             _eaten = new List<TrackSnackEaten>();
             bus.Subscribe<TrackSnackEaten>(e => _eaten.Add(e));
-            _run = new RunController(config.Runner, () =>
+            _run = new RunController(config.Runner, config.Sections, () =>
             {
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
-                var fsm = new HypoEventFsm(config, model, director, bus);
-                return new RunSession(model, director, fsm, bus.Subscribe<HypoEventTriggered>(fsm.Begin));
+                var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
+                var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
+                return new RunSession(model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                    scoring.Subscribe(bus));
             }, new NullLog(), bus);
             _run.StartRun();
 
@@ -148,7 +150,36 @@ namespace SugarDash.Presentation.Tests
             Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed * _player.StumbleSpeedFactor).Within(Eps));
 
             _player.Advance(_player.StumbleSec + 0.01);
+            Assert.That(_player.CurrentSpeed,
+                Is.EqualTo(_player.RunSpeed + _player.SpeedGainPerSec * (_player.StumbleSec + 0.01f)).Within(Eps));
+        }
+
+        [Test]
+        public void Speed_IncreasesAndCaps()
+        {
+            _player.Advance(10);
+            Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed + _player.SpeedGainPerSec * 10).Within(Eps));
+
+            _player.Advance(1000);
+            Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.MaxRunSpeed).Within(Eps));
+        }
+
+        [Test]
+        public void ResetRun_RestoresSpeed()
+        {
+            _player.Advance(10);
+            _player.ResetRun();
             Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed));
+        }
+
+        [Test]
+        public void Hit_EliminatesRun()
+        {
+            _player.Resolve(Item(TrackItemKind.LaneBlock));
+
+            _run.Tick(0.01);
+
+            Assert.That(_run.State, Is.EqualTo(RunState.Eliminated));
         }
 
         [Test]
@@ -202,7 +233,7 @@ namespace SugarDash.Presentation.Tests
         {
             _go = new GameObject("Track");
             _track = _go.AddComponent<TrackSpawner>();
-            _track.Init(SnackInterval, Snacks, 42, false);
+            _track.Init(SnackInterval, SnackInterval, Snacks, 42, false);
         }
 
         [TearDown]
@@ -250,6 +281,69 @@ namespace SugarDash.Presentation.Tests
 
             var rows = _track.Items.Where(i => i.IsObstacle).GroupBy(i => Math.Round(i.Z, 3));
             Assert.That(rows.All(r => r.Count() == 1), Is.True);
+        }
+
+        /// <summary>새 스포너로 seconds 동안 dt씩 진행하며 간식이 놓인 worldDt 누적 시각을 모은다.</summary>
+        private static List<double> SnackSpawnTimes(double min, double max, int seed, double seconds, double dt)
+        {
+            var go = new GameObject("RandomTrack");
+            try
+            {
+                var track = go.AddComponent<TrackSpawner>();
+                track.Init(min, max, Snacks, seed, false);
+                var seen = new HashSet<TrackItem>(track.Items.Where(i => i.Kind == TrackItemKind.Snack));
+                var times = new List<double>();
+                int steps = (int)Math.Round(seconds / dt);
+                for (int i = 1; i <= steps; i++)
+                {
+                    track.Advance(dt, Speed, true);
+                    foreach (var item in track.Items.Where(x => x.Kind == TrackItemKind.Snack && seen.Add(x)))
+                        times.Add(i * dt);
+                }
+                return times;
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void SnackInterval_StaysWithinRange()
+        {
+            var times = SnackSpawnTimes(4, 6, 42, 300, 0.1);
+
+            Assert.That(times.Count, Is.GreaterThan(40));
+            var gaps = times.Zip(times.Skip(1), (a, b) => b - a).ToList();
+            // 한 프레임(0.1초) 단위로 감지하므로 그만큼의 오차를 허용한다.
+            Assert.That(gaps, Is.All.InRange(4 - 0.15, 6 + 0.15));
+            Assert.That(gaps.Max() - gaps.Min(), Is.GreaterThan(0.5), "간격이 무작위로 달라져야 한다");
+        }
+
+        [Test]
+        public void SnackInterval_SameSeed_SameSequence()
+        {
+            var a = SnackSpawnTimes(4, 6, 7, 120, 0.1);
+            var b = SnackSpawnTimes(4, 6, 7, 120, 0.1);
+
+            Assert.That(a, Is.Not.Empty);
+            Assert.That(a, Is.EqualTo(b));
+        }
+
+        [Test]
+        public void SnackInterval_InvalidRange_Throws()
+        {
+            var go = new GameObject("BadTrack");
+            try
+            {
+                var track = go.AddComponent<TrackSpawner>();
+                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(0, 5, Snacks, 1, false));
+                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(6, 5, Snacks, 1, false));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
         }
 
         [Test]

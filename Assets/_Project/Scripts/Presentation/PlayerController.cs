@@ -30,6 +30,10 @@ namespace SugarDash.Presentation
         [SerializeField] private float slideSec = 0.7f;
         [Tooltip("달리기 속도(초당 거리)")]
         [SerializeField] private float runSpeed = 10f;
+        [Tooltip("월드 시간 1초마다 늘어나는 달리기 속도")]
+        [SerializeField] private float speedGainPerSec = 0.1f;
+        [Tooltip("달리기 속도의 상한")]
+        [SerializeField] private float maxRunSpeed = 20f;
         [Tooltip("장애물에 부딪힌 뒤 느려지는 시간(초)")]
         [SerializeField] private float stumbleSec = 1f;
         [Tooltip("부딪힌 뒤 속도 배율")]
@@ -45,12 +49,15 @@ namespace SugarDash.Presentation
         private float _jumpLeft;
         private float _slideLeft;
         private float _stumbleLeft;
+        private float _speed;
 
         public float LaneWidth => laneWidth;
         public float LaneChangeSec => laneChangeSec;
         public float JumpSec => jumpSec;
         public float SlideSec => slideSec;
         public float RunSpeed => runSpeed;
+        public float MaxRunSpeed => maxRunSpeed;
+        public float SpeedGainPerSec => speedGainPerSec;
         public float StumbleSec => stumbleSec;
         public float StumbleSpeedFactor => stumbleSpeedFactor;
 
@@ -63,7 +70,7 @@ namespace SugarDash.Presentation
         public bool IsSliding => _slideLeft > 0;
         public bool IsStumbling => _stumbleLeft > 0;
         /// <summary>이번 프레임의 달리기 속도. 트랙이 이 속도로 다가온다.</summary>
-        public float CurrentSpeed => IsStumbling ? runSpeed * stumbleSpeedFactor : runSpeed;
+        public float CurrentSpeed => IsStumbling ? _speed * stumbleSpeedFactor : _speed;
 
         /// <param name="createView">false면 화면 없이 상태만 계산한다(테스트용).</param>
         public void Init(RunController run, bool createView)
@@ -81,6 +88,7 @@ namespace SugarDash.Presentation
             _jumpLeft = 0;
             _slideLeft = 0;
             _stumbleLeft = 0;
+            _speed = runSpeed;
             UpdateView();
         }
 
@@ -116,6 +124,7 @@ namespace SugarDash.Presentation
             _jumpLeft = Mathf.Max(0, _jumpLeft - dt);
             _slideLeft = Mathf.Max(0, _slideLeft - dt);
             _stumbleLeft = Mathf.Max(0, _stumbleLeft - dt);
+            _speed = Mathf.Min(maxRunSpeed, _speed + speedGainPerSec * dt);
             UpdateView();
         }
 
@@ -141,6 +150,8 @@ namespace SugarDash.Presentation
 
         private Outcome Stumble()
         {
+            // 부딪히면 바로 탈락해 결과 화면이 곧 뜬다. 비틀거림 연출은 그 전 잠깐만 보인다.
+            _run.HitObstacle();
             _stumbleLeft = stumbleSec;
             return Outcome.Hit;
         }

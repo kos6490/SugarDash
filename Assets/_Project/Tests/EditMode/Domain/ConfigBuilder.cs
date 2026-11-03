@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SugarDash.Domain.Config;
+using SugarDash.Domain.Hypo;
 
 namespace SugarDash.Domain.Tests
 {
@@ -54,6 +56,8 @@ namespace SugarDash.Domain.Tests
         public double GuardianPromptTimeLimitSec = 5;
         public double ResumeCountdownSec = 1;
         public double GraceSec = 3;
+        /// <summary>결과 문구 창. 0이면 문구 창 없이 바로 다음 단계로 간다(기존 타이밍 테스트 유지).</summary>
+        public double AnswerFeedbackSec = 0;
         public string GuardianSnackId = "juice";
         public double DoseUnder = 1;
         public double DoseProper = 2;
@@ -62,8 +66,21 @@ namespace SugarDash.Domain.Tests
         public double HyperNotifyTimeLimitSec = 5;
 
         public double TrackSnackServings = 0.5;
-        public double RunDurationSec = 120;
-        public double TrackSnackIntervalSec = 8;
+        public double TrackSnackIntervalMinSec = 8;
+        public double TrackSnackIntervalMaxSec = 8;
+
+        public double GlucoseLow = 40;
+        public double GlucoseHigh = 300;
+        public double ShakeStartGlucose = 90;
+
+        public double InRangePerSec = 1;
+        public double PerMeter = 0.1;
+        public double CorrectWeight = 10;
+        public double ErrorWeight = 0;
+        /// <summary>ErrorWeight 기본값 위에 덮어쓰는 오류별 가중치.</summary>
+        public Dictionary<HypoErrorCode, double> ErrorWeightOverrides = new Dictionary<HypoErrorCode, double>();
+
+        public List<SectionConfig> Sections = new List<SectionConfig> { new SectionConfig("signal", null) };
 
         public List<Snack> Snacks = new List<Snack>
         {
@@ -85,8 +102,21 @@ namespace SugarDash.Domain.Tests
 
         public GameConfig Build() => new GameConfig(ConfigVersion, Unit, BuildGlucose(), new HypoConfig(
             Step1TimeLimitSec, Step2TimeLimitSec, Step3TimeLimitSec, Step4TimeLimitSec, GuardianPromptTimeLimitSec,
-            ResumeCountdownSec, GraceSec, GuardianSnackId, new DoseConfig(DoseUnder, DoseProper, DoseOver)),
+            ResumeCountdownSec, GraceSec, AnswerFeedbackSec, GuardianSnackId, new DoseConfig(DoseUnder, DoseProper, DoseOver)),
             new HyperConfig(HyperNotifyTimeLimitSec),
-            new RunnerConfig(TrackSnackServings, RunDurationSec, TrackSnackIntervalSec));
+            new RunnerConfig(TrackSnackServings, TrackSnackIntervalMinSec, TrackSnackIntervalMaxSec),
+            new EliminationConfig(GlucoseLow, GlucoseHigh),
+            new SymptomConfig(ShakeStartGlucose),
+            BuildScore(),
+            Sections.ToList());
+
+        private ScoreConfig BuildScore()
+        {
+            var correct = Enum.GetValues(typeof(HypoStep)).Cast<HypoStep>().ToDictionary(step => step, _ => CorrectWeight);
+            var errors = Enum.GetValues(typeof(HypoErrorCode)).Cast<HypoErrorCode>()
+                .Where(code => code != HypoErrorCode.None)
+                .ToDictionary(code => code, code => ErrorWeightOverrides.TryGetValue(code, out var w) ? w : ErrorWeight);
+            return new ScoreConfig(InRangePerSec, PerMeter, correct, errors);
+        }
     }
 }

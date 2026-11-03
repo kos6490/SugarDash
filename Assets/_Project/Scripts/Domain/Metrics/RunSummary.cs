@@ -5,9 +5,8 @@ namespace SugarDash.Domain.Metrics
     /// <summary>주행이 어떻게 끝났는지.</summary>
     public enum RunOutcome
     {
-        Completed,
         Eliminated,
-        /// <summary>완주·탈락 기록 없이 끝났다(앱 종료 등).</summary>
+        /// <summary>탈락 기록 없이 끝났다(앱 종료 등).</summary>
         Unfinished,
     }
 

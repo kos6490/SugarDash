@@ -48,7 +48,7 @@ namespace SugarDash.Presentation
         {
             var result = _flow.LastResult;
             titleText.text = ResultScreenText.Title(result);
-            summaryText.text = ResultScreenText.Summary(result);
+            summaryText.text = ResultScreenText.Summary(result, _flow.LastScore, _flow.BestScore, _flow.IsNewBest);
             root.SetActive(true);
         }
 

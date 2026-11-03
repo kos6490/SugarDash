@@ -12,6 +12,8 @@ namespace SugarDash.Presentation
     /// <summary>
     /// 2~4단계 선택지, 고혈당 알리기, 오류 뒤 "어른에게 알리기" 대기 화면. 단계가 바뀔 때마다 버튼 템플릿을 복제해 다시 만든다.
     /// 버튼은 만들 때의 단계를 기억해 명령과 함께 넘긴다(연타로 다음 단계에 잘못 들어가지 않게).
+    /// 선택 뒤 결과 문구 창 동안에는 무엇을 골랐는지 문구만 보여 주고 버튼은 없다. 창이 끝나면 지금 단계 화면을 그린다.
+    /// 재개 카운트다운은 패널을 숨기고 HudPresenter가 숫자로 보여 준다.
     /// </summary>
     public sealed class HypoChoicePanel : MonoBehaviour
     {
@@ -25,10 +27,16 @@ namespace SugarDash.Presentation
         private RunController _run;
         private IReadOnlyList<SnackConfig> _snacks;
         private HypoPhase? _shown;
+        private bool _shownFeedback;
+        // 마지막 선택의 결과 문구. 문구 창 동안 제목에 보여 준다.
+        private string _feedback = "";
+        private System.Random _random;
 
         /// <summary>GameBootstrapper가 연결한다. 반환값을 Dispose하면 구독을 해제한다.</summary>
-        public IDisposable Bind(RunController run, DomainEventBus bus, IReadOnlyList<SnackConfig> snacks)
+        public IDisposable Bind(RunController run, DomainEventBus bus, IReadOnlyList<SnackConfig> snacks,
+            int seed)
         {
+            _random = new System.Random(seed);
             _run = run ?? throw new ArgumentNullException(nameof(run));
             _snacks = snacks ?? throw new ArgumentNullException(nameof(snacks));
 
@@ -39,6 +47,8 @@ namespace SugarDash.Presentation
             var subscriptions = new List<IDisposable>
             {
                 bus.Subscribe<HypoEventTriggered>(_ => recheckText.text = ""),
+                bus.Subscribe<StepAnswered>(e => _feedback = AnswerFeedbackText.For(e)),
+                bus.Subscribe<GuardianNotified>(_ => _feedback = AnswerFeedbackText.ForGuardianNotified()),
                 bus.Subscribe<RecheckFastForward>(e => recheckText.text = $"다시 잰 혈당: {e.GlucoseAfter:0} mg/dL"),
             };
 
@@ -54,41 +64,57 @@ namespace SugarDash.Presentation
             if (_run == null) return;
 
             var phase = _run.Phase;
-            if (phase == _shown) return;
+            bool feedback = _run.IsShowingAnswerFeedback;
+            if (phase == _shown && feedback == _shownFeedback) return;
 
             _shown = phase;
-            Rebuild(phase);
+            _shownFeedback = feedback;
+            Rebuild(phase, feedback);
         }
 
-        private void Rebuild(HypoPhase phase)
+        private void Rebuild(HypoPhase phase, bool feedback)
         {
             foreach (var button in _buttons) Destroy(button.gameObject);
             _buttons.Clear();
+
+            if (feedback)
+            {
+                Show(_feedback);
+                return;
+            }
 
             switch (phase)
             {
                 case HypoPhase.Respond:
                     Show("무엇을 먹을까요?");
+                    var respond = new List<(string, Action)>();
                     foreach (var snack in _snacks)
                     {
                         string id = snack.Id;
-                        Add(id, () => _run.ChooseSnack(id));
+                        respond.Add((id, () => _run.ChooseSnack(id)));
                     }
-                    Add("계속 달리기", () => _run.ChooseKeepRunning());
-                    Add("먹을 게 없어요", () => _run.ChooseNoSugar());
+                    respond.Add(("계속 달리기", () => _run.ChooseKeepRunning()));
+                    respond.Add(("먹을 게 없어요", () => _run.ChooseNoSugar()));
+                    AddShuffled(respond);
                     AddHelp(phase);
                     break;
                 case HypoPhase.Dose:
                     Show($"{_run.DoseSnackId}을(를) 얼마나 먹을까요?");
-                    Add("조금", () => _run.ChooseDose(DoseLevel.Under));
-                    Add("알맞게", () => _run.ChooseDose(DoseLevel.Proper));
-                    Add("많이", () => _run.ChooseDose(DoseLevel.Over));
+                    AddShuffled(new List<(string, Action)>
+                    {
+                        ("조금", () => _run.ChooseDose(DoseLevel.Under)),
+                        ("알맞게", () => _run.ChooseDose(DoseLevel.Proper)),
+                        ("많이", () => _run.ChooseDose(DoseLevel.Over)),
+                    });
                     AddHelp(phase);
                     break;
                 case HypoPhase.Remeasure:
                     Show("이제 무엇을 할까요?");
-                    Add("다시 재기", () => _run.ChooseRecheck());
-                    Add("다시 달리기", () => _run.ChooseRunAgain(phase));
+                    AddShuffled(new List<(string, Action)>
+                    {
+                        ("다시 재기", () => _run.ChooseRecheck()),
+                        ("다시 달리기", () => _run.ChooseRunAgain(phase)),
+                    });
                     AddHelp(phase);
                     break;
                 case HypoPhase.Notify:
@@ -103,11 +129,8 @@ namespace SugarDash.Presentation
                     break;
                 case HypoPhase.GuardianPrompt:
                     Show("도움이 필요해요!");
-                    AddHelp(phase);
                     Add("다시 달리기", () => _run.ChooseRunAgain(phase));
-                    break;
-                case HypoPhase.ResumeCountdown:
-                    Show("곧 다시 달려요");
+                    AddHelp(phase);
                     break;
                 default:
                     root.SetActive(false);
@@ -119,6 +142,11 @@ namespace SugarDash.Presentation
         {
             titleText.text = title;
             root.SetActive(true);
+        }
+
+        private void AddShuffled(List<(string Label, Action Action)> choices)
+        {
+            foreach (var (label, action) in ChoiceOrder.Shuffle(choices, _random)) Add(label, action);
         }
 
         private void AddHelp(HypoPhase phase) => Add("어른에게 알리기", () => _run.PressHelp(phase));
