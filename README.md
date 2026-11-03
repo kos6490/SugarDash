@@ -1,6 +1,6 @@
 # SugarDash
 
-제1형 당뇨병 아동의 자가 관리 교육을 위한 기능성 게임 (Serious Game)
+제1형·제2형 당뇨병 아동의 자가 관리 교육을 위한 기능성 게임 (Serious Game)
 
 > 처음 [2. 초기 설정](#2-초기-설정)을 순서대로 끝까지 진행할 것, 막히면 [3. 문제 해결](#3-문제-해결)부터 확인할 것
 
@@ -198,6 +198,7 @@ git mergetool
 
 ## 4. 협업 규칙
 
+- **작업 전에 [docs/team-rules.md](docs/team-rules.md)를 읽을 것.** AI 에이전트(Claude Code, Codex)를 쓰면 처음 한 번 에이전트에게 `docs/team-rules.md 0절대로 에이전트 설정해줘`라고 보낼 것
 - **`main` 직접 push 불가**, `dev` → `main`으로 PR (배포 시점) → 팀원 1명 승인 → Merge
 - **`dev` 직접 push 불가**, 작업 브랜치(`feat`, `fix` 등) → `dev`로 PR → 팀원 1명 승인 → Merge
 - 브랜치 전략: `main`은 항상 배포 가능한 상태 유지, `dev`는 잘 동작하는 개발 코드 상태 유지, `dev`에서 `feat`, `fix` 등 브랜치 생성 후 기능 추가, 버그 수정 등 작업 수행

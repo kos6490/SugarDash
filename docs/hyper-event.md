@@ -2,6 +2,7 @@
 
 - 브랜치: `feat/hyper-event`
 - 상태: 설계 확정, 수치는 PLACEHOLDER (담당자 결정 전까지 `null`)
+- 범위: 1형 주행 기준이다. 2형 주행은 `docs/type-tracks.md`를 본다.
 - 배경: 아동이 고른 양을 그대로 혈당에 반영하므로 과잉 처치는 고혈당으로 이어진다(`docs/glucose-model.md` 3절). 고혈당은 "어른에게 알리기" 한 단계만 다룬다(CLAUDE.md 2절).
 
 ## 1. 흐름
