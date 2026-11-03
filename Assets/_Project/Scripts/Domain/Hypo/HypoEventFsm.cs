@@ -22,10 +22,13 @@ namespace SugarDash.Domain.Hypo
         private const string ChoiceHelp = "help";
         private const string ChoiceRecheck = "recheck";
         private const string ChoiceRunAgain = "run_again";
+        private const string ChoiceJuice = "juice";
 
         private readonly GameConfig _config;
         private readonly HypoConfig _hypo;
         private readonly Dictionary<string, SnackConfig> _snacks;
+        private enum EventKind { Hypo, Hyper, Low }
+
         private readonly GlucoseModel _model;
         private readonly EventDirector _director;
         private readonly DomainEventBus _bus;
@@ -34,7 +37,7 @@ namespace SugarDash.Domain.Hypo
         private double _phaseStart;
         private double _deadline;
         private bool _anyError;
-        private bool _isHyper;
+        private EventKind _kind;
 
         // 알리기 대기 중 상태
         private HypoStep _promptStep;
@@ -119,7 +122,7 @@ namespace SugarDash.Domain.Hypo
             EventId = e.EventId;
             DoseSnackId = null;
             _anyError = false;
-            _isHyper = false;
+            _kind = EventKind.Hypo;
             EnterNow(HypoPhase.Recognize, _hypo.Step1TimeLimitSec);
         }
 
@@ -132,8 +135,21 @@ namespace SugarDash.Domain.Hypo
             EventId = e.EventId;
             DoseSnackId = null;
             _anyError = false;
-            _isHyper = true;
+            _kind = EventKind.Hyper;
             EnterNow(HypoPhase.HyperNotify, _config.Hyper.NotifyTimeLimitSec);
+        }
+
+        /// <summary>2형 저혈당 tell을 시작한다. 세계를 멈추고 "어른에게 알리기"를 기다린다.</summary>
+        public void BeginLow(LowEventTriggered e)
+        {
+            if (e == null) throw new ArgumentNullException(nameof(e));
+            if (Phase != HypoPhase.Idle) throw new InvalidOperationException($"이미 진행 중이다 ({Phase})");
+
+            EventId = e.EventId;
+            DoseSnackId = null;
+            _anyError = false;
+            _kind = EventKind.Low;
+            EnterNow(HypoPhase.LowNotify, _config.Hyper.NotifyTimeLimitSec);
         }
 
         /// <summary>
@@ -173,6 +189,9 @@ namespace SugarDash.Domain.Hypo
                     break;
                 case HypoPhase.HyperNotify:
                     Timeout(HypoStep.HyperNotify, HypoErrorCode.HyTimeout, Resolve);
+                    break;
+                case HypoPhase.LowNotify:
+                    Timeout(HypoStep.LowNotify, HypoErrorCode.LoTimeout, GuardianSnackAndResolve);
                     break;
                 case HypoPhase.GuardianPrompt:
                     // 혈당이 안전 범위 밖이어도 알리기 대기 시간 초과로 기록한다.
@@ -239,13 +258,32 @@ namespace SugarDash.Domain.Hypo
             return true;
         }
 
-        /// <summary>"계속 달리기". 2단계에서는 RS_KEEP_RUNNING, 고혈당 알리기에서는 HY_KEEP_RUNNING 오류다.</summary>
+        /// <summary>"계속 달리기". 2단계에서는 RS_KEEP_RUNNING, 고혈당 알리기에서는 HY_KEEP_RUNNING, 2형 저혈당 tell에서는 LO_KEEP_RUNNING 오류다.</summary>
         public bool ChooseKeepRunning()
         {
             if (IsShowingAnswerFeedback) return false;
+            if (Phase == HypoPhase.LowNotify)
+            {
+                Error(HypoStep.LowNotify, ChoiceKeepRunning, HypoErrorCode.LoKeepRunning, GuardianSnackAndResolve);
+                return true;
+            }
             if (Phase != HypoPhase.HyperNotify) return ChooseNoSnack(ChoiceKeepRunning, HypoErrorCode.RsKeepRunning);
 
             Error(HypoStep.HyperNotify, ChoiceKeepRunning, HypoErrorCode.HyKeepRunning, Resolve);
+            return true;
+        }
+
+        /// <summary>
+        /// 2형 고혈당 tell의 "주스 마시기". 주스 1인분이 혈당에 반영되고 HY_JUICE 오류다. 1형이나 다른 단계에서는 무시한다.
+        /// </summary>
+        public bool ChooseJuice()
+        {
+            if (_config.TrackType != TrackType.Type2 || Phase != HypoPhase.HyperNotify || IsShowingAnswerFeedback)
+                return false;
+
+            DoseSnackId = _config.Type2.JuiceChoiceFoodId;
+            ApplyDose(1, true);
+            Error(HypoStep.HyperNotify, ChoiceJuice, HypoErrorCode.HyJuice, Resolve);
             return true;
         }
 
@@ -352,6 +390,10 @@ namespace SugarDash.Domain.Hypo
                     Correct(HypoStep.HyperNotify, ChoiceHelp);
                     Resolve();
                     return true;
+                case HypoPhase.LowNotify:
+                    Correct(HypoStep.LowNotify, ChoiceHelp);
+                    GuardianSnackAndResolve();
+                    return true;
                 default:
                     return false;
             }
@@ -401,17 +443,30 @@ namespace SugarDash.Domain.Hypo
                 _model.DecisionTime));
         }
 
+        /// <summary>2형 저혈당 tell을 마치며 어른이 빠른 당을 건넨다.</summary>
+        private void GuardianSnackAndResolve()
+        {
+            DoseSnackId = _hypo.GuardianSnackId;
+            ApplyDose(1, false);
+            Resolve();
+        }
+
         private void Resolve()
         {
-            if (_isHyper)
+            switch (_kind)
             {
-                Publish(new HyperResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
-                _director.NotifyHyperEventEnded();
-            }
-            else
-            {
-                Publish(new HypoResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
-                _director.NotifyHypoEventEnded();
+                case EventKind.Hyper:
+                    Publish(new HyperResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
+                    _director.NotifyHyperEventEnded();
+                    break;
+                case EventKind.Low:
+                    Publish(new LowResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
+                    _director.NotifyLowEventEnded();
+                    break;
+                default:
+                    Publish(new HypoResolved(EventId, !_anyError, _model.SimTime, _model.DecisionTime));
+                    _director.NotifyHypoEventEnded();
+                    break;
             }
             Enter(HypoPhase.ResumeCountdown, _hypo.ResumeCountdownSec);
         }
