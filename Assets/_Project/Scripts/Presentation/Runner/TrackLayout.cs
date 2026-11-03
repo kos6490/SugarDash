@@ -10,7 +10,7 @@ namespace SugarDash.Presentation.Runner
     public sealed class TrackLayout
     {
         public TrackLayout(IReadOnlyList<string> snackIds, double snackIntervalMinSec, double snackIntervalMaxSec,
-            bool foodRows, double restIntervalMinSec, double restIntervalMaxSec)
+            bool foodRows, double restIntervalMinSec, double restIntervalMaxSec, bool spawnsItems = true)
         {
             SnackIds = snackIds;
             SnackIntervalMinSec = snackIntervalMinSec;
@@ -18,6 +18,7 @@ namespace SugarDash.Presentation.Runner
             FoodRows = foodRows;
             RestIntervalMinSec = restIntervalMinSec;
             RestIntervalMaxSec = restIntervalMaxSec;
+            SpawnsItems = spawnsItems;
         }
 
         /// <summary>트랙에 놓을 간식·음식 id.</summary>
@@ -31,6 +32,9 @@ namespace SugarDash.Presentation.Runner
         public double RestIntervalMaxSec { get; }
 
         public bool HasRestSpots => RestIntervalMinSec > 0;
+
+        /// <summary>false면 장애물·간식·음식·쉬는 곳을 놓지 않는다(집 장면). 마커는 놓는다.</summary>
+        public bool SpawnsItems { get; }
 
         /// <summary>값이 올바르지 않으면 예외를 던진다.</summary>
         public void Validate()

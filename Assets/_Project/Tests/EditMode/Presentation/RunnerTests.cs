@@ -440,6 +440,88 @@ namespace SugarDash.Presentation.Tests
 
         private static IEnumerable<TrackItem> Obstacles(IEnumerable<TrackItem> items) => items.Where(i => i.IsObstacle);
 
+        private static TrackLayout NoSpawns() =>
+            new TrackLayout(new[] { "juice", "water", "cracker" }, 1, 1, true, 2, 2, spawnsItems: false);
+
+        [Test]
+        public void ChangeLayout_NoSpawns_PlacesNoObstaclesSnacksOrRests()
+        {
+            var before = new HashSet<TrackItem>(_track.Items);
+
+            _track.ChangeLayout(NoSpawns());
+            Run(20);
+
+            var added = _track.Items.Where(i => !before.Contains(i)).ToList();
+            Assert.That(added, Is.Not.Empty, "마커는 계속 놓는다");
+            Assert.That(added.Select(i => i.Kind), Is.All.EqualTo(TrackItemKind.Marker));
+        }
+
+        [Test]
+        public void ResumeSpawns_PlacesNothingNearerThanSpawnAhead()
+        {
+            _track.ChangeLayout(NoSpawns());
+            Run(20);
+            _track.ChangeLayout(Type1(0.5, 0.5));
+
+            var seen = new HashSet<TrackItem>(_track.Items);
+            const double dt = 0.1;
+            double move = Speed * dt;
+            int placed = 0;
+            for (int i = 0; i < 30; i++)
+            {
+                _track.Advance(dt, Speed, true);
+                foreach (var item in _track.Items.Where(x => seen.Add(x) && x.Kind != TrackItemKind.Marker))
+                {
+                    Assert.That(item.Z, Is.GreaterThanOrEqualTo(_track.SpawnAheadDistance - move), item.Kind.ToString());
+                    placed++;
+                }
+            }
+            Assert.That(placed, Is.GreaterThan(0), "배치가 돌아온다");
+            Assert.That(_track.Items.Where(x => x.Kind != TrackItemKind.Marker).Select(x => x.Z),
+                Is.All.GreaterThanOrEqualTo(_track.SpawnAheadDistance - move * 30), "집 장면 전 물체는 모두 지나갔다");
+        }
+
+        [Test]
+        public void ChangeLayout_AppliesNewSnackInterval_Immediately()
+        {
+            var go = new GameObject("Slow");
+            try
+            {
+                var track = go.AddComponent<TrackSpawner>();
+                track.Init(Type1(100, 100), 5, false);
+                for (int i = 0; i < 10; i++) track.Advance(0.1, Speed, true);
+                Assert.That(track.Items.Any(x => x.Kind == TrackItemKind.Snack), Is.False);
+
+                track.ChangeLayout(Type1(1, 1));
+                for (int i = 0; i < 20; i++) track.Advance(0.1, Speed, true);
+
+                Assert.That(track.Items.Any(x => x.Kind == TrackItemKind.Snack), Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void ChangeLayout_KeepsExistingItems()
+        {
+            Run(10);
+            var before = _track.Items.ToList();
+            Assert.That(before.Any(x => x.Kind != TrackItemKind.Marker), Is.True);
+
+            _track.ChangeLayout(Type2());
+
+            Assert.That(_track.Items, Is.EqualTo(before));
+        }
+
+        [Test]
+        public void ChangeLayout_Invalid_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => _track.ChangeLayout(null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _track.ChangeLayout(Type1(0, 1)));
+        }
+
         [Test]
         public void ZeroWorldDt_MovesNothing()
         {

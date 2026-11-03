@@ -80,6 +80,27 @@ namespace SugarDash.Presentation
             _pendingLayout = layout;
         }
 
+        /// <summary>
+        /// 배치 값을 지금 주행에 바로 바꾼다(장면이 바뀔 때). 이미 놓인 물체는 그대로 두고 앞으로 놓을 물체부터 새 값을 쓴다.
+        /// 간식·쉬는 곳 타이머는 처음부터 다시 잰다. 물체는 계속 spawnAheadDistance 앞에만 놓는다.
+        /// </summary>
+        public void ChangeLayout(TrackLayout layout)
+        {
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            layout.Validate();
+            _layout = layout;
+            _snackTimer = 0;
+            _nextSnackIntervalSec = NextSnackInterval();
+            _restTimer = 0;
+            _nextRestIntervalSec = _layout.HasRestSpots ? NextRestInterval() : 0;
+        }
+
+        /// <summary>지금 장면 id를 모습 도우미에 넘긴다. 장면 없는 구간이면 null.</summary>
+        public void SetScene(string sceneId)
+        {
+            if (look != null) look.SetScene(sceneId);
+        }
+
         /// <summary>새 주행 시작 시 트랙을 비우고 처음부터 놓는다.</summary>
         public void ResetRun(int seed)
         {
@@ -136,8 +157,8 @@ namespace SugarDash.Presentation
             // 같은 프레임에 여러 개가 지나가면 먼저 지나간 것(더 뒤로 간 것)부터 판정한다.
             _crossed.Sort((a, b) => a.Z.CompareTo(b.Z));
 
-            // 멈춘 동안(쉬는 중)에는 간식·쉬는 곳 타이머도 멈춘다.
-            if (speed > 0)
+            // 멈춘 동안(쉬는 중)과 물체를 놓지 않는 장면에서는 간식·쉬는 곳 타이머도 멈춘다.
+            if (speed > 0 && _layout.SpawnsItems)
             {
                 _snackTimer += worldDt;
                 _restTimer += worldDt;
@@ -165,8 +186,8 @@ namespace SugarDash.Presentation
 
             while (_nextObstacleAt <= horizon)
             {
-                // 장애물을 못 놓는 동안 지나간 줄은 건너뛴다.
-                if (obstaclesAllowed && !InRestClearZone(_nextObstacleAt))
+                // 장애물을 못 놓는 동안(유예, 쉬는 곳 근처, 물체를 놓지 않는 장면) 지나간 줄은 건너뛴다.
+                if (obstaclesAllowed && _layout.SpawnsItems && !InRestClearZone(_nextObstacleAt))
                 {
                     var kind = (TrackItemKind)_random.Next(0, 3);
                     int lane = _random.Next(-1, 2);

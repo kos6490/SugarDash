@@ -10,10 +10,17 @@ namespace SugarDash.Presentation
     // [빈 틀] 담당: 월드
     public sealed class TrackItemLook : MonoBehaviour
     {
+        /// <summary>지금 장면 id. 장면 없는 구간이면 null.</summary>
+        public string SceneId { get; private set; }
+
+        /// <summary>TrackSpawner가 장면이 바뀔 때 부른다.</summary>
+        public void SetScene(string sceneId) => SceneId = sceneId;
+
         /// <summary>물체의 보이는 모습을 만들어 parent 아래에 둔다.</summary>
         public Transform CreateView(TrackItem item, Transform parent)
         {
             // TODO(월드): 물체 종류(item.Kind)와 음식 id(item.SnackId)별 프리팹으로 만든다.
+            // TODO(월드): 장면 id(SceneId)별 장애물 모양(운동장 축구공, 놀이터 미끄럼틀 등)을 고른다.
             // 지금은 기본 도형(PrimitiveViews)을 쓴다.
             return PrimitiveViews.CreateItem(item, parent);
         }
