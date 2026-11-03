@@ -74,6 +74,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? GuardianPromptTimeLimitSec { get; set; }
         public double? ResumeCountdownSec { get; set; }
         public double? GraceSec { get; set; }
+        public double? AnswerFeedbackSec { get; set; }
         public string GuardianSnackId { get; set; }
         public DosesDto Doses { get; set; }
     }

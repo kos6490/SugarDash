@@ -232,6 +232,7 @@ namespace SugarDash.Domain.Config
             Positive(errors, "hypo.guardianPromptTimeLimitSec", hypo.GuardianPromptTimeLimitSec);
             Positive(errors, "hypo.resumeCountdownSec", hypo.ResumeCountdownSec);
             Positive(errors, "hypo.graceSec", hypo.GraceSec);
+            NonNegative(errors, "hypo.answerFeedbackSec", hypo.AnswerFeedbackSec);
 
             // 16
             if (!(0 < doses.Under && doses.Under < doses.Proper && doses.Proper < doses.Over))
@@ -274,12 +275,30 @@ namespace SugarDash.Domain.Config
             double worstAtDose = WorstGlucoseAtDose(config);
             double absorbedRatio = Math.Max(0, Math.Min(1, (absorbWindow - snack.OnsetSec) / snack.AbsorbSec));
             double absorbed = snack.TotalRise * hypo.Doses.Proper * absorbedRatio;
-            double decayAfterDose = baseDecay * (hypo.Step4TimeLimitSec + guardian + recheck);
+            double decayAfterDose = baseDecay * (hypo.Step4TimeLimitSec + guardian + recheck
+                                                 + FeedbackWindowsAfterDose * ValidFeedbackSec(hypo));
             return worstAtDose + absorbed - decayAfterDose;
         }
 
         /// <summary>
+        /// 처치 전 결과 문구 창의 최대 횟수. 1단계 시간 초과 → 알리기 대기(1) → 2단계(2) → 오류 → 알리기 대기(3)
+        /// → 3단계(4) → 오류·시간 초과 → 알리기 대기(5) → 처치. 발동 직후 1단계에는 문구 창이 없다.
+        /// </summary>
+        private const int FeedbackWindowsBeforeDose = 5;
+
+        /// <summary>
+        /// 처치 뒤 재측정 빨리 감기까지 결과 문구 창의 최대 횟수. 처치 → 4단계 ①(1) → 오류·시간 초과
+        /// → 알리기 대기(2) → 어른이 재측정.
+        /// </summary>
+        private const int FeedbackWindowsAfterDose = 2;
+
+        /// <summary>문구 창 길이. 15번이 이미 보고한 잘못된 값(음수·NaN)이면 18번 계산에는 0으로 둔다.</summary>
+        private static double ValidFeedbackSec(HypoConfig hypo) =>
+            hypo.AnswerFeedbackSec >= 0 ? hypo.AnswerFeedbackSec : 0;
+
+        /// <summary>
         /// 발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우의 처치 시점 혈당.
+        /// 결과 문구 창(세계는 멈추고 혈당 시간은 흐른다)도 최대 횟수만큼 기본 하강으로 깎는다.
         /// </summary>
         private static double WorstGlucoseAtDose(GameConfig config)
         {
@@ -289,7 +308,8 @@ namespace SugarDash.Domain.Config
             double baseDecay = levels.BaseDecayPerSec;
             return levels.HypoThreshold - g.SuddenDrop.Amount
                    - (baseDecay + levels.RunDecayPerSec) * hypo.Step1TimeLimitSec
-                   - baseDecay * (3 * hypo.GuardianPromptTimeLimitSec + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec);
+                   - baseDecay * (3 * hypo.GuardianPromptTimeLimitSec + hypo.Step2TimeLimitSec + hypo.Step3TimeLimitSec
+                                  + FeedbackWindowsBeforeDose * ValidFeedbackSec(hypo));
         }
 
         // NaN도 위반으로 잡도록 부정형으로 비교한다.

@@ -29,6 +29,7 @@
     "guardianPromptTimeLimitSec": null,
     "resumeCountdownSec": null,
     "graceSec": null,
+    "answerFeedbackSec": null,
     "guardianSnackId": "juice",
     "doses": { "under": null, "proper": null, "over": null }
   },

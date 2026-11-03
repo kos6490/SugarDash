@@ -606,5 +606,57 @@ namespace SugarDash.App.Tests
             Assert.That(rig.All<HyperResolved>().Single().AllCorrect, Is.False);
             Assert.That(rig.All<StepAnswered>().Single().ErrorCode, Is.EqualTo(HypoErrorCode.HyKeepRunning));
         }
+
+        [Test]
+        public void AnswerFeedbackAndCountdown_AreZeroWithoutSession()
+        {
+            var rig = new Rig(b => b.AnswerFeedbackSec = 1);
+
+            Assert.That(rig.Run.IsShowingAnswerFeedback, Is.False);
+            Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void AnswerFeedback_IgnoresCommandsUntilWindowEnds()
+        {
+            var rig = new Rig(b => b.AnswerFeedbackSec = 1).Triggered();
+            rig.Run.PressMeter();
+            rig.Run.Tick(0.5);
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Respond));
+            Assert.That(rig.Run.IsShowingAnswerFeedback, Is.True);
+            Assert.That(rig.Run.IsWorldFrozen, Is.True);
+
+            rig.Run.ChooseSnack("juice");
+            rig.Run.Tick(0.5);
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Respond), "문구 창 중에 고른 것은 버린다");
+            Assert.That(rig.Run.IsShowingAnswerFeedback, Is.False);
+
+            rig.Run.ChooseSnack("juice");
+            rig.Run.Tick(0.1);
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Dose));
+            Assert.That(rig.All<StepAnswered>().Last().DecisionSec, Is.EqualTo(0).Within(Eps));
+        }
+
+        [Test]
+        public void ResumeCountdownRemaining_IsExposed()
+        {
+            var rig = new Rig(b => { b.AnswerFeedbackSec = 1; b.ResumeCountdownSec = 3; }).Triggered();
+            void Step(Action command)
+            {
+                command();
+                rig.Run.Tick(1); // 명령 처리 뒤 문구 창 1초
+            }
+
+            Step(rig.Run.PressMeter);
+            Step(() => rig.Run.ChooseSnack("juice"));
+            Step(() => rig.Run.ChooseDose(DoseLevel.Proper));
+            Step(rig.Run.ChooseRecheck);
+            Step(() => rig.Run.PressHelp(HypoPhase.Notify));
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.ResumeCountdown));
+            Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(3).Within(Eps));
+
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(2).Within(Eps));
+        }
     }
 }

@@ -31,7 +31,7 @@ namespace SugarDash.Infrastructure.Tests
   ""display"": { ""delaySec"": 3, ""warningThreshold"": 80 },
   ""hypo"": {
     ""step1TimeLimitSec"": 5, ""step2TimeLimitSec"": 5, ""step3TimeLimitSec"": 5, ""step4TimeLimitSec"": 5,
-    ""guardianPromptTimeLimitSec"": 5, ""resumeCountdownSec"": 1, ""graceSec"": 3,
+    ""guardianPromptTimeLimitSec"": 5, ""resumeCountdownSec"": 1, ""graceSec"": 3, ""answerFeedbackSec"": 0,
     ""guardianSnackId"": ""juice"", ""doses"": { ""under"": 1, ""proper"": 2, ""over"": 3 }
   },
   ""hyper"": { ""notifyTimeLimitSec"": 5 },
@@ -83,6 +83,7 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Hypo.Step3TimeLimitSec, Is.EqualTo(5));
             Assert.That(config.Hypo.GuardianSnackId, Is.EqualTo("juice"));
             Assert.That(config.Hypo.Doses.Proper, Is.EqualTo(2));
+            Assert.That(config.Hypo.AnswerFeedbackSec, Is.EqualTo(0));
             Assert.That(config.Glucose.Time.FastForwardTickSimSec, Is.EqualTo(0.5));
             Assert.That(config.Glucose.Levels.NormalRangeMin, Is.EqualTo(72));
             Assert.That(config.Runner.TrackSnackServings, Is.EqualTo(0.5));
@@ -150,6 +151,27 @@ namespace SugarDash.Infrastructure.Tests
 
             Assert.That(e.MissingPaths,
                 Is.EquivalentTo(new[] { "hypo.graceSec", "hypo.doses.proper", "hypo.guardianSnackId" }));
+        }
+
+        [Test]
+        public void AnswerFeedback_MissingIsReportedByPath()
+        {
+            var json = With(ValidJson, ", \"answerFeedbackSec\": 0", "");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths, Is.EqualTo(new[] { "hypo.answerFeedbackSec" }));
+        }
+
+        [Test]
+        public void AnswerFeedback_NegativeIsViolation()
+        {
+            var json = With(ValidJson, "\"answerFeedbackSec\": 0", "\"answerFeedbackSec\": -1");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.Violations, Has.Count.EqualTo(1));
+            Assert.That(e.Violations[0], Does.Contain("hypo.answerFeedbackSec"));
         }
 
         [Test]
@@ -317,6 +339,8 @@ namespace SugarDash.Infrastructure.Tests
             var config = new ConfigProvider(json).Load();
 
             Assert.That(config.ConfigVersion, Is.EqualTo("dev-not-real"));
+            Assert.That(config.Hypo.AnswerFeedbackSec, Is.EqualTo(1));
+            Assert.That(config.Hypo.ResumeCountdownSec, Is.EqualTo(3));
         }
     }
 }

@@ -66,6 +66,8 @@ namespace SugarDash.Domain.Tests
             yield return Case("GuardianPromptZero", b => b.GuardianPromptTimeLimitSec = 0);
             yield return Case("ResumeCountdownZero", b => b.ResumeCountdownSec = 0);
             yield return Case("GraceZero", b => b.GraceSec = 0);
+            yield return Case("AnswerFeedbackNegative", b => b.AnswerFeedbackSec = -1);
+            yield return Case("AnswerFeedbackNaN", b => b.AnswerFeedbackSec = double.NaN);
             yield return Case("DoseUnderZero", b => b.DoseUnder = 0, 2); // 16 + 19(trackSnack 0.5 ≥ under)
             yield return Case("DoseProperNotAboveUnder", b => b.DoseUnder = 2);
             yield return Case("DoseOverNotAboveProper", b => b.DoseOver = 2);
@@ -112,6 +114,34 @@ namespace SugarDash.Domain.Tests
 
             builder.NormalRangeMin = 72.001;
             Assert.That(GameConfigValidator.Validate(builder.Build()), Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void AnswerFeedbackZero_IsValid()
+        {
+            Assert.That(GameConfigValidator.Validate(new ConfigBuilder { AnswerFeedbackSec = 0 }.Build()), Is.Empty);
+        }
+
+        [Test]
+        public void Recovery_IncludesAnswerFeedbackWindows()
+        {
+            // 처치 전 문구 창 5번, 처치 뒤 재측정까지 2번이 기본 하강으로 혈당을 깎는다.
+            // G0 = 70 − 30 − 1.5×5 − 0.5×(25 + 5×1) = 17.5, A = 35×2 = 70, D = 0.5×(5+5+6 + 2×1) = 9 → 78.5
+            var builder = new ConfigBuilder
+            {
+                BaseDecayPerSec = 0.5, RunDecayPerSec = 1, AnswerFeedbackSec = 1, Min = 17.5, NormalRangeMin = 78.5,
+            };
+            builder.SnackById("juice").TotalRise = 35;
+            Assert.That(GameConfigValidator.Validate(builder.Build()), Is.Empty);
+
+            builder.NormalRangeMin = 78.501;
+            Assert.That(GameConfigValidator.Validate(builder.Build()), Has.Count.EqualTo(1));
+
+            builder.NormalRangeMin = 78.5;
+            builder.Min = 17.501;
+            var errors = GameConfigValidator.Validate(builder.Build());
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("min"));
         }
 
         [Test]

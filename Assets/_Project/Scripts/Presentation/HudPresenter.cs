@@ -23,6 +23,8 @@ namespace SugarDash.Presentation
         [SerializeField] private Text statusText;
         [Tooltip("점수 표시. 비워 두면 표시하지 않는다.")]
         [SerializeField] private Text scoreText;
+        [Tooltip("재개 카운트다운 숫자(3·2·1). 비워 두면 표시하지 않는다.")]
+        [SerializeField] private Text countdownText;
         [Tooltip("측정 결과 글자를 보여 주는 시간(초). 지나면 지운다.")]
         [SerializeField] private float meterTextShowSec = 3f;
 
@@ -71,6 +73,7 @@ namespace SugarDash.Presentation
             {
                 // 주행이 닫혀 혈당 값이 없으므로 마지막 화면을 그대로 둔다. 결과는 ResultScreenView가 보여 준다.
                 meterButton.interactable = false;
+                if (countdownText != null) countdownText.text = "";
                 if (scoreText != null && _flow.LastScore != null)
                     scoreText.text = $"점수 {(int)Math.Floor(_flow.LastScore.Value)}";
                 return;
@@ -96,6 +99,12 @@ namespace SugarDash.Presentation
                                         phase == HypoPhase.Grace);
 
             if (scoreText != null) scoreText.text = $"점수 {(int)Math.Floor(_run.Score)}";
+
+            if (countdownText != null)
+            {
+                int? number = AnswerFeedbackText.CountdownNumber(_run.ResumeCountdownRemaining);
+                countdownText.text = number.HasValue ? number.Value.ToString() : "";
+            }
 
             statusText.text = _run.State == RunState.Paused ? "잠시 멈춤" : "";
         }

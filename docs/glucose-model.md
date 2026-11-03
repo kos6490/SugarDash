@@ -51,7 +51,7 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 | 구간 | worldDt | simDt | decisionDt |
 |---|---|---|---|
 | 일반 주행, 1단계(위험 인지) | 흐름 | 흐름 | 흐름 |
-| 2~4단계, 오류 후 알리기 대기, 재개 카운트다운 | 0 (세계 정지) | 흐름 | 흐름 |
+| 2~4단계, 오류 후 알리기 대기, 재개 카운트다운(각 단계 앞의 결과 문구 창 포함) | 0 (세계 정지) | 흐름 | 흐름 |
 | 4단계 재측정 빨리 감기 | 0 | 재측정 간격만큼 진행 | 0 |
 | 재개 후 유예 시간 | 흐름 | 흐름 | 흐름 |
 
@@ -59,9 +59,10 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 - 2~4단계에도 기본 하강과 흡수는 simDt로 계속된다. 증상 연출 강도는 이 값을 따른다. 그래서 2~4단계에도 제한 시간을 둔다(혈당이 끝없이 내려가지 않게).
 - 재측정 빨리 감기는 재측정 간격(`RecheckIntervalGameSec`)을 `time.fastForwardTickSimSec` 간격으로 나눠 여러 번 Tick한다. 큰 값 하나로 넘기지 않는 것은 표시 혈당 지연 버퍼를 채워 재개 시점에 혈당바가 오른 값을 보여 주기 위해서다. 실시간 대기는 없고 결과는 결정적이다.
 - 화면 문구 "15분 뒤"와 재측정 간격(게임 초)은 다른 숫자다.
+- 결과 문구 창: 대처 중 다음 단계(2~4단계, 알리기 대기, 재개 카운트다운)로 넘어갈 때마다 `hypo.answerFeedbackSec`(decisionDt) 동안 무엇을 골랐는지 문구만 보여 준다(정답·오답은 말하지 않음). 이 동안 선택 버튼은 무시되고, 다음 단계의 판단 시간과 마감은 창이 끝난 뒤부터 잰다(마감 = 전환 시각 + 문구 창 + 제한 시간). 발동 직후의 1단계와 고혈당 알리기에는 앞선 선택이 없어 창이 없다. 세계는 멈추고 혈당 시간은 흐르므로 불변식 18에 넣는다.
 
 ### 2.3 재개와 유예 시간
-- 대처를 마치면 `hypo.resumeCountdownSec` 동안 카운트다운(세계 정지), 이어서 `hypo.graceSec`(simDt) 동안 유예 시간이다.
+- 대처를 마치면 결과 문구 창 뒤 `hypo.resumeCountdownSec` 동안 카운트다운(세계 정지, 화면 가운데에 3·2·1처럼 남은 초를 올림한 숫자), 이어서 `hypo.graceSec`(simDt) 동안 유예 시간이다.
 - 유예 시간에는 저혈당 발동과 급하강 판정을 하지 않고 장애물을 만들지 않는다. 측정기를 누르면 `inGrace: true`로 기록한다.
 - cooldown은 대처를 마친 시점에 시작하며 유예 시간과 별개다. 유예 중에도 해제 수준 도달은 기록하고, 유예가 끝난 뒤 4절 규칙으로 판정한다.
 
@@ -173,6 +174,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     "guardianPromptTimeLimitSec": null,
     "resumeCountdownSec": null,
     "graceSec": null,
+    "answerFeedbackSec": null,
     "guardianSnackId": "juice",
     "doses": { "under": null, "proper": null, "over": null }
   },
@@ -199,7 +201,8 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 
 간식 id와 종류는 예시다. 실제 목록은 2·3단계 선택지와 함께 정한다.
 
-- `hypo.step1~4TimeLimitSec`, `guardianPromptTimeLimitSec`, `resumeCountdownSec`는 decisionDt 기준 초, `graceSec`는 simDt 기준 게임 초다. 4단계 제한 시간은 선택 하나당 적용한다.
+- `hypo.step1~4TimeLimitSec`, `guardianPromptTimeLimitSec`, `resumeCountdownSec`, `answerFeedbackSec`는 decisionDt 기준 초, `graceSec`는 simDt 기준 게임 초다. 4단계 제한 시간은 선택 하나당 적용한다.
+- `hypo.answerFeedbackSec`는 선택(또는 시간 초과) 뒤 결과 문구를 보여 주는 시간이다(2.2절). 다음 단계의 제한 시간에서 빼지 않는다. 0이면 문구 창 없이 바로 다음 단계로 간다.
 - `hypo.doses`는 간식 1회분에 곱하는 배수(과소·적정·과잉)다.
 - `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
 - `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
@@ -225,17 +228,20 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 12. `hypo.step1TimeLimitSec > display.delaySec` ← 핵심. 1단계 제한 시간은 HypoEventFsm 설정에 속한다.
 13. `hypoThreshold ≤ normalRangeMin < hyperThreshold`
 14. 재측정 간격(게임 초) `> display.delaySec`, `0 < fastForwardTickSimSec < display.delaySec`
-15. `step2~4TimeLimitSec`, `guardianPromptTimeLimitSec`, `resumeCountdownSec`, `graceSec` 모두 `> 0`
+15. `step2~4TimeLimitSec`, `guardianPromptTimeLimitSec`, `resumeCountdownSec`, `graceSec` 모두 `> 0`, `answerFeedbackSec ≥ 0`(NaN 거부)
 16. `0 < doses.under < doses.proper < doses.over`
 17. `guardianSnackId`는 `snacks`에 있는 `fast` 간식이어야 한다.
 18. **적정 처치 회복 보장**. 최악의 경우에서 적정량을 먹고 재측정 빨리 감기를 마친 혈당이 정상 범위여야 한다.
-    - 최악의 투입 시점 혈당 `G0 = hypoThreshold − suddenDrop.amount − (baseDecay + runDecay) × step1Limit − baseDecay × (3 × guardianLimit + step2Limit + step3Limit)` (발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우)
+    - 최악의 투입 시점 혈당 `G0 = hypoThreshold − suddenDrop.amount − (baseDecay + runDecay) × step1Limit − baseDecay × (3 × guardianLimit + step2Limit + step3Limit + 5 × answerFeedbackSec)` (발동 직후 급하강 전량, 1단계는 주행 중, 1~3단계 모두 오류 후 알리기 대기를 최대로 쓴 경우)
+      - 처치 전 결과 문구 창은 최대 5번이다: 1단계 시간 초과 → 알리기 대기(1) → 2단계(2) → 오류 → 알리기 대기(3) → 3단계(4) → 오류·시간 초과 → 알리기 대기(5) → 처치. 1단계는 발동 직후라 창이 없다.
     - `G0 < min`이면 위반이다.
     - 모든 `fast` 간식 각각에 대해 `G0 + A(w) − D ≥ normalRangeMin`이어야 한다.
       - `A(w) = totalRise × doses.proper × clamp((w − onsetSec) / absorbSec, 0, 1)`
-      - `D = baseDecay × (step4Limit + guardianLimit + W)`, `W` = 재측정 간격(게임 초)
+      - `D = baseDecay × (step4Limit + guardianLimit + W + 2 × answerFeedbackSec)`, `W` = 재측정 간격(게임 초)
+      - 처치 뒤 재측정까지 결과 문구 창은 최대 2번이다: 처치 → 4단계 ①(1) → 오류·시간 초과 → 알리기 대기(2) → 어른이 재측정.
+      - 처치 뒤 문구 창 동안의 흡수는 회복에 유리하므로 `A(w)`에 넣지 않는다(보수적).
       - 실제 혈당은 `w = W`, 표시 혈당은 `w = W − delaySec`로 두 번 확인한다.
-    - `W`가 양의 유한수가 아니면 14·18번은 건너뛴다(9번이 이미 보고).
+    - `W`가 양의 유한수가 아니면 14·18번은 건너뛴다(9번이 이미 보고). `answerFeedbackSec`가 음수·NaN이면 15번이 보고하고 18번 계산에는 0으로 둔다.
 
 ### 8.3 주행 설정
 19. `0 < runner.trackSnackServings < hypo.doses.under`, `0 < runner.trackSnackIntervalMinSec ≤ trackSnackIntervalMaxSec`

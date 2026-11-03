@@ -79,6 +79,38 @@ namespace SugarDash.Domain.Hypo
 
         public bool IsInGrace => Phase == HypoPhase.Grace;
 
+        /// <summary>
+        /// 대처 중 선택(또는 시간 초과) 뒤 결과 문구 창이 열려 있다. 이 동안 선택 명령은 무시하고,
+        /// 지금 단계의 판단 시간과 마감은 창이 끝난 뒤부터 잰다. 1단계·고혈당 알리기는 발동 직후라 창이 없다.
+        /// </summary>
+        public bool IsShowingAnswerFeedback => IsCoping && _model.DecisionTime < _phaseStart;
+
+        /// <summary>재개 카운트다운의 남은 시간(decisionDt 기준 초). 카운트다운 중이 아니거나 결과 문구 창이 열려 있으면 0.</summary>
+        public double ResumeCountdownRemaining =>
+            Phase == HypoPhase.ResumeCountdown && !IsShowingAnswerFeedback
+                ? Math.Max(0, _deadline - _model.DecisionTime)
+                : 0;
+
+        /// <summary>결과 문구 창이 붙는 대처 중 단계(1단계·고혈당 알리기·유예 제외).</summary>
+        private bool IsCoping
+        {
+            get
+            {
+                switch (Phase)
+                {
+                    case HypoPhase.Respond:
+                    case HypoPhase.Dose:
+                    case HypoPhase.Remeasure:
+                    case HypoPhase.Notify:
+                    case HypoPhase.GuardianPrompt:
+                    case HypoPhase.ResumeCountdown:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
         public void Begin(HypoEventTriggered e)
         {
             if (e == null) throw new ArgumentNullException(nameof(e));
@@ -88,7 +120,7 @@ namespace SugarDash.Domain.Hypo
             DoseSnackId = null;
             _anyError = false;
             _isHyper = false;
-            Enter(HypoPhase.Recognize, _hypo.Step1TimeLimitSec);
+            EnterNow(HypoPhase.Recognize, _hypo.Step1TimeLimitSec);
         }
 
         /// <summary>고혈당 이벤트를 시작한다. 세계를 멈추고 "어른에게 알리기"를 기다린다.</summary>
@@ -101,12 +133,12 @@ namespace SugarDash.Domain.Hypo
             DoseSnackId = null;
             _anyError = false;
             _isHyper = true;
-            Enter(HypoPhase.HyperNotify, _config.Hyper.NotifyTimeLimitSec);
+            EnterNow(HypoPhase.HyperNotify, _config.Hyper.NotifyTimeLimitSec);
         }
 
         /// <summary>
         /// 매 프레임 GlucoseModel.Tick과 EventDirector.Evaluate 뒤에 호출한다.
-        /// 한 번에 현재 단계의 마감 하나만 처리한다. 새 단계의 마감은 지금부터 잰다.
+        /// 한 번에 현재 단계의 마감 하나만 처리한다. 새 단계의 마감은 결과 문구 창이 끝난 뒤부터 잰다.
         /// 실제 혈당이 안전 범위를 벗어나도 바로 탈락하지 않는다. 1~4단계와 고혈당 알리기는
         /// 제한 시간을 넘긴 순간에만 안전 범위를 판정한다. 주행 중·재개 카운트다운·유예 시간에는 판정하지 않는다.
         /// </summary>
@@ -190,7 +222,7 @@ namespace SugarDash.Domain.Hypo
 
         public bool ChooseSnack(string snackId)
         {
-            if (Phase != HypoPhase.Respond) return false;
+            if (Phase != HypoPhase.Respond || IsShowingAnswerFeedback) return false;
             if (snackId == null || !_snacks.TryGetValue(snackId, out var snack))
                 throw new ArgumentException($"설정에 없는 간식이다: {snackId}", nameof(snackId));
 
@@ -210,6 +242,7 @@ namespace SugarDash.Domain.Hypo
         /// <summary>"계속 달리기". 2단계에서는 RS_KEEP_RUNNING, 고혈당 알리기에서는 HY_KEEP_RUNNING 오류다.</summary>
         public bool ChooseKeepRunning()
         {
+            if (IsShowingAnswerFeedback) return false;
             if (Phase != HypoPhase.HyperNotify) return ChooseNoSnack(ChoiceKeepRunning, HypoErrorCode.RsKeepRunning);
 
             Error(HypoStep.HyperNotify, ChoiceKeepRunning, HypoErrorCode.HyKeepRunning, Resolve);
@@ -220,7 +253,7 @@ namespace SugarDash.Domain.Hypo
 
         public bool ChooseDose(DoseLevel level)
         {
-            if (Phase != HypoPhase.Dose) return false;
+            if (Phase != HypoPhase.Dose || IsShowingAnswerFeedback) return false;
 
             double servings = _hypo.Doses.Servings(level);
             string choiceId = level.ToString().ToLowerInvariant();
@@ -248,7 +281,7 @@ namespace SugarDash.Domain.Hypo
         /// </summary>
         public bool ChooseRecheck()
         {
-            if (Phase != HypoPhase.Remeasure) return false;
+            if (Phase != HypoPhase.Remeasure || IsShowingAnswerFeedback) return false;
 
             Correct(HypoStep.Remeasure, ChoiceRecheck);
             RemeasureAndNotify();
@@ -261,7 +294,7 @@ namespace SugarDash.Domain.Hypo
         /// <param name="shownPhase">버튼을 누를 때 화면이 보여 주던 단계. 연타로 다음 단계에 잘못 들어가지 않게 한다.</param>
         public bool ChooseRunAgain(HypoPhase shownPhase)
         {
-            if (shownPhase != Phase) return false;
+            if (shownPhase != Phase || IsShowingAnswerFeedback) return false;
 
             switch (Phase)
             {
@@ -287,7 +320,7 @@ namespace SugarDash.Domain.Hypo
         /// <param name="shownPhase">버튼을 누를 때 화면이 보여 주던 단계. 연타로 다음 단계에 잘못 들어가지 않게 한다.</param>
         public bool PressHelp(HypoPhase shownPhase)
         {
-            if (shownPhase != Phase) return false;
+            if (shownPhase != Phase || IsShowingAnswerFeedback) return false;
 
             switch (Phase)
             {
@@ -326,7 +359,7 @@ namespace SugarDash.Domain.Hypo
 
         private bool ChooseNoSnack(string choiceId, HypoErrorCode code)
         {
-            if (Phase != HypoPhase.Respond) return false;
+            if (Phase != HypoPhase.Respond || IsShowingAnswerFeedback) return false;
 
             DoseSnackId = _hypo.GuardianSnackId;
             Error(HypoStep.Respond, choiceId, code, EnterDose);
@@ -383,11 +416,23 @@ namespace SugarDash.Domain.Hypo
             Enter(HypoPhase.ResumeCountdown, _hypo.ResumeCountdownSec);
         }
 
+        /// <summary>
+        /// 대처 중 다음 단계로 간다. 결과 문구 창(<see cref="HypoConfig.AnswerFeedbackSec"/>)이 먼저 열리고,
+        /// 판단 시간과 마감은 창이 끝난 뒤부터 잰다. 문구 창은 제한 시간을 먹지 않는다.
+        /// </summary>
         private void Enter(HypoPhase phase, double limitSec)
         {
             Phase = phase;
+            _phaseStart = _model.DecisionTime + _hypo.AnswerFeedbackSec;
+            _deadline = _phaseStart + limitSec;
+        }
+
+        /// <summary>이벤트 발동 직후 단계(1단계, 고혈당 알리기). 앞선 선택이 없으므로 문구 창 없이 지금부터 잰다.</summary>
+        private void EnterNow(HypoPhase phase, double limitSec)
+        {
+            Phase = phase;
             _phaseStart = _model.DecisionTime;
-            _deadline = _model.DecisionTime + limitSec;
+            _deadline = _phaseStart + limitSec;
         }
 
         private void Correct(HypoStep step, string choiceId, bool measuredBeforeWarning = false) =>

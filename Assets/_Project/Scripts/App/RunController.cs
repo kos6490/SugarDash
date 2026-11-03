@@ -73,6 +73,10 @@ namespace SugarDash.App
         public bool IsGaugeWarningOn => _session?.Director.IsGaugeWarningOn ?? false;
         public HypoPhase Phase => _session?.Fsm.Phase ?? HypoPhase.Idle;
         public bool IsWorldFrozen => _session?.Fsm.IsWorldFrozen ?? false;
+        /// <summary>선택 뒤 결과 문구 창이 열려 있다. 이 동안 패널은 문구만 보여 주고 선택 명령은 무시된다.</summary>
+        public bool IsShowingAnswerFeedback => _session?.Fsm.IsShowingAnswerFeedback ?? false;
+        /// <summary>재개 카운트다운의 남은 시간(초). 카운트다운 중이 아니면 0.</summary>
+        public double ResumeCountdownRemaining => _session?.Fsm.ResumeCountdownRemaining ?? 0;
         /// <summary>3단계에서 양을 고를 간식.</summary>
         public string DoseSnackId => _session?.Fsm.DoseSnackId;
 

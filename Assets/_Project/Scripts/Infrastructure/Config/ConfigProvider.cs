@@ -103,6 +103,7 @@ namespace SugarDash.Infrastructure.Config
                     Number(hypo?.GuardianPromptTimeLimitSec, "hypo.guardianPromptTimeLimitSec", hypo),
                     Number(hypo?.ResumeCountdownSec, "hypo.resumeCountdownSec", hypo),
                     Number(hypo?.GraceSec, "hypo.graceSec", hypo),
+                    Number(hypo?.AnswerFeedbackSec, "hypo.answerFeedbackSec", hypo),
                     Text(hypo?.GuardianSnackId, "hypo.guardianSnackId", hypo),
                     new DoseConfig(
                         Number(doses?.Under, "hypo.doses.under", doses),
