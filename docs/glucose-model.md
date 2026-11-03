@@ -119,7 +119,7 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 
 - **불필요 측정**: "저혈당 상황이 발동하지 않았을 때" → "**실제 혈당이 `hypoThreshold` 이상일 때** 누른 측정"으로 바꾼다.
 - 이유: cooldown 중에도 혈당이 낮으면 증상이 보이고, 이때 측정은 올바른 행동이다. 기존 정의로는 불필요 측정으로 잘못 집계된다.
-- 영향: MetricsCalculator(지표 계산은 ScoringService가 아니라 여기서 한다), CLAUDE.md 2절.
+- 영향: MetricsCalculator(지표 계산은 ScoringService가 아니라 여기서 한다).
 
 ### 6.1 지표 계산 규칙 (MetricsCalculator)
 원시 기록(주행별 .jsonl)을 조회할 때마다 계산하고 저장하지 않는다. 저혈당 이벤트는 `eventId`로 묶는다.

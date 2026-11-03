@@ -221,8 +221,8 @@ Unity 에디터 기본 배치:
 
 ### 6.6.1 TitleScreen
 1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TitleScreen`. `Add Component` → `TitleScreenView`.
-2. `TitleScreen` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Root`. 화면 전체를 덮는 그대로 둔다. `Image`의 `Color` A를 `255`로 올려 뒤 화면을 가린다.
-3. `Root` 아래에 만든다.
+2. `TitleScreen` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Root`. 크기는 화면 전체를 덮는 기본값 그대로 둔다. `Image`의 `Color` A를 `255`로 올려 뒤 화면을 가린다.
+3. `Root` 위에서 오른쪽 클릭하고, 아래 표의 오브젝트 3개(`TypeText`, `StartButton`, `SettingsButton`)를 만든다.
 
 | 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
 | --- | --- | --- | --- | --- |
