@@ -14,6 +14,7 @@ using SugarDash.Infrastructure.Config;
 using SugarDash.Infrastructure.Logging;
 using SugarDash.Infrastructure.Progress;
 using SugarDash.Presentation;
+using SugarDash.Presentation.Runner;
 using UnityEngine;
 
 namespace SugarDash.Bootstrap
@@ -87,8 +88,8 @@ namespace SugarDash.Bootstrap
                 _subscriptions.Add(symptomEffect.Bind(_run, _config.Symptom.ShakeStartGlucose, _config.Elimination.GlucoseLow));
 
             player.Init(_run, true);
-            track.Init(_config.Runner.TrackSnackIntervalMinSec, _config.Runner.TrackSnackIntervalMaxSec,
-                _config.Glucose.Snacks.Select(s => s.Id).ToList(),
+            track.Init(new TrackLayout(_config.Glucose.Snacks.Select(s => s.Id).ToList(),
+                    _config.Runner.TrackSnackIntervalMinSec, _config.Runner.TrackSnackIntervalMaxSec, false, 0, 0),
                 Environment.TickCount, true);
             input.Init(_run, player);
         }

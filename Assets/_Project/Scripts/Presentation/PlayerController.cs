@@ -20,6 +20,8 @@ namespace SugarDash.Presentation
             Collected,
             /// <summary>장애물에 부딪혔다.</summary>
             Hit,
+            /// <summary>2형 쉬는 곳에 들어가 앉아서 쉬기 시작했다.</summary>
+            Rested,
         }
 
         [SerializeField] private float laneWidth = 2.5f;
@@ -70,7 +72,10 @@ namespace SugarDash.Presentation
         public bool IsSliding => _slideLeft > 0;
         public bool IsStumbling => _stumbleLeft > 0;
         /// <summary>이번 프레임의 달리기 속도. 트랙이 이 속도로 다가온다.</summary>
-        public float CurrentSpeed => IsStumbling ? _speed * stumbleSpeedFactor : _speed;
+        public float CurrentSpeed => _run != null && _run.IsResting ? 0f : IsStumbling ? _speed * stumbleSpeedFactor : _speed;
+
+        // 쉬는 동안(2형)에는 캐릭터가 멈춰 입력을 받지 않는다.
+        private bool Resting => _run != null && _run.IsResting;
 
         /// <param name="createView">false면 화면 없이 상태만 계산한다(테스트용).</param>
         public void Init(RunController run, bool createView)
@@ -92,14 +97,22 @@ namespace SugarDash.Presentation
             UpdateView();
         }
 
-        public void MoveLeft() => _targetLane = Math.Max(-1, _targetLane - 1);
+        public void MoveLeft()
+        {
+            if (Resting) return;
+            _targetLane = Math.Max(-1, _targetLane - 1);
+        }
 
-        public void MoveRight() => _targetLane = Math.Min(1, _targetLane + 1);
+        public void MoveRight()
+        {
+            if (Resting) return;
+            _targetLane = Math.Min(1, _targetLane + 1);
+        }
 
         /// <summary>슬라이드 중이면 슬라이드를 끝내고 뛴다. 이미 공중이면 무시한다.</summary>
         public void Jump()
         {
-            if (IsAirborne) return;
+            if (Resting || IsAirborne) return;
             _slideLeft = 0;
             _jumpLeft = jumpSec;
         }
@@ -107,6 +120,7 @@ namespace SugarDash.Presentation
         /// <summary>공중이면 바로 내려와 슬라이드한다.</summary>
         public void Slide()
         {
+            if (Resting) return;
             _jumpLeft = 0;
             _slideLeft = slideSec;
         }
@@ -115,7 +129,7 @@ namespace SugarDash.Presentation
         public void Advance(double worldDt)
         {
             float dt = (float)worldDt;
-            if (dt <= 0) return;
+            if (dt <= 0 || Resting) return;
 
             float targetX = _targetLane * laneWidth;
             float step = laneWidth / laneChangeSec * dt;
@@ -136,6 +150,9 @@ namespace SugarDash.Presentation
 
             switch (item.Kind)
             {
+                case TrackItemKind.RestSpot:
+                    _run.StartRest();
+                    return Outcome.Rested;
                 case TrackItemKind.Snack:
                     _run.PickUpSnack(item.SnackId);
                     return Outcome.Collected;

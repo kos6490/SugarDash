@@ -23,6 +23,8 @@ namespace SugarDash.Presentation
         [SerializeField] private Transform buttonContainer;
         [SerializeField] private Button buttonTemplate;
 
+        private const string Type2TellTitle = "몸이 힘들어요. 어떻게 할까요?";
+
         private readonly List<Button> _buttons = new List<Button>();
         private RunController _run;
         private IReadOnlyList<SnackConfig> _snacks;
@@ -123,7 +125,24 @@ namespace SugarDash.Presentation
                     AddHelp(phase);
                     break;
                 case HypoPhase.HyperNotify:
-                    Show("혈당이 높아요. 어떻게 할까요?");
+                    if (_run.TrackType == TrackType.Type2)
+                    {
+                        Show(Type2TellTitle);
+                        AddShuffled(new List<(string, Action)>
+                        {
+                            ("계속 달리기", () => _run.ChooseKeepRunning()),
+                            ("주스 마시기", () => _run.ChooseJuice()),
+                        });
+                    }
+                    else
+                    {
+                        Show("혈당이 높아요. 어떻게 할까요?");
+                        Add("계속 달리기", () => _run.ChooseKeepRunning());
+                    }
+                    AddHelp(phase);
+                    break;
+                case HypoPhase.LowNotify:
+                    Show(Type2TellTitle);
                     Add("계속 달리기", () => _run.ChooseKeepRunning());
                     AddHelp(phase);
                     break;

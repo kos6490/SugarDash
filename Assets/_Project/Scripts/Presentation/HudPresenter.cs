@@ -87,10 +87,14 @@ namespace SugarDash.Presentation
 
             if (_meterTextHideAt >= 0 && Time.time >= _meterTextHideAt) ClearMeterText();
 
-            double displayed = _run.Displayed;
+            // 2형에는 측정기·표시 혈당 지연·게이지 경고가 없다. 혈당바는 실제 혈당을 보여 주고 측정 관련 표시는 숨긴다.
+            bool type2 = _run.TrackType == TrackType.Type2;
+            meterButton.gameObject.SetActive(!type2);
+            meterText.enabled = !type2;
+            double displayed = type2 ? _run.Actual : _run.Displayed;
             glucoseBar.value = (float)displayed;
             glucoseText.text = $"{displayed:0} mg/dL";
-            warningText.enabled = _run.IsGaugeWarningOn;
+            warningText.enabled = !type2 && _run.IsGaugeWarningOn;
 
             // 2~4단계와 알리기 대기 중에는 패널이 화면을 맡는다.
             var phase = _run.Phase;

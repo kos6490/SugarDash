@@ -25,21 +25,28 @@ namespace SugarDash.Presentation.Tests
             public void EndRun() { }
         }
 
-        private static RunController StartRig(double initialGlucose)
+        private static RunController StartRig(double initialGlucose,
+            SugarDash.Domain.Config.TrackType type = SugarDash.Domain.Config.TrackType.Type1)
         {
-            var config = new ConfigBuilder { Initial = initialGlucose }.Build();
+            var builder = new ConfigBuilder { Initial = initialGlucose };
+            var config = type == SugarDash.Domain.Config.TrackType.Type2 ? builder.BuildType2() : builder.Build();
             var bus = new DomainEventBus();
             RunController run = null;
             run = new RunController(_ =>
             {
                 var model = new GlucoseModel(config.Glucose);
-                var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
+                var director = type == SugarDash.Domain.Config.TrackType.Type2
+                    ? new EventDirector(config.Glucose, model, new NoRandom(), bus, config.Type2)
+                    : new EventDirector(config.Glucose, model, new NoRandom(), bus);
                 var fsm = new HypoEventFsm(config, model, director, bus, () => run.DistanceM);
                 var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
-                return new RunSession(config, model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
-                    scoring.Subscribe(bus));
+                return type == SugarDash.Domain.Config.TrackType.Type2
+                    ? new RunSession(config, model, director, fsm, scoring, scoring.Subscribe(bus),
+                        bus.Subscribe<LowEventTriggered>(fsm.BeginLow), bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper))
+                    : new RunSession(config, model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
+                        scoring.Subscribe(bus));
             }, new NullLog(), bus);
-            run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            run.StartRun(type);
             return run;
         }
 
@@ -126,6 +133,19 @@ namespace SugarDash.Presentation.Tests
             _presenter.LateUpdate();
 
             Assert.That(_presenter.LastOffset.magnitude, Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void Type2_NoShake()
+        {
+            var run = StartRig(80, SugarDash.Domain.Config.TrackType.Type2);
+            Assert.That(run.State, Is.EqualTo(RunState.Running));
+            Assert.That(run.Actual, Is.LessThan(90));
+            using var _ = _presenter.Bind(run, 90, 40);
+
+            _presenter.LateUpdate();
+
+            Assert.That(_presenter.LastOffset, Is.EqualTo(Vector3.zero));
         }
 
         [Test]

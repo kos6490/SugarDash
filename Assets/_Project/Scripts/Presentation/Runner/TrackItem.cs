@@ -12,6 +12,8 @@ namespace SugarDash.Presentation.Runner
         /// <summary>레인을 막는 장애물. 옆 레인으로 피한다.</summary>
         LaneBlock,
         Snack,
+        /// <summary>2형 쉬는 곳(벤치 등). 같은 레인으로 지나가면 앉아서 쉰다.</summary>
+        RestSpot,
         /// <summary>달리는 느낌을 주는 바닥 표시. 충돌하지 않는다.</summary>
         Marker,
     }

@@ -62,6 +62,61 @@ namespace SugarDash.Presentation.Tests
         [TearDown]
         public void TearDown() => Object.DestroyImmediate(_go);
 
+        private RunController StartType2Run()
+        {
+            var config = new ConfigBuilder().BuildType2();
+            var bus = new DomainEventBus();
+            RunController run = null;
+            run = new RunController(_ =>
+            {
+                var model = new GlucoseModel(config.Glucose);
+                var director = new EventDirector(config.Glucose, model, new NoRandom(), bus, config.Type2);
+                var fsm = new HypoEventFsm(config, model, director, bus, () => run.DistanceM);
+                var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
+                return new RunSession(config, model, director, fsm, scoring, scoring.Subscribe(bus),
+                    bus.Subscribe<LowEventTriggered>(fsm.BeginLow), bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
+            }, new NullLog(), bus);
+            run.StartRun(SugarDash.Domain.Config.TrackType.Type2);
+            return run;
+        }
+
+        [Test]
+        public void RestSpot_SameLane_StartsRest_ReturnsRested()
+        {
+            var run = StartType2Run();
+            _player.Init(run, false);
+
+            Assert.That(_player.Resolve(Item(TrackItemKind.RestSpot, 1)), Is.EqualTo(PlayerController.Outcome.Passed));
+            Assert.That(_player.Resolve(Item(TrackItemKind.RestSpot, 0)), Is.EqualTo(PlayerController.Outcome.Rested));
+            run.Tick(0.1);
+
+            Assert.That(run.IsResting, Is.True);
+        }
+
+        [Test]
+        public void Resting_SpeedZero_IgnoresInput()
+        {
+            var run = StartType2Run();
+            _player.Init(run, false);
+            _player.Resolve(Item(TrackItemKind.RestSpot, 0));
+            run.Tick(0.1);
+            Assert.That(run.IsResting, Is.True);
+
+            _player.MoveLeft();
+            _player.MoveRight();
+            _player.Jump();
+            _player.Slide();
+            float speedBefore = _player.CurrentSpeed;
+            _player.Advance(0.5);
+
+            Assert.That(_player.CurrentSpeed, Is.EqualTo(0f));
+            Assert.That(speedBefore, Is.EqualTo(0f));
+            Assert.That(_player.TargetLane, Is.EqualTo(0));
+            Assert.That(_player.X, Is.EqualTo(0f));
+            Assert.That(_player.IsAirborne, Is.False);
+            Assert.That(_player.IsSliding, Is.False);
+        }
+
         private static TrackItem Item(TrackItemKind kind, int lane = 0, string snackId = null) =>
             new TrackItem(kind, lane, 0, snackId);
 
@@ -225,6 +280,141 @@ namespace SugarDash.Presentation.Tests
         private const double SnackInterval = 8;
         private const double Speed = 10;
 
+        private static TrackLayout Type1(double min, double max) => new TrackLayout(Snacks, min, max, false, 0, 0);
+
+        private static TrackLayout Type2(double foodSec = 3, double restSec = 12) =>
+            new TrackLayout(new[] { "juice", "water", "cracker" }, foodSec, foodSec, true, restSec, restSec);
+
+        private static TrackSpawner NewType2(GameObject go, int seed = 7, double foodSec = 3, double restSec = 12)
+        {
+            var track = go.AddComponent<TrackSpawner>();
+            track.Init(Type2(foodSec, restSec), seed, false);
+            return track;
+        }
+
+        [Test]
+        public void Type1Layout_Unchanged()
+        {
+            int snacks = 0;
+            for (int i = 0; i < 400; i++)
+            {
+                var crossed = _track.Advance(0.1, Speed, true);
+                Assert.That(crossed.Any(x => x.Kind == TrackItemKind.RestSpot), Is.False);
+                Assert.That(crossed.Count(x => x.Kind == TrackItemKind.Snack), Is.LessThanOrEqualTo(1), "1형은 한 번에 간식 한 개");
+                snacks += crossed.Count(x => x.Kind == TrackItemKind.Snack);
+            }
+            Assert.That(snacks, Is.GreaterThan(0));
+            Assert.That(_track.Items.Any(x => x.Kind == TrackItemKind.RestSpot), Is.False);
+        }
+
+        [Test]
+        public void Type2Layout_FoodRowsHaveTwoDistinctFoodsAndOneEmptyLane()
+        {
+            var go = new GameObject("T2");
+            try
+            {
+                var track = NewType2(go, 7, 3, 0);
+                var rows = new Dictionary<TrackItem, int>();
+                var all = new List<TrackItem>();
+                var seen = new HashSet<TrackItem>();
+                for (int i = 0; i < 600; i++)
+                {
+                    track.Advance(0.1, Speed, true);
+                    foreach (var item in track.Items.Where(x => x.Kind == TrackItemKind.Snack && seen.Add(x))) all.Add(item);
+                }
+                // 같은 줄에서 같이 놓인 것끼리 묶는다(생성 시 Z가 같다 = 같은 프레임 같은 거리).
+                Assert.That(all.Count, Is.GreaterThanOrEqualTo(8));
+                Assert.That(all.Count % 2, Is.EqualTo(0));
+                for (int i = 0; i < all.Count; i += 2)
+                {
+                    var a = all[i];
+                    var b = all[i + 1];
+                    Assert.That(a.SnackId, Is.Not.EqualTo(b.SnackId));
+                    Assert.That(a.Lane, Is.Not.EqualTo(b.Lane));
+                    Assert.That(a.Z, Is.EqualTo(b.Z).Within(1e-9));
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Type2Layout_RestSpotHasClearZone()
+        {
+            var go = new GameObject("T2");
+            try
+            {
+                var track = NewType2(go, 11, 2, 12);
+                const double clear = 8;
+                int restCount = 0;
+                var checkedSpots = new HashSet<TrackItem>();
+                for (int i = 0; i < 1500; i++)
+                {
+                    track.Advance(0.1, Speed, true);
+                    foreach (var rest in track.Items.Where(x => x.Kind == TrackItemKind.RestSpot))
+                    {
+                        // 놓인 직후(맨 앞)에만 앞쪽 검사가 끝나지 않으므로 화면 안으로 완전히 들어온 뒤 검사한다.
+                        if (rest.Z > track.SpawnAheadDistance - 1) continue;
+                        if (!checkedSpots.Add(rest)) continue;
+                        restCount++;
+                        foreach (var other in track.Items.Where(x => x.IsObstacle || x.Kind == TrackItemKind.Snack))
+                            Assert.That(Math.Abs(other.Z - rest.Z), Is.GreaterThanOrEqualTo(clear),
+                                $"{other.Kind} z={other.Z} rest z={rest.Z}");
+                    }
+                }
+                Assert.That(restCount, Is.GreaterThanOrEqualTo(3));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void SpawnTimersPauseWhileSpeedZero()
+        {
+            var go = new GameObject("T2");
+            try
+            {
+                var track = NewType2(go, 5, 2, 3);
+                int before = track.Items.Count;
+                for (int i = 0; i < 300; i++) track.Advance(0.1, 0, true);
+                Assert.That(track.Items.Count, Is.EqualTo(before), "속도 0이면 아무것도 새로 놓이지 않는다");
+                Assert.That(track.Distance, Is.EqualTo(0));
+
+                for (int i = 0; i < 40; i++) track.Advance(0.1, Speed, true);
+                Assert.That(track.Items.Any(x => x.Kind == TrackItemKind.Snack), Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void SetLayout_AppliesFromNextResetRun()
+        {
+            var go = new GameObject("T2");
+            try
+            {
+                var track = go.AddComponent<TrackSpawner>();
+                track.Init(Type1(2, 2), 3, false);
+                track.SetLayout(Type2(2, 3));
+                for (int i = 0; i < 100; i++) track.Advance(0.1, Speed, true);
+                Assert.That(track.Items.Any(x => x.Kind == TrackItemKind.RestSpot), Is.False);
+
+                track.ResetRun(3);
+                for (int i = 0; i < 100; i++) track.Advance(0.1, Speed, true);
+                Assert.That(track.Items.Any(x => x.Kind == TrackItemKind.RestSpot), Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         private GameObject _go;
         private TrackSpawner _track;
 
@@ -233,7 +423,7 @@ namespace SugarDash.Presentation.Tests
         {
             _go = new GameObject("Track");
             _track = _go.AddComponent<TrackSpawner>();
-            _track.Init(SnackInterval, SnackInterval, Snacks, 42, false);
+            _track.Init(Type1(SnackInterval, SnackInterval), 42, false);
         }
 
         [TearDown]
@@ -290,7 +480,7 @@ namespace SugarDash.Presentation.Tests
             try
             {
                 var track = go.AddComponent<TrackSpawner>();
-                track.Init(min, max, Snacks, seed, false);
+                track.Init(Type1(min, max), seed, false);
                 var seen = new HashSet<TrackItem>(track.Items.Where(i => i.Kind == TrackItemKind.Snack));
                 var times = new List<double>();
                 int steps = (int)Math.Round(seconds / dt);
@@ -337,8 +527,8 @@ namespace SugarDash.Presentation.Tests
             try
             {
                 var track = go.AddComponent<TrackSpawner>();
-                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(0, 5, Snacks, 1, false));
-                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(6, 5, Snacks, 1, false));
+                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(Type1(0, 5), 1, false));
+                Assert.Throws<ArgumentOutOfRangeException>(() => track.Init(Type1(6, 5), 1, false));
             }
             finally
             {

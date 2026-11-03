@@ -35,6 +35,9 @@ namespace SugarDash.Presentation.Runner
                 case TrackItemKind.Snack:
                     return Create(PrimitiveType.Sphere, parent, "Snack " + item.SnackId, Vector3.one * 0.6f,
                         new Color(1f, 0.85f, 0.2f));
+                case TrackItemKind.RestSpot:
+                    return Create(PrimitiveType.Cube, parent, "RestSpot", new Vector3(2f, 0.5f, 1f),
+                        new Color(0.3f, 0.75f, 0.45f));
                 default:
                     return Create(PrimitiveType.Cube, parent, "Marker", new Vector3(0.15f, 0.02f, 1.2f),
                         new Color(0.85f, 0.85f, 0.85f));
@@ -50,6 +53,7 @@ namespace SugarDash.Presentation.Runner
                 case TrackItemKind.HighObstacle: return 1.6f;
                 case TrackItemKind.LaneBlock: return 1.1f;
                 case TrackItemKind.Snack: return 0.8f;
+                case TrackItemKind.RestSpot: return 0.25f;
                 default: return 0.01f;
             }
         }

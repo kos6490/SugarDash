@@ -1,5 +1,6 @@
 using System;
 using SugarDash.App;
+using SugarDash.Domain.Config;
 using UnityEngine;
 
 namespace SugarDash.Presentation
@@ -39,7 +40,8 @@ namespace SugarDash.Presentation
 
         public void LateUpdate()
         {
-            double intensity = _run != null && _run.State == RunState.Running
+            // 2형 주행에는 화면 흔들림이 없다.
+            double intensity = _run != null && _run.State == RunState.Running && _run.TrackType != TrackType.Type2
                 ? SymptomShake.Intensity(_run.Actual, _startGlucose, _lowGlucose)
                 : 0;
             ApplyShake(intensity, Time.time);

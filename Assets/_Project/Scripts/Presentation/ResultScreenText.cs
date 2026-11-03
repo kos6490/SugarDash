@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SugarDash.Domain.Config;
 using SugarDash.Domain.Metrics;
 
 namespace SugarDash.Presentation
@@ -26,13 +27,28 @@ namespace SugarDash.Presentation
                 if (best != null) lines.Add($"최고 점수 {Math.Floor(best.Value):0}점");
                 if (isNewBest) lines.Add("새 최고 기록!");
             }
-            lines.Add(HypoSummary(result));
-            string hyper = HyperSummary(result);
-            if (hyper != null) lines.Add(hyper);
+            bool type2 = result.TrackType == TrackType.Type2;
+            if (type2)
+            {
+                // 2형: 고혈당·저혈당 줄을 각각 이벤트가 있을 때만 넣는다.
+                string high = Type2Summary("높을", result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect));
+                if (high != null) lines.Add(high);
+                string low = Type2Summary("낮을", result.LowEvents.Count, result.LowEvents.Count(e => e.AllCorrect));
+                if (low != null) lines.Add(low);
+            }
+            else
+            {
+                lines.Add(HypoSummary(result));
+                string hyper = HyperSummary(result);
+                if (hyper != null) lines.Add(hyper);
+            }
 
             // 하나도 해내지 못한 항목이 있으면 격려 문구를 맨 아래에 한 번만 붙인다.
-            bool anyMissed = Missed(result.Events.Count, result.Events.Count(e => e.AllCorrect)) ||
-                             Missed(result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect));
+            bool anyMissed = type2
+                ? Missed(result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect)) ||
+                  Missed(result.LowEvents.Count, result.LowEvents.Count(e => e.AllCorrect))
+                : Missed(result.Events.Count, result.Events.Count(e => e.AllCorrect)) ||
+                  Missed(result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect));
             if (anyMissed) lines.Add(Encouragement);
             return string.Join("\n", lines);
         }
@@ -49,6 +65,15 @@ namespace SugarDash.Presentation
             if (good == 0) return $"저혈당 {result.Events.Count}번 모두 아쉬웠어요";
             if (good == result.Events.Count) return $"저혈당 {good}번 모두 잘 해냈어요";
             return $"저혈당 {result.Events.Count}번 중 {good}번 모두 잘 해냈어요";
+        }
+
+        /// <summary>2형 한 줄. 이벤트가 없으면 null(줄을 더하지 않는다).</summary>
+        private static string Type2Summary(string level, int count, int good)
+        {
+            if (count == 0) return null;
+            if (good == 0) return $"혈당이 {level} 때 {count}번 모두 아쉬웠어요";
+            if (good == count) return $"혈당이 {level} 때 {count}번 모두 바로 알렸어요";
+            return $"혈당이 {level} 때 {count}번 중 {good}번 바로 알렸어요";
         }
 
         /// <summary>고혈당이 없었으면 null(줄을 더하지 않는다).</summary>

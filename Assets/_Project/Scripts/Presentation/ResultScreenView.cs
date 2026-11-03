@@ -15,6 +15,7 @@ namespace SugarDash.Presentation
         [SerializeField] private Text titleText;
         [SerializeField] private Text summaryText;
         [SerializeField] private Button retryButton;
+        [SerializeField] private Button titleButton;
 
         private GameFlowController _flow;
         private bool _shown;
@@ -26,10 +27,12 @@ namespace SugarDash.Presentation
 
             root.SetActive(false);
             retryButton.onClick.AddListener(OnRetry);
+            titleButton.onClick.AddListener(OnTitle);
 
             return new Unbinder(() =>
             {
                 retryButton.onClick.RemoveListener(OnRetry);
+                titleButton.onClick.RemoveListener(OnTitle);
                 _flow = null;
             });
         }
@@ -53,5 +56,7 @@ namespace SugarDash.Presentation
         }
 
         private void OnRetry() => _flow?.Retry();
+
+        private void OnTitle() => _flow?.BackToTitle();
     }
 }

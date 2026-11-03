@@ -28,6 +28,38 @@ namespace SugarDash.Presentation.Tests
             return new RunSummary(hypo.RunId, hypo.Outcome, hypo.Events, hyper, null);
         }
 
+        private static RunSummary Type2Summary(bool[] high, bool[] low)
+        {
+            var hyper = new List<HyperEventResult>();
+            for (int i = 0; i < high.Length; i++) hyper.Add(new HyperEventResult(10 + i, high[i], true));
+            var lows = new List<LowEventResult>();
+            for (int i = 0; i < low.Length; i++) lows.Add(new LowEventResult(20 + i, low[i], true));
+            return new RunSummary("run", RunOutcome.Eliminated, new EventResult[0], hyper, null, lows,
+                SugarDash.Domain.Config.TrackType.Type2);
+        }
+
+        [Test]
+        public void Type2_SummaryLines()
+        {
+            Assert.That(ResultScreenText.Summary(Type2Summary(new[] { true, false }, new[] { true })),
+                Is.EqualTo("혈당이 높을 때 2번 중 1번 바로 알렸어요\n혈당이 낮을 때 1번 모두 바로 알렸어요"));
+            Assert.That(ResultScreenText.Summary(Type2Summary(new[] { true, true }, new[] { true, false, false })),
+                Is.EqualTo("혈당이 높을 때 2번 모두 바로 알렸어요\n혈당이 낮을 때 3번 중 1번 바로 알렸어요"));
+            Assert.That(ResultScreenText.Summary(Type2Summary(new[] { false, false }, new[] { false })),
+                Is.EqualTo("혈당이 높을 때 2번 모두 아쉬웠어요\n혈당이 낮을 때 1번 모두 아쉬웠어요\n다음에 더 잘해봐요!"));
+        }
+
+        [Test]
+        public void Type2_NoHypoLineWhenNoEvents()
+        {
+            var none = ResultScreenText.Summary(Type2Summary(new bool[0], new bool[0]));
+            Assert.That(none, Is.Empty);
+            Assert.That(none, Does.Not.Contain("저혈당"));
+
+            var onlyLow = ResultScreenText.Summary(Type2Summary(new bool[0], new[] { true }));
+            Assert.That(onlyLow, Is.EqualTo("혈당이 낮을 때 1번 모두 바로 알렸어요"));
+        }
+
         [Test]
         public void Title_Eliminated()
         {
