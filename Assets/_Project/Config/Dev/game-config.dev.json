@@ -1,4 +1,5 @@
 {
+  "trackType": "type1",
   "configVersion": "dev-not-real",
   "unit": "mg/dL",
   "time": { "timeScale": 150, "recheckIntervalRealMin": 15, "recheckIntervalSource": "dev-not-real",

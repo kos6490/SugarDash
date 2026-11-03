@@ -1,0 +1,36 @@
+{
+  "configVersion": "dev-not-real-type2",
+  "trackType": "type2",
+  "unit": "mg/dL",
+  "time": { "timeScale": 150 },
+  "glucose": {
+    "initial": 120, "min": 20, "max": 400, "hypoThreshold": 70, "hypoReleaseMargin": 10,
+    "hyperThreshold": 180, "hyperReleaseMargin": 20,
+    "baseDecayPerSec": 0.3, "runDecayPerSec": 0.7, "normalRangeMin": 72
+  },
+  "type2": {
+    "highHoldSec": 4, "lowHoldSec": 4, "noticeSec": 2, "tellTimeLimitSec": 8,
+    "guardianPromptTimeLimitSec": 5, "answerFeedbackSec": 1, "resumeCountdownSec": 3, "graceSec": 3,
+    "guardianSnackId": "juice", "juiceChoiceFoodId": "juice"
+  },
+  "foods": [
+    { "id": "water", "totalRise": 0, "onsetRealMin": 1, "absorbRealMin": 1, "source": "dev-not-real" },
+    { "id": "juice", "totalRise": 30, "onsetRealMin": 2.5, "absorbRealMin": 5, "source": "dev-not-real" },
+    { "id": "soda", "totalRise": 30, "onsetRealMin": 2.5, "absorbRealMin": 5, "source": "dev-not-real" },
+    { "id": "apple", "totalRise": 15, "onsetRealMin": 5, "absorbRealMin": 12.5, "source": "dev-not-real" },
+    { "id": "chicken", "totalRise": 15, "onsetRealMin": 10, "absorbRealMin": 25, "source": "dev-not-real" },
+    { "id": "pizza", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "dev-not-real" },
+    { "id": "burger", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "dev-not-real" }
+  ],
+  "runner": {
+    "foodRowIntervalMinSec": 4, "foodRowIntervalMaxSec": 7,
+    "restIntervalMinSec": 15, "restIntervalMaxSec": 25, "restDurationSec": 3
+  },
+  "elimination": { "glucoseLow": 40, "glucoseHigh": 300 },
+  "score": {
+    "inRangePerSec": 1, "perMeter": 0.1,
+    "correct": { "hyperNotify": 10, "lowNotify": 10 },
+    "errors": { "HY_KEEP_RUNNING": 0, "HY_JUICE": 2, "HY_TIMEOUT": 0, "LO_KEEP_RUNNING": 0, "LO_TIMEOUT": 0 }
+  },
+  "sections": [ { "id": "signal" } ]
+}

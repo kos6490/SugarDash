@@ -6,6 +6,7 @@ using SugarDash.Domain.Ports;
 using SugarDash.Infrastructure.Logging;
 using SugarDash.Infrastructure.Config.Dto;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace SugarDash.Infrastructure.Config
 {
@@ -26,18 +27,36 @@ namespace SugarDash.Infrastructure.Config
 
         public GameConfig Load()
         {
-            GameConfigDto dto;
+            string trackType;
             try
             {
-                dto = JsonConvert.DeserializeObject<GameConfigDto>(_json, Settings);
+                var root = JObject.Parse(_json);
+                trackType = root.Value<string>("trackType");
+            }
+            catch (Exception e) when (e is JsonException || e is InvalidCastException)
+            {
+                throw new ConfigValidationException(Array.Empty<string>(), new[] { "JSON 형식 오류: " + e.Message });
+            }
+
+            if (trackType == null) throw new ConfigValidationException(new[] { "trackType" }, Array.Empty<string>());
+            if (trackType != "type1" && trackType != "type2")
+                throw new ConfigValidationException(Array.Empty<string>(),
+                    new[] { $"trackType은 type1 또는 type2 이어야 한다 ({trackType})" });
+
+            var reader = new Reader();
+            GameConfig config;
+            try
+            {
+                if (trackType == "type2")
+                    config = reader.MapType2(JsonConvert.DeserializeObject<Type2ConfigDto>(_json, Settings));
+                else
+                    config = reader.Map(JsonConvert.DeserializeObject<GameConfigDto>(_json, Settings));
             }
             catch (JsonException e)
             {
                 throw new ConfigValidationException(Array.Empty<string>(), new[] { "JSON 형식 오류: " + e.Message });
             }
 
-            var reader = new Reader();
-            var config = reader.Map(dto);
             if (reader.Missing.Count > 0 || reader.Violations.Count > 0)
                 throw new ConfigValidationException(reader.Missing, reader.Violations);
 
@@ -152,8 +171,119 @@ namespace SugarDash.Infrastructure.Config
 
                 var scoreConfig = MapScore(Section(dto.Score, "score"));
 
+                var sections = MapSections(dto.Sections);
+
+                var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
+                    snacks);
+                return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, hyperConfig,
+                    runnerConfig, eliminationConfig, symptomConfig, scoreConfig, sections);
+            }
+
+            public GameConfig MapType2(Type2ConfigDto dto)
+            {
+                if (dto == null)
+                {
+                    Missing.Add("(root)");
+                    return null;
+                }
+
+                string configVersion = Text(dto.ConfigVersion, "configVersion", dto);
+                string unit = Text(dto.Unit, "unit", dto);
+
+                var time = Section(dto.Time, "time");
+                double timeScale = Number(time?.TimeScale, "time.timeScale", time);
+
+                var glucose = Section(dto.Glucose, "glucose");
+                var levels = new GlucoseLevelConfig(
+                    Number(glucose?.Initial, "glucose.initial", glucose),
+                    Number(glucose?.Min, "glucose.min", glucose),
+                    Number(glucose?.Max, "glucose.max", glucose),
+                    Number(glucose?.HypoThreshold, "glucose.hypoThreshold", glucose),
+                    Number(glucose?.HypoReleaseMargin, "glucose.hypoReleaseMargin", glucose),
+                    Number(glucose?.HyperThreshold, "glucose.hyperThreshold", glucose),
+                    Number(glucose?.HyperReleaseMargin, "glucose.hyperReleaseMargin", glucose),
+                    Number(glucose?.BaseDecayPerSec, "glucose.baseDecayPerSec", glucose),
+                    Number(glucose?.RunDecayPerSec, "glucose.runDecayPerSec", glucose),
+                    Number(glucose?.NormalRangeMin, "glucose.normalRangeMin", glucose));
+
+                var t2 = Section(dto.Type2, "type2");
+                var runner = Section(dto.Runner, "runner");
+                var type2 = new Type2Config(
+                    Number(t2?.HighHoldSec, "type2.highHoldSec", t2),
+                    Number(t2?.LowHoldSec, "type2.lowHoldSec", t2),
+                    Number(t2?.NoticeSec, "type2.noticeSec", t2),
+                    Number(t2?.TellTimeLimitSec, "type2.tellTimeLimitSec", t2),
+                    Number(t2?.GuardianPromptTimeLimitSec, "type2.guardianPromptTimeLimitSec", t2),
+                    Number(t2?.AnswerFeedbackSec, "type2.answerFeedbackSec", t2),
+                    Number(t2?.ResumeCountdownSec, "type2.resumeCountdownSec", t2),
+                    Number(t2?.GraceSec, "type2.graceSec", t2),
+                    Text(t2?.GuardianSnackId, "type2.guardianSnackId", t2),
+                    Text(t2?.JuiceChoiceFoodId, "type2.juiceChoiceFoodId", t2),
+                    Number(runner?.FoodRowIntervalMinSec, "runner.foodRowIntervalMinSec", runner),
+                    Number(runner?.FoodRowIntervalMaxSec, "runner.foodRowIntervalMaxSec", runner),
+                    Number(runner?.RestIntervalMinSec, "runner.restIntervalMinSec", runner),
+                    Number(runner?.RestIntervalMaxSec, "runner.restIntervalMaxSec", runner),
+                    Number(runner?.RestDurationSec, "runner.restDurationSec", runner));
+
+                // timeScale이 0이면 불변식 검증이 먼저 실패해야 하므로 0으로 나누지 않는다.
+                double toGameSec = timeScale > 0 ? 60 / timeScale : 0;
+                var foods = new List<SnackConfig>();
+                var foodDtos = Section(dto.Foods, "foods");
+                for (int i = 0; foodDtos != null && i < foodDtos.Count; i++)
+                {
+                    string path = $"foods[{i}]";
+                    var food = Section(foodDtos[i], path);
+                    // Kind는 2형에서 쓰지 않는다(빠른·느린 당 구분은 1형 대처용).
+                    foods.Add(new SnackConfig(
+                        Text(food?.Id, path + ".id", food),
+                        SnackKind.Fast,
+                        Number(food?.TotalRise, path + ".totalRise", food),
+                        Number(food?.OnsetRealMin, path + ".onsetRealMin", food) * toGameSec,
+                        Number(food?.AbsorbRealMin, path + ".absorbRealMin", food) * toGameSec,
+                        Text(food?.Source, path + ".source", food)));
+                }
+
+                var elimination = Section(dto.Elimination, "elimination");
+                var eliminationConfig = new EliminationConfig(
+                    Number(elimination?.GlucoseLow, "elimination.glucoseLow", elimination),
+                    Number(elimination?.GlucoseHigh, "elimination.glucoseHigh", elimination));
+
+                var score = MapType2Score(Section(dto.Score, "score"));
+                var sections = MapSections(dto.Sections);
+
+                return GameConfig.ForType2(configVersion, unit, timeScale, levels, foods, type2,
+                    eliminationConfig, score, sections);
+            }
+
+            private ScoreConfig MapType2Score(Type2ScoreDto score)
+            {
+                var correct = score == null ? null : Section(score.Correct, "score.correct");
+                var correctWeights = new Dictionary<HypoStep, double>
+                {
+                    { HypoStep.HyperNotify, Number(correct?.HyperNotify, "score.correct.hyperNotify", correct) },
+                    { HypoStep.LowNotify, Number(correct?.LowNotify, "score.correct.lowNotify", correct) },
+                };
+
+                var errors = score == null ? null : Section(score.Errors, "score.errors");
+                var errorWeights = new Dictionary<HypoErrorCode, double>
+                {
+                    { HypoErrorCode.HyKeepRunning, Error(errors?.HyKeepRunning, HypoErrorCode.HyKeepRunning, errors) },
+                    { HypoErrorCode.HyJuice, Error(errors?.HyJuice, HypoErrorCode.HyJuice, errors) },
+                    { HypoErrorCode.HyTimeout, Error(errors?.HyTimeout, HypoErrorCode.HyTimeout, errors) },
+                    { HypoErrorCode.LoKeepRunning, Error(errors?.LoKeepRunning, HypoErrorCode.LoKeepRunning, errors) },
+                    { HypoErrorCode.LoTimeout, Error(errors?.LoTimeout, HypoErrorCode.LoTimeout, errors) },
+                };
+
+                return new ScoreConfig(
+                    Number(score?.InRangePerSec, "score.inRangePerSec", score),
+                    Number(score?.PerMeter, "score.perMeter", score),
+                    correctWeights, errorWeights);
+            }
+
+            private List<SectionConfig> MapSections(List<SectionDto> sectionDtos)
+            {
                 var sections = new List<SectionConfig>();
-                var sectionDtos = Section(dto.Sections, "sections");
+                sectionDtos = Section(sectionDtos, "sections");
                 for (int i = 0; sectionDtos != null && i < sectionDtos.Count; i++)
                 {
                     string path = $"sections[{i}]";
@@ -164,11 +294,7 @@ namespace SugarDash.Infrastructure.Config
                     if (!last && !length.HasValue && section != null) Missing.Add(path + ".lengthM");
                     sections.Add(new SectionConfig(Text(section?.Id, path + ".id", section), length));
                 }
-
-                var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
-                    snacks);
-                return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, hyperConfig,
-                    runnerConfig, eliminationConfig, symptomConfig, scoreConfig, sections);
+                return sections;
             }
 
             private ScoreConfig MapScore(ScoreDto score)

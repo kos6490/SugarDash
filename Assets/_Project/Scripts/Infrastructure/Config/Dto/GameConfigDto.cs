@@ -11,6 +11,8 @@ namespace SugarDash.Infrastructure.Config.Dto
     public sealed class GameConfigDto
     {
         public string ConfigVersion { get; set; }
+        /// <summary>Load가 먼저 읽어 분기한다. 1형 경로에서는 값을 쓰지 않는다.</summary>
+        public string TrackType { get; set; }
         public string Unit { get; set; }
         public TimeDto Time { get; set; }
         public GlucoseDto Glucose { get; set; }

@@ -1,4 +1,5 @@
 {
+  "trackType": "type1",
   "configVersion": "0.1.0",
   "unit": "mg/dL",
   "time": {
