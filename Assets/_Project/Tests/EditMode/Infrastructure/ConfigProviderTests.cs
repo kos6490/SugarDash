@@ -603,7 +603,7 @@ namespace SugarDash.Infrastructure.Tests
 
             Assert.That(config.Sections[0].LengthM, Is.EqualTo(300));
             Assert.That(config.Sections[1].Scenes.Select(x => x.Id), Is.EqualTo(new[] { "schoolyard", "playground", "outing", "home" }));
-            Assert.That(config.Sections[1].Scenes.Select(x => x.LengthM), Is.EqualTo(new double?[] { 200, 200, 200, 80 }));
+            Assert.That(config.Sections[1].Scenes.Select(x => x.LengthM), Is.EqualTo(new double?[] { 200, 200, 200, 140 }));
             Assert.That(config.Sections[1].Scenes[3].Spawns, Is.False);
         }
     }

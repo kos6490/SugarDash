@@ -40,7 +40,7 @@
         { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "overrides": {} },
         { "id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {} },
         { "id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {} },
-        { "id": "home", "timeOfDay": "night", "lengthM": 80, "spawns": false }
+        { "id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false }
       ]
     }
   ]
