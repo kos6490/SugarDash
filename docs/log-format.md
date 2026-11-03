@@ -54,7 +54,7 @@
 - `cause`: `declined`(알리기 대기에서 "다시 달리기"), `prompt_timeout`(알리기 제한 시간 초과), `obstacle_hit`(장애물에 부딪힘), `glucose_low`·`glucose_high`(실제 혈당이 안전 범위를 벗어남)
 - `RunCompleted`는 없앴다(한 판은 탈락으로만 끝난다).
 - 점수는 저장하지 않는다. `StepAnswered`의 선택, `GlucoseRangeEntered/Exited`, `RecheckFastForward`, `RunEliminated.distanceM`으로 ScoringService가 다시 계산한다.
-- `decisionSec`: 단계 진입부터 답할 때까지의 `t` 차이. 단계 제한 시간을 넘지 않는다(큰 프레임 뒤 시간 초과도 제한 시간으로 기록).
+- `decisionSec`: 단계 진입부터 답할 때까지의 `t` 차이. 단계 제한 시간을 넘지 않는다(큰 프레임 뒤 시간 초과도 제한 시간으로 기록). 결과 문구 창(`hypo.answerFeedbackSec`)이 끝난 뒤부터 잰다. 그래서 기록의 `t` 차이와는 문구 창만큼 다를 수 있다.
 - 문자열 코드는 도메인 enum 이름과 따로 `LogCodes`에 고정한다. enum 이름을 바꿔도 과거 기록과 어긋나지 않게 하기 위해서다.
 
 ## 4. 조회

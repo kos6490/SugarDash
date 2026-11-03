@@ -452,7 +452,7 @@ namespace SugarDash.Domain.Hypo
         }
 
         /// <summary>
-        /// 대처 중 단계의 시간 초과. 실제 혈당이 안전 범위 밖이면 시간 초과 기록 뒤 탈락하고,
+        /// 1~4단계·고혈당 알리기의 시간 초과. 실제 혈당이 안전 범위 밖이면 시간 초과 기록 뒤 탈락하고,
         /// 범위 안이면 오류 공통 처리로 간다.
         /// </summary>
         private void Timeout(HypoStep step, HypoErrorCode code, Action afterNotify)
