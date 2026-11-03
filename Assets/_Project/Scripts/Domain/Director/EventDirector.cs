@@ -22,6 +22,14 @@ namespace SugarDash.Domain.Director
             PendingRecurrence,
         }
 
+        private enum LowState
+        {
+            Armed,
+            Active,
+            /// <summary>tell을 마쳤다. 저혈당 해제 수준 이상으로 올라오면 다시 무장한다.</summary>
+            WaitingRelease,
+        }
+
         private enum HyperState
         {
             Armed,
@@ -34,6 +42,7 @@ namespace SugarDash.Domain.Director
         private readonly GlucoseModel _model;
         private readonly IRandomSource _random;
         private readonly DomainEventBus _bus;
+        private readonly Type2Config _type2;
 
         private HypoState _hypoState = HypoState.Armed;
         private HyperState _hyperState = HyperState.Armed;
@@ -43,14 +52,28 @@ namespace SugarDash.Domain.Director
         private int _lastEventId;
         private bool _targetRangeEvaluated;
 
-        public EventDirector(GlucoseConfig config, GlucoseModel model, IRandomSource random, DomainEventBus bus)
+        // 2형 판정 상태. type2가 null이면 쓰지 않는다.
+        private LowState _lowState = LowState.Armed;
+        private double _highHold;
+        private double _lowHold;
+        private double _noticeEnd;
+
+        /// <param name="type2">null이 아니면 2형 모드다. 급하강·1형 저혈당·게이지 경고 대신 hold 누적과 notice, tell 판정을 한다.</param>
+        public EventDirector(GlucoseConfig config, GlucoseModel model, IRandomSource random, DomainEventBus bus,
+            Type2Config type2 = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _model = model ?? throw new ArgumentNullException(nameof(model));
             _random = random ?? throw new ArgumentNullException(nameof(random));
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
-            IsGaugeWarningOn = IsDisplayedBelowWarning();
+            _type2 = type2;
+            IsGaugeWarningOn = type2 == null && IsDisplayedBelowWarning();
         }
+
+        /// <summary>
+        /// 2형에서 notice가 시작된 뒤 그 tell이 끝날 때(<see cref="NotifyHyperEventEnded"/>, <see cref="NotifyLowEventEnded"/>)까지 값이 있다.
+        /// </summary>
+        public NoticeKind? ActiveSignal { get; private set; }
 
         public bool IsHypoEventActive => _hypoState == HypoState.Active;
 
@@ -60,7 +83,7 @@ namespace SugarDash.Domain.Director
         /// 다음 판정에서 고혈당이 발동한다. 유예가 끝난 프레임에 true가 되고 다음 판정에서 발동한다.
         /// RunController는 이 동안 주행을 끝내지 않는다(과잉 처치 뒤 고혈당 알리기를 건너뛰지 않게).
         /// </summary>
-        public bool IsHyperTriggerPending => CanTriggerHyper();
+        public bool IsHyperTriggerPending => _type2 == null && CanTriggerHyper();
 
         /// <summary>표시 혈당이 경고선 아래인 동안 true. 히스테리시스는 두지 않는다.</summary>
         public bool IsGaugeWarningOn { get; private set; }
@@ -76,6 +99,13 @@ namespace SugarDash.Domain.Director
         public void Evaluate(double simDt)
         {
             if (!(simDt >= 0)) throw new ArgumentOutOfRangeException(nameof(simDt), simDt, "0 이상이어야 한다");
+
+            if (_type2 != null)
+            {
+                EvaluateType2(simDt);
+                EvaluateTargetRange();
+                return;
+            }
 
             EvaluateSuddenDrop(simDt);
             EvaluateHypo();
@@ -127,6 +157,17 @@ namespace SugarDash.Domain.Director
 
             _hyperState = HyperState.WaitingRelease;
             _suppressed = true;
+            ActiveSignal = null;
+        }
+
+        /// <summary>2형 저혈당 tell을 마치면 호출한다. <see cref="NotifyGraceEnded"/> 전까지 누적을 멈추고, 해제 수준 이상이 되어야 다시 무장한다.</summary>
+        public void NotifyLowEventEnded()
+        {
+            if (_lowState != LowState.Active) throw new InvalidOperationException("진행 중인 2형 저혈당 tell이 없다");
+
+            _lowState = LowState.WaitingRelease;
+            _suppressed = true;
+            ActiveSignal = null;
         }
 
         /// <summary>HypoEventFsm이 재개 후 유예 시간을 마치면 호출한다. 다음 판정부터 기존 규칙으로 돌아간다.</summary>
@@ -135,6 +176,66 @@ namespace SugarDash.Domain.Director
             if (!_suppressed) throw new InvalidOperationException("유예 중이 아니다");
 
             _suppressed = false;
+        }
+
+        // 2형 판정(설계 4.3절). 순서: 해제 → tell 진행 중이면 끝 → notice 끝나면 tell → 억제 중이면 hold 0 → hold 누적 → notice 시작.
+        private void EvaluateType2(double simDt)
+        {
+            var levels = _config.Levels;
+            double actual = _model.Actual;
+
+            if (_hyperState == HyperState.WaitingRelease && actual < levels.HyperReleaseLevel)
+                _hyperState = HyperState.Armed;
+            if (_lowState == LowState.WaitingRelease && actual >= levels.HypoReleaseLevel)
+                _lowState = LowState.Armed;
+
+            if (_hyperState == HyperState.Active || _lowState == LowState.Active) return;
+
+            if (ActiveSignal.HasValue)
+            {
+                if (_model.SimTime >= _noticeEnd) TriggerTell();
+                return;
+            }
+
+            if (_suppressed)
+            {
+                _highHold = 0;
+                _lowHold = 0;
+                return;
+            }
+
+            bool high = _hyperState == HyperState.Armed && actual >= levels.HyperThreshold;
+            bool low = _lowState == LowState.Armed && actual < levels.HypoThreshold;
+            _highHold = high ? _highHold + simDt : 0;
+            _lowHold = low ? _lowHold + simDt : 0;
+
+            if (high && _highHold >= _type2.HighHoldSec) StartNotice(NoticeKind.High);
+            else if (low && _lowHold >= _type2.LowHoldSec) StartNotice(NoticeKind.Low);
+        }
+
+        private void StartNotice(NoticeKind kind)
+        {
+            _lastEventId++;
+            ActiveSignal = kind;
+            _highHold = 0;
+            _lowHold = 0;
+            _noticeEnd = _model.SimTime + _type2.NoticeSec;
+            _bus.Publish(new NoticeStarted(_lastEventId, kind, _model.SimTime, _model.DecisionTime, _model.Actual));
+            if (_type2.NoticeSec <= 0) TriggerTell();
+        }
+
+        private void TriggerTell()
+        {
+            if (ActiveSignal == NoticeKind.High)
+            {
+                _hyperState = HyperState.Active;
+                _bus.Publish(new HyperEventTriggered(_lastEventId, _model.SimTime, _model.DecisionTime, _model.Actual));
+            }
+            else
+            {
+                _lowState = LowState.Active;
+                _bus.Publish(new LowEventTriggered(_lastEventId, _model.SimTime, _model.DecisionTime, _model.Actual));
+            }
         }
 
         private void EvaluateSuddenDrop(double simDt)
