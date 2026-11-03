@@ -487,16 +487,16 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Run.DistanceM, Is.EqualTo(200));
         }
 
-        /// <summary>같은 Tick에서 장애물과 혈당이 함께 탈락 조건이 되면 탈락은 하나만 낸다(명령이 먼저 처리된다).</summary>
+        /// <summary>같은 Tick에서 장애물과 1단계 시간 초과 혈당 탈락이 함께 탈락 조건이 되면 탈락은 하나만 낸다(명령이 먼저 처리된다).</summary>
         [Test]
         public void ObstacleAndGlucoseSameTick_PublishesOneElimination()
         {
             var rig = new Rig(b => b.GlucoseLow = 65);
             rig.Run.StartRun();
-            rig.Ticks(27); // 26초에 발동(68), 27초에 66
+            rig.Ticks(30); // 26초에 발동(68), 30초에 60: 아직 1단계 제한 시간 안
             Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Recognize), "1단계에서는 세계가 흐른다");
-            Assert.That(rig.Run.Actual, Is.EqualTo(66).Within(Eps));
-            Assert.That(rig.Run.Actual - 2, Is.LessThan(65), "다음 Tick 감소로 안전 범위를 벗어나는 상황이어야 한다");
+            Assert.That(rig.Run.Actual, Is.LessThan(65), "기준 아래여도 제한 시간 안에서는 탈락하지 않는다");
+            Assert.That(rig.All<RunEliminated>(), Is.Empty);
 
             rig.Run.HitObstacle();
             rig.Run.Tick(1);
@@ -508,8 +508,8 @@ namespace SugarDash.App.Tests
             // 대조: 부딪히지 않으면 같은 Tick에서 혈당 탈락이 난다(두 원인이 모두 살아 있었다).
             var control = new Rig(b => b.GlucoseLow = 65);
             control.Run.StartRun();
-            control.Ticks(27);
-            control.Run.Tick(1);
+            control.Ticks(30);
+            control.Run.Tick(1); // 31초: 1단계 시간 초과
             Assert.That(control.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.GlucoseLow));
         }
 

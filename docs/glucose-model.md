@@ -79,7 +79,7 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 - 러너 화면(캐릭터, 트랙)은 `RunController.LastWorldDt`로만 움직인다. 그래서 2~4단계·알리기 대기·재개 카운트다운·일시정지 중에는 멈추고, 1단계와 유예 시간에는 달린다.
 - 재개 카운트다운과 유예 시간에는 트랙의 장애물을 모두 치우고 새로 놓지 않는다. 간식은 계속 놓는다.
 - 한 판은 탈락할 때까지 끝없이 이어진다. 고정 주행 길이와 완주는 없다. 달린 거리(`worldDt × 속도` 누적)로 구간이 바뀌고 점수가 쌓인다.
-- 실제 혈당이 안전 범위(`elimination.glucoseLow`~`glucoseHigh`)를 벗어나면 탈락한다. 평소 주행과 1단계에는 매 Tick 판정하고, 대처 중(2~4단계, 고혈당 알리기, 알리기 대기)에는 제한 시간을 넘긴 순간에만 판정한다. 재개 카운트다운과 유예 시간에는 저혈당·고혈당 발동이 억제되어 아동이 대처할 기회가 없으므로 판정하지 않고, 유예가 끝난 뒤 다시 판정한다.
+- 실제 혈당이 안전 범위(`elimination.glucoseLow`~`glucoseHigh`)를 벗어나면 탈락한다. 혈당 때문에 즉시 탈락하지는 않는다. 1~4단계와 고혈당 알리기의 제한 시간을 넘긴 순간에만 판정한다(알리기 대기 시간 초과는 `prompt_timeout`). 평소 주행, 재개 카운트다운, 유예, 쉬는 시간에는 판정하지 않는다. 아동은 제한 시간 안에 행동하면 기준 밖이어도 탈락하지 않는다.
 - 탈락하면 주행이 멈추고 더 진행하지 않는다.
 
 ## 3. 처치 반영 정책: 아동이 고른 양을 그대로 반영
@@ -257,7 +257,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 | 고혈당 처리 | 정책 A로 1순위 범위 편입, `hyperThreshold` 사용. 설계는 `docs/hyper-event.md` |
 | MetricsCalculator | 불필요 측정 정의 변경, 재발 이벤트의 정확 대응률 포함 여부, 4단계는 재측정·알리기 두 기록을 묶어 계산 |
 | EventDirector | 급하강 판정(`IRandomSource`), 저혈당 발동·cooldown·재무장·재발 판정, EventId, 게이지 경고, 유예 중 억제 |
-| RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 쌓인 명령 처리 → Tick → Evaluate → Update 순서 호출(2.5절), 거리·구간, 장애물 탈락, 혈당 범위 탈락 |
+| RunController | 세 시계 계산(`IsWorldFrozen`이면 worldDt = 0, 일시정지면 모두 0), 프레임마다 쌓인 명령 처리 → Tick → Evaluate → Update 순서 호출(2.5절), 거리·구간, 장애물 탈락, 혈당 범위 탈락(제한 시간 초과 순간) |
 | ScoringService | 혈당 유지(적정 범위 시간), 대처 가중치, 거리 점수. 주행 중 누적과 기록 재계산을 같은 규칙으로 |
 | LogRepository | `SimT`·`T` 모두 기록, `isRecurrence`, `inGrace`, `helpInstead`, 실제 선택한 간식과 양(`DoseApplied`), 빨리 감기 전후 혈당 |
 | 설정 로더 | null 수집 실패, 교차 검증 단계 |

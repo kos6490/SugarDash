@@ -30,33 +30,43 @@ namespace SugarDash.Domain.Tests
             });
 
         [Test]
-        public void Running_BelowLow_Eliminates()
+        public void Recognize_BelowLowWithinLimit_DoesNotEliminate()
+        {
+            var h = Harness();
+            h.RunUntilTriggered();
+            Assert.That(h.Model.Actual, Is.EqualTo(68).Within(1e-9));
+
+            h.Frames(3); // 62: 기준 아래지만 제한 시간 안
+
+            Assert.That(h.Model.Actual, Is.LessThan(65));
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Recognize));
+            Assert.That(h.All<RunEliminated>(), Is.Empty);
+        }
+
+        [Test]
+        public void RecognizeTimeout_BelowLow_EliminatesAfterAnswer()
         {
             var h = Harness();
             h.RunUntilTriggered();
             int eventId = h.Fsm.EventId;
-            Assert.That(h.Model.Actual, Is.EqualTo(68).Within(1e-9));
 
-            h.Frame(1); // 66: 아직 범위 안
-            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Recognize));
-            h.Frame(1); // 64
+            h.Frames(5);
 
             Assert.That(h.Model.Actual, Is.LessThan(65));
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
+            var answer = h.All<StepAnswered>().Single(a => a.Step == HypoStep.Recognize);
+            Assert.That(answer.ErrorCode, Is.EqualTo(HypoErrorCode.SMissed));
+            Assert.That(answer.IsCorrect, Is.False);
             var eliminated = h.All<RunEliminated>().Single();
+            Assert.That(h.Events.IndexOf(answer), Is.LessThan(h.Events.IndexOf(eliminated)));
             Assert.That(eliminated.Cause, Is.EqualTo(EliminationCause.GlucoseLow));
-            Assert.That(eliminated.Step, Is.Null);
-            Assert.That(eliminated.Reason, Is.EqualTo(HypoErrorCode.None));
+            Assert.That(eliminated.Step, Is.EqualTo(HypoStep.Recognize));
+            Assert.That(eliminated.Reason, Is.EqualTo(HypoErrorCode.SMissed));
             Assert.That(eliminated.EventId, Is.EqualTo(eventId));
-            Assert.That(eventId, Is.GreaterThan(0));
+            Assert.That(h.All<GuardianPromptStarted>(), Is.Empty);
         }
 
-        /// <summary>
-        /// 재개 카운트다운과 유예 시간에는 혈당 범위로 탈락시키지 않는다(아동이 대처할 기회가 없다).
-        /// 유예가 끝난 뒤에도 범위 밖이면 그때 탈락한다.
-        /// </summary>
-        [Test]
-        public void ResumeAndGrace_BelowLow_DoesNotEliminateUntilGraceEnds()
+        private static HypoHarness CopeToResume()
         {
             var h = CopingHarness(b =>
             {
@@ -72,6 +82,14 @@ namespace SugarDash.Domain.Tests
             h.Fsm.PressHelp(HypoPhase.Notify);
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.ResumeCountdown));
             Assert.That(h.Model.Actual, Is.LessThan(65), "재개 카운트다운에 들어갈 때 이미 범위 밖이어야 한다");
+            return h;
+        }
+
+        /// <summary>재개 카운트다운과 유예 시간, 그 뒤 쉬는 시간에도 혈당 범위로 탈락시키지 않는다.</summary>
+        [Test]
+        public void ResumeAndGrace_BelowLow_DoesNotEliminate()
+        {
+            var h = CopeToResume();
 
             bool sawGrace = false;
             int guard = 0;
@@ -81,14 +99,38 @@ namespace SugarDash.Domain.Tests
                 h.Frame(0.5);
                 if (h.Fsm.Phase == HypoPhase.Grace) sawGrace = true;
             }
-            Assert.That(sawGrace, Is.True, "재개 카운트다운·유예 중에 탈락하지 않고 유예를 끝까지 지나야 한다");
+            Assert.That(sawGrace, Is.True);
 
-            // 유예가 끝나면 다시 주행 중 판정을 한다.
-            for (int i = 0; i < 4 && h.Fsm.Phase != HypoPhase.Eliminated; i++) h.Frame(0.5);
+            for (int i = 0; i < 4 && h.Fsm.Phase == HypoPhase.Idle; i++) h.Frame(0.5);
 
             Assert.That(h.Model.Actual, Is.LessThan(65));
+            Assert.That(h.Fsm.Phase, Is.Not.EqualTo(HypoPhase.Eliminated));
+            Assert.That(h.All<RunEliminated>(), Is.Empty);
+        }
+
+        [Test]
+        public void Cooldown_BelowLow_EliminatesOnlyAtRecognizeTimeout()
+        {
+            var h = CopeToResume();
+            int firstEventId = h.Fsm.EventId;
+
+            int guard = 0;
+            while (h.Fsm.Phase != HypoPhase.Recognize)
+            {
+                Assert.That(guard++, Is.LessThan(200), "재발하지 않는다");
+                Assert.That(h.Fsm.Phase, Is.Not.EqualTo(HypoPhase.Eliminated), "쉬는 시간에 탈락하면 안 된다");
+                h.Frame(0.5);
+            }
+            Assert.That(h.Fsm.EventId, Is.GreaterThan(firstEventId));
+            Assert.That(h.All<RunEliminated>(), Is.Empty);
+
+            for (int i = 0; i < 20 && h.Fsm.Phase == HypoPhase.Recognize; i++) h.Frame(0.5);
+
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Eliminated));
-            Assert.That(h.All<RunEliminated>().Single().Cause, Is.EqualTo(EliminationCause.GlucoseLow));
+            var eliminated = h.All<RunEliminated>().Single();
+            Assert.That(eliminated.Cause, Is.EqualTo(EliminationCause.GlucoseLow));
+            Assert.That(eliminated.Step, Is.EqualTo(HypoStep.Recognize));
+            Assert.That(eliminated.Reason, Is.EqualTo(HypoErrorCode.SMissed));
         }
 
         [Test]
