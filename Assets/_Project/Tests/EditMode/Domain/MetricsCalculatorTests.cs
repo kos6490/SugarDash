@@ -1,4 +1,5 @@
 using System.Linq;
+using SugarDash.Domain.Config;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Metrics;
@@ -235,6 +236,61 @@ namespace SugarDash.Domain.Tests
             Assert.That(hyper.AllCorrect, Is.False);
             Assert.That(hyper.IsFinished, Is.True);
             Assert.That(summary.Metrics.MedianDecisionSec[HypoStep.HyperNotify], Is.Null, "시간 초과는 판단 시간에서 뺀다");
+        }
+
+        private static RunRecord Type2Run(params object[] events) =>
+            new RunRecord("run", "test", null, null, events, 0, TrackType.Type2);
+
+        [Test]
+        public void Summarize_Type2_LowAndHighEvents()
+        {
+            var run = Type2Run(
+                new LowEventTriggered(1, 0, 0, 250),
+                Ok(1, HypoStep.LowNotify, decisionSec: 2),
+                new LowResolved(1, true, 0, 0),
+                new LowEventTriggered(2, 0, 0, 255),
+                Wrong(2, HypoStep.LowNotify, HypoErrorCode.LoKeepRunning, decisionSec: 4),
+                new LowResolved(2, false, 0, 0),
+                new HyperEventTriggered(3, 0, 0, 260),
+                Ok(3, HypoStep.HyperNotify),
+                new HyperResolved(3, true, 0, 0),
+                ObstacleHit(40, 50));
+
+            var summary = MetricsCalculator.Summarize(run);
+
+            Assert.That(summary.TrackType, Is.EqualTo(TrackType.Type2));
+            Assert.That(summary.Events, Is.Empty);
+            Assert.That(summary.LowEvents.Select(e => e.EventId), Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(summary.LowEvents.Select(e => e.AllCorrect), Is.EqualTo(new[] { true, false }));
+            Assert.That(summary.LowEvents.Select(e => e.IsFinished), Is.All.True);
+            Assert.That(summary.HyperEvents.Select(e => e.EventId), Is.EqualTo(new[] { 3 }));
+        }
+
+        [Test]
+        public void Calculate_LowNotifyExcludedFromHypoMetrics()
+        {
+            var run = Type2Run(
+                new LowEventTriggered(1, 0, 0, 250),
+                Ok(1, HypoStep.LowNotify, decisionSec: 2, measuredFirst: true),
+                new LowResolved(1, true, 0, 0),
+                new LowEventTriggered(2, 0, 0, 250),
+                Ok(2, HypoStep.LowNotify, decisionSec: 4),
+                new LowResolved(2, true, 0, 0));
+
+            var m = MetricsCalculator.Calculate(new[] { run });
+
+            Assert.That(m.AccurateResponse.Rate, Is.Null);
+            Assert.That(m.StepAccuracy.Values.Select(r => r.Rate), Is.All.Null);
+            Assert.That(m.MeasuredFirst.Rate, Is.Null);
+            Assert.That(m.MedianDecisionSec[HypoStep.LowNotify], Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Summarize_Type1Default_HasNoLowEvents()
+        {
+            var summary = MetricsCalculator.Summarize(Run(AllCorrect(1)));
+            Assert.That(summary.TrackType, Is.EqualTo(TrackType.Type1));
+            Assert.That(summary.LowEvents, Is.Empty);
         }
     }
 }

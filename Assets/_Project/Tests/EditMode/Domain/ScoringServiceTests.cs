@@ -106,5 +106,28 @@ namespace SugarDash.Domain.Tests
             var run = new RunRecord("r", "test", null, null, Events(), 0);
             Assert.That(ScoringService.Calculate(run, new ConfigBuilder().Build().Score), Is.Null);
         }
+
+        [Test]
+        public void Score_Type2_Recalculation()
+        {
+            var b = new ConfigBuilder();
+            b.ErrorWeightOverrides[HypoErrorCode.HyJuice] = 2;
+            var config = b.BuildType2().Score;
+            var events = new List<object>
+            {
+                new RestStarted(200, 0, 0),
+                new FoodEaten("juice", 210, 5, 5),
+                new RestEnded(200, 8, 8),
+                new GlucoseRangeEntered(120, 10, 10),
+                Answer(HypoStep.LowNotify, true, HypoErrorCode.None),
+                Answer(HypoStep.HyperNotify, false, HypoErrorCode.HyJuice),
+                new GlucoseRangeExited(260, 30, 30),
+                new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.ObstacleHit, 200, 40, 40),
+            };
+            var run = new RunRecord("r", "test", null, null, events, 0, SugarDash.Domain.Config.TrackType.Type2);
+
+            // 선택 10 + 2, 범위 20초 * 1, 거리 200m * 0.1 = 52. 먹기·쉬기는 점수에 영향 없음.
+            Assert.That(ScoringService.Calculate(run, config), Is.EqualTo(52).Within(Eps));
+        }
     }
 }

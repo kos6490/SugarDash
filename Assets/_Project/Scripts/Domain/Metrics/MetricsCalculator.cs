@@ -20,7 +20,7 @@ namespace SugarDash.Domain.Metrics
         private static readonly HypoStep[] AllHypoSteps =
         {
             HypoStep.Recognize, HypoStep.Respond, HypoStep.Dose, HypoStep.Remeasure, HypoStep.Notify,
-            HypoStep.HyperNotify,
+            HypoStep.HyperNotify, HypoStep.LowNotify,
         };
 
         /// <summary>결과 화면용 주행 하나의 요약.</summary>
@@ -29,7 +29,8 @@ namespace SugarDash.Domain.Metrics
             if (run == null) throw new ArgumentNullException(nameof(run));
 
             var outcome = run.Events.OfType<RunEliminated>().Any() ? RunOutcome.Eliminated : RunOutcome.Unfinished;
-            return new RunSummary(run.RunId, outcome, Events(run), HyperEvents(run), Calculate(new[] { run }));
+            return new RunSummary(run.RunId, outcome, Events(run), HyperEvents(run), Calculate(new[] { run }),
+                LowEvents(run), run.TrackType);
         }
 
         /// <summary>여러 주행을 모은 지표.</summary>
@@ -106,6 +107,20 @@ namespace SugarDash.Domain.Metrics
                 var resolved = run.Events.OfType<HyperResolved>().FirstOrDefault(r => r.EventId == id);
                 bool eliminated = run.Events.OfType<RunEliminated>().Any(r => r.EventId == id);
                 results.Add(new HyperEventResult(id, resolved?.AllCorrect ?? false, resolved != null || eliminated));
+            }
+            return results;
+        }
+
+        /// <summary>주행 안의 2형 저혈당 tell 이벤트를 발동 순서대로 묶는다.</summary>
+        private static IReadOnlyList<LowEventResult> LowEvents(RunRecord run)
+        {
+            var results = new List<LowEventResult>();
+            foreach (var triggered in run.Events.OfType<LowEventTriggered>())
+            {
+                int id = triggered.EventId;
+                var resolved = run.Events.OfType<LowResolved>().FirstOrDefault(r => r.EventId == id);
+                bool eliminated = run.Events.OfType<RunEliminated>().Any(r => r.EventId == id);
+                results.Add(new LowEventResult(id, resolved?.AllCorrect ?? false, resolved != null || eliminated));
             }
             return results;
         }

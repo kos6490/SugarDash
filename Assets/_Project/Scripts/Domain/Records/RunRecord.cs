@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SugarDash.Domain.Config;
 
 namespace SugarDash.Domain.Records
 {
@@ -9,7 +10,7 @@ namespace SugarDash.Domain.Records
     public sealed class RunRecord
     {
         public RunRecord(string runId, string configVersion, DateTime? startedAtUtc, DateTime? endedAtUtc,
-            IReadOnlyList<object> events, int skippedLineCount)
+            IReadOnlyList<object> events, int skippedLineCount, TrackType trackType = TrackType.Type1)
         {
             RunId = runId ?? throw new ArgumentNullException(nameof(runId));
             ConfigVersion = configVersion;
@@ -17,6 +18,7 @@ namespace SugarDash.Domain.Records
             EndedAtUtc = endedAtUtc;
             Events = events ?? throw new ArgumentNullException(nameof(events));
             SkippedLineCount = skippedLineCount;
+            TrackType = trackType;
         }
 
         public string RunId { get; }
@@ -28,5 +30,7 @@ namespace SugarDash.Domain.Records
         public IReadOnlyList<object> Events { get; }
         /// <summary>형식이 깨져 읽지 못한 줄 수(예: 쓰기 도중 종료된 마지막 줄).</summary>
         public int SkippedLineCount { get; }
+        /// <summary>주행 유형. 기록에 없으면 1형.</summary>
+        public TrackType TrackType { get; }
     }
 }
