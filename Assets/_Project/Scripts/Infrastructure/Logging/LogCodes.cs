@@ -74,6 +74,18 @@ namespace SugarDash.Infrastructure.Logging
             }
         }
 
+        public static string TimeOfDay(TimeOfDay time)
+        {
+            switch (time)
+            {
+                case Domain.Config.TimeOfDay.Morning: return "morning";
+                case Domain.Config.TimeOfDay.Afternoon: return "afternoon";
+                case Domain.Config.TimeOfDay.Evening: return "evening";
+                case Domain.Config.TimeOfDay.Night: return "night";
+                default: throw new ArgumentOutOfRangeException(nameof(time), time, null);
+            }
+        }
+
         public static string NoticeKind(NoticeKind kind)
         {
             switch (kind)
@@ -101,6 +113,10 @@ namespace SugarDash.Infrastructure.Logging
         public static NoticeKind ParseNoticeKind(string code) =>
             Parse(code, NoticeKindValues, NoticeKind, "kind");
 
+        public static TimeOfDay ParseTimeOfDay(string code) =>
+            Parse(code, TimeOfDayValues, TimeOfDay, "timeOfDay");
+
+        private static readonly TimeOfDay[] TimeOfDayValues = (TimeOfDay[])Enum.GetValues(typeof(TimeOfDay));
         private static readonly NoticeKind[] NoticeKindValues = (NoticeKind[])Enum.GetValues(typeof(NoticeKind));
         private static readonly HypoStep[] StepValues = (HypoStep[])Enum.GetValues(typeof(HypoStep));
         private static readonly HypoErrorCode[] ErrorValues = (HypoErrorCode[])Enum.GetValues(typeof(HypoErrorCode));

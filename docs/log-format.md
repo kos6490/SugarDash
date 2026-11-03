@@ -51,6 +51,7 @@
 | `FoodEaten` | `foodId`, `actual`. 2형 트랙 음식. `eventId` 없음 |
 | `RestStarted`, `RestEnded` | `actual`. 2형 쉬는 구간. `eventId` 없음 |
 | `SectionEntered` | `section`(`signal`, `condition`, `complex`), `distanceM`. 주행 시작 시 첫 구간도 기록 |
+| `SceneEntered` | `scene`(장면 id, 예: `schoolyard`, `playground`, `outing`, `home`), `timeOfDay`(`morning`, `afternoon`, `evening`, `night`), `dayIndex`(장면 구간 첫날 0, 마지막 장면에서 첫 장면으로 돌아갈 때 하나 오름), `distanceM`. 장면이 있는 구간에 들어가면 `SectionEntered` 바로 뒤에 첫 장면을 기록. 한 번에 여러 장면 경계를 넘으면 넘은 순서대로 모두 기록하고 `distanceM`은 처리 시점 거리. `eventId` 없음 |
 | `GlucoseRangeEntered`, `GlucoseRangeExited` | `actual`. 적정 범위(`normalRangeMin` 이상 `hyperThreshold` 미만) 들어감·나감. 점수 재계산용. 주행 시작 때 기록 순서는 `RunStarted` → `SectionEntered` → `GlucoseRangeEntered`(시작 시 범위 안일 때만) |
 
 - `atUtc`: `yyyy-MM-ddTHH:mm:ss.fffZ`
@@ -71,4 +72,4 @@
 
 ## 5. 아직 기록하지 않는 것
 
-- 주행 종류(일반 / 평가). 구간은 한 판 안에서 바뀌므로 `RunStarted`가 아니라 `SectionEntered`로 기록한다. 이벤트의 구간은 그 앞의 마지막 `SectionEntered`다.
+- 주행 종류(일반 / 평가). 구간은 한 판 안에서 바뀌므로 `RunStarted`가 아니라 `SectionEntered`로 기록한다. 이벤트의 구간은 그 앞의 마지막 `SectionEntered`다. 장면도 같다. 다른 레코드에 장면 필드를 붙이지 않고, 이벤트의 장면은 그 앞의 마지막 `SceneEntered`다.

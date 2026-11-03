@@ -147,6 +147,9 @@ namespace SugarDash.Infrastructure.Logging
                 case "SectionEntered":
                     return new SectionEntered(r.Section ?? throw new FormatException("section이 비었다"),
                         Req(r.DistanceM), Req(r.SimT), Req(r.T));
+                case "SceneEntered":
+                    return new SceneEntered(r.Scene ?? throw new FormatException("scene이 비었다"),
+                        LogCodes.ParseTimeOfDay(r.TimeOfDay), Req(r.DayIndex), Req(r.DistanceM), Req(r.SimT), Req(r.T));
                 case "GlucoseRangeEntered":
                     return new GlucoseRangeEntered(Req(r.Actual), Req(r.SimT), Req(r.T));
                 case "GlucoseRangeExited":

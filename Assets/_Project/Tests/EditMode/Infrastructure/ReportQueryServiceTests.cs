@@ -242,5 +242,42 @@ namespace SugarDash.Infrastructure.Tests
 
             Assert.Throws<FormatException>(() => LogCodes.ParseStep("jump"));
         }
+
+        [Test]
+        public void Query_ReadsSceneEntered_RoundTrip()
+        {
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
+            var published = new object[]
+            {
+                new SectionEntered("condition", 300, 1, 1),
+                new SceneEntered("schoolyard", TimeOfDay.Morning, 0, 300, 1, 1),
+                new GlucoseRangeEntered(95.5, 2, 2),
+                new SceneEntered("home", TimeOfDay.Night, 0, 900.5, 3, 3),
+                new SceneEntered("schoolyard", TimeOfDay.Morning, 1, 980.5, 4, 4),
+                new SceneEntered("playground", TimeOfDay.Afternoon, 1, 1180.5, 5, 5),
+                new SceneEntered("outing", TimeOfDay.Evening, 1, 1380.5, 6, 6),
+            };
+            foreach (var e in published) Publish(e);
+            _repo.EndRun();
+
+            var run = _query.LoadRun(runId);
+
+            Assert.That(run.SkippedLineCount, Is.EqualTo(0));
+            Assert.That(run.Events, Has.Count.EqualTo(published.Length));
+            for (int i = 0; i < published.Length; i++) AssertSameProperties(published[i], run.Events[i]);
+        }
+
+        [Test]
+        public void Query_SceneEnteredWithoutScene_IsSkipped()
+        {
+            Directory.CreateDirectory(_dir);
+            File.WriteAllText(Path.Combine(_dir, "bad-scene.jsonl"),
+                "{\"schemaVersion\":2,\"configVersion\":\"c\",\"runId\":\"bad-scene\",\"seq\":1,\"type\":\"SceneEntered\",\"timeOfDay\":\"morning\",\"dayIndex\":0,\"distanceM\":1,\"simT\":1,\"t\":1}\n");
+
+            var run = _query.LoadRun("bad-scene");
+
+            Assert.That(run.Events, Is.Empty);
+            Assert.That(run.SkippedLineCount, Is.EqualTo(1));
+        }
     }
 }

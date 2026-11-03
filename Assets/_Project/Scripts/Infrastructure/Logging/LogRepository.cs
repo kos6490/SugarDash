@@ -118,6 +118,13 @@ namespace SugarDash.Infrastructure.Logging
                     r.Section = e.Section;
                     r.DistanceM = e.DistanceM;
                 }))),
+                bus.Subscribe<SceneEntered>(e => Append(Event("SceneEntered", null, e.SimT, e.T, r =>
+                {
+                    r.Scene = e.Scene;
+                    r.TimeOfDay = LogCodes.TimeOfDay(e.TimeOfDay);
+                    r.DayIndex = e.DayIndex;
+                    r.DistanceM = e.DistanceM;
+                }))),
                 bus.Subscribe<GlucoseRangeEntered>(e => Append(Event("GlucoseRangeEntered", null, e.SimT, e.T,
                     r => r.Actual = e.Actual))),
                 bus.Subscribe<GlucoseRangeExited>(e => Append(Event("GlucoseRangeExited", null, e.SimT, e.T,

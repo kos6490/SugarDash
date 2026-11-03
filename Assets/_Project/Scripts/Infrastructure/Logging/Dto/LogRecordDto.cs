@@ -50,6 +50,11 @@ namespace SugarDash.Infrastructure.Logging.Dto
 
         public string Section { get; set; }
 
+        /// <summary>SceneEntered 전용. 장면 id, "morning|afternoon|evening|night", 하루 번호.</summary>
+        public string Scene { get; set; }
+        public string TimeOfDay { get; set; }
+        public int? DayIndex { get; set; }
+
         /// <summary>RunStarted 전용. "type1" 또는 "type2".</summary>
         public string TrackType { get; set; }
         /// <summary>NoticeStarted 전용. "high" 또는 "low".</summary>

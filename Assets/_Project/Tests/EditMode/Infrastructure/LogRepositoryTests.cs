@@ -340,5 +340,25 @@ namespace SugarDash.Infrastructure.Tests
             foreach (EliminationCause cause in Enum.GetValues(typeof(EliminationCause)))
                 Assert.That(LogCodes.Cause(cause), Is.Not.Empty);
         }
+
+        [Test]
+        public void SceneEntered_IsRecorded()
+        {
+            _repo.BeginRun("cfg-test", TrackType.Type1);
+            _bus.Publish(new SceneEntered("playground", TimeOfDay.Afternoon, 1, 412.5, 30, 20));
+
+            var raw = RawLines();
+            var line = Lines()[1];
+            Assert.That(line.Type, Is.EqualTo("SceneEntered"));
+            Assert.That(line.Scene, Is.EqualTo("playground"));
+            Assert.That(line.TimeOfDay, Is.EqualTo("afternoon"));
+            Assert.That(line.DayIndex, Is.EqualTo(1));
+            Assert.That(line.DistanceM, Is.EqualTo(412.5));
+            Assert.That(line.SimT, Is.EqualTo(30));
+            Assert.That(line.T, Is.EqualTo(20));
+            Assert.That(line.SchemaVersion, Is.EqualTo(2));
+            Assert.That(raw[1], Does.Not.Contain("eventId"));
+            Assert.That(raw[1], Does.Contain("\"timeOfDay\":\"afternoon\""));
+        }
     }
 }
