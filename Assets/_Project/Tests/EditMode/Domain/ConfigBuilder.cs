@@ -102,6 +102,19 @@ namespace SugarDash.Domain.Tests
 
         public Snack SnackById(string id) => Snacks.First(s => s.Id == id);
 
+        /// <summary>구간을 signal(signalLengthM) → condition(장면 목록)으로 바꾼다.</summary>
+        public ConfigBuilder WithScenes(params SceneConfig[] scenes) => WithScenes(10, scenes);
+
+        public ConfigBuilder WithScenes(double signalLengthM, params SceneConfig[] scenes)
+        {
+            Sections = new List<SectionConfig>
+            {
+                new SectionConfig("signal", signalLengthM),
+                new SectionConfig("condition", null, scenes.ToList()),
+            };
+            return this;
+        }
+
         public GlucoseConfig BuildGlucose() => new GlucoseConfig(
             new TimeConfig(TimeScale, RecheckIntervalRealMin, RecheckIntervalSource, FastForwardTickSimSec),
             new GlucoseLevelConfig(Initial, Min, Max, HypoThreshold, HypoReleaseMargin, HyperThreshold,

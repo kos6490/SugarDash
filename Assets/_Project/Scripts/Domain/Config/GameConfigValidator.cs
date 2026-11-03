@@ -142,7 +142,7 @@ namespace SugarDash.Domain.Config
                 new[] { HypoErrorCode.RsKeepRunning, HypoErrorCode.HyKeepRunning });
 
             // 23. 구간
-            ValidateSections(errors, config.Sections);
+            ValidateSections(errors, config);
 
             return errors;
         }
@@ -285,13 +285,14 @@ namespace SugarDash.Domain.Config
             }
 
             ValidateScore(errors, config.Score, Type2Steps, Type2Codes, Type2ZeroCodes);
-            ValidateSections(errors, config.Sections);
+            ValidateSections(errors, config);
         }
 
         private static readonly string[] SectionIds = { "signal", "condition", "complex" };
 
-        private static void ValidateSections(List<string> errors, IReadOnlyList<SectionConfig> sections)
+        private static void ValidateSections(List<string> errors, GameConfig config)
         {
+            var sections = config.Sections;
             if (sections.Count == 0)
             {
                 errors.Add("sections: 1개 이상이어야 한다");
@@ -307,7 +308,15 @@ namespace SugarDash.Domain.Config
                     errors.Add($"sections[{i}].id가 중복된다 ({section.Id})");
 
                 bool last = i == sections.Count - 1;
-                if (last)
+                if (section.HasScenes)
+                {
+                    if (!last)
+                        errors.Add($"sections[{i}]: 장면이 있는 구간은 마지막 구간이어야 한다 ({section.Id})");
+                    if (section.LengthM != null)
+                        errors.Add($"sections[{i}].lengthM은 장면이 있는 구간에서 비어 있어야 한다 ({section.LengthM})");
+                    ValidateScenes(errors, config, i, section.Scenes);
+                }
+                else if (last)
                 {
                     if (section.LengthM != null)
                         errors.Add($"sections[{i}].lengthM은 마지막 구간에서 비어 있어야 한다 ({section.LengthM})");
@@ -317,6 +326,91 @@ namespace SugarDash.Domain.Config
                     errors.Add($"sections[{i}].lengthM > 0 이어야 한다 ({section.LengthM})");
                 }
             }
+        }
+
+        private static void ValidateScenes(List<string> errors, GameConfig config, int sectionIndex,
+            IReadOnlyList<SceneConfig> scenes)
+        {
+            if (scenes.Count == 0)
+            {
+                errors.Add($"sections[{sectionIndex}].scenes: 1개 이상이어야 한다");
+                return;
+            }
+            var seen = new HashSet<string>();
+            for (int j = 0; j < scenes.Count; j++)
+            {
+                var scene = scenes[j];
+                string path = $"sections[{sectionIndex}].scenes[{j}]";
+                if (string.IsNullOrEmpty(scene.Id))
+                    errors.Add($"{path}.id는 비어 있으면 안 된다");
+                else if (!seen.Add(scene.Id))
+                    errors.Add($"{path}.id가 중복된다 ({scene.Id})");
+
+                // 장면은 되풀이되므로 끝없는 장면은 안 된다.
+                double? length = scene.LengthM;
+                if (!(length.HasValue && length.Value > 0 && !double.IsInfinity(length.Value)))
+                    errors.Add($"{path}.lengthM > 0 이고 유한해야 한다 ({length})");
+
+                ValidateOverrides(errors, config, path, scene.Overrides);
+            }
+        }
+
+        // 덮어쓴 값은 전역 값과 같은 규칙으로 검사한다. 간격은 덮어쓴 뒤의 min·max 쌍으로 본다.
+        private static void ValidateOverrides(List<string> errors, GameConfig config, string path, SceneOverrides o)
+        {
+            if (o.RunDecayPerSec.HasValue)
+                NonNegative(errors, $"{path}.runDecayPerSec", o.RunDecayPerSec.Value);
+
+            if (config.TrackType == TrackType.Type2)
+            {
+                OtherTypeKey(errors, path, "suddenDropChancePerSec", o.SuddenDropChancePerSec.HasValue);
+                OtherTypeKey(errors, path, "trackSnackIds", o.TrackSnackIds != null);
+                OtherTypeKey(errors, path, "trackSnackIntervalMinSec", o.TrackSnackIntervalMinSec.HasValue);
+                OtherTypeKey(errors, path, "trackSnackIntervalMaxSec", o.TrackSnackIntervalMaxSec.HasValue);
+                var t2 = config.Type2;
+                IntervalOverride(errors, path, "foodRowInterval", o.FoodRowIntervalMinSec, o.FoodRowIntervalMaxSec,
+                    t2.FoodRowIntervalMinSec, t2.FoodRowIntervalMaxSec);
+                IntervalOverride(errors, path, "restInterval", o.RestIntervalMinSec, o.RestIntervalMaxSec,
+                    t2.RestIntervalMinSec, t2.RestIntervalMaxSec);
+                return;
+            }
+
+            OtherTypeKey(errors, path, "foodRowIntervalMinSec", o.FoodRowIntervalMinSec.HasValue);
+            OtherTypeKey(errors, path, "foodRowIntervalMaxSec", o.FoodRowIntervalMaxSec.HasValue);
+            OtherTypeKey(errors, path, "restIntervalMinSec", o.RestIntervalMinSec.HasValue);
+            OtherTypeKey(errors, path, "restIntervalMaxSec", o.RestIntervalMaxSec.HasValue);
+            if (o.SuddenDropChancePerSec.HasValue)
+            {
+                double chance = o.SuddenDropChancePerSec.Value;
+                if (!(chance >= 0 && chance <= 1))
+                    errors.Add($"{path}.suddenDropChancePerSec는 0 이상 1 이하여야 한다 ({chance})");
+            }
+            if (o.TrackSnackIds != null)
+            {
+                var snacks = config.Glucose.Snacks;
+                if (o.TrackSnackIds.Count == 0)
+                    errors.Add($"{path}.trackSnackIds: 1개 이상이어야 한다");
+                foreach (var id in o.TrackSnackIds.Where(id => snacks.All(s => s.Id != id)).Distinct())
+                    errors.Add($"{path}.trackSnackIds는 snacks에 있어야 한다 ({id})");
+            }
+            var runner = config.Runner;
+            IntervalOverride(errors, path, "trackSnackInterval", o.TrackSnackIntervalMinSec, o.TrackSnackIntervalMaxSec,
+                runner.TrackSnackIntervalMinSec, runner.TrackSnackIntervalMaxSec);
+        }
+
+        private static void OtherTypeKey(List<string> errors, string path, string key, bool present)
+        {
+            if (present) errors.Add($"{path}.{key}는 이 유형 설정에 쓸 수 없다");
+        }
+
+        private static void IntervalOverride(List<string> errors, string path, string key, double? min, double? max,
+            double globalMin, double globalMax)
+        {
+            if (!min.HasValue && !max.HasValue) return;
+            double lo = min ?? globalMin;
+            double hi = max ?? globalMax;
+            if (!(0 < lo && lo <= hi))
+                errors.Add($"0 < {path}.{key}MinSec ≤ {path}.{key}MaxSec 이어야 한다 (덮어쓴 뒤 min={lo}, max={hi})");
         }
 
         // 13~18. 저혈당 이벤트(HypoEventFsm) 설정.

@@ -249,5 +249,182 @@ namespace SugarDash.Domain.Tests
 
             Assert.That(GameConfigValidator.Validate(builder.Build()), Is.Not.Empty);
         }
+
+        private static SceneConfig Scene(string id, double? lengthM = 100, TimeOfDay time = TimeOfDay.Morning,
+            bool spawns = true, SceneOverrides overrides = null) => new SceneConfig(id, time, lengthM, spawns, overrides);
+
+        private static List<string> ValidateScenes(params SceneConfig[] scenes) =>
+            GameConfigValidator.Validate(new ConfigBuilder().WithScenes(scenes).Build()).ToList();
+
+        private static List<string> ValidateType2Scenes(params SceneConfig[] scenes) =>
+            GameConfigValidator.Validate(new ConfigBuilder().WithScenes(scenes).BuildType2()).ToList();
+
+        [Test]
+        public void Scenes_Valid_Passes()
+        {
+            Assert.That(ValidateScenes(Scene("a"), Scene("b", 50, TimeOfDay.Night, spawns: false)), Is.Empty);
+            Assert.That(ValidateType2Scenes(Scene("a"), Scene("b", 50, TimeOfDay.Night, spawns: false)), Is.Empty);
+        }
+
+        [Test]
+        public void ScenesSection_WithLength_Fails()
+        {
+            var builder = new ConfigBuilder();
+            builder.Sections = new List<SectionConfig>
+            {
+                new SectionConfig("signal", 10),
+                new SectionConfig("condition", 10, new List<SceneConfig> { Scene("a") }),
+            };
+
+            var errors = GameConfigValidator.Validate(builder.Build());
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("sections[1].lengthM"));
+        }
+
+        [Test]
+        public void ScenesSection_NotLast_Fails()
+        {
+            var builder = new ConfigBuilder();
+            builder.Sections = new List<SectionConfig>
+            {
+                new SectionConfig("signal", 10),
+                new SectionConfig("condition", null, new List<SceneConfig> { Scene("a") }),
+                new SectionConfig("complex", null),
+            };
+
+            var errors = GameConfigValidator.Validate(builder.Build());
+
+            Assert.That(errors, Has.Some.Contains("sections[1]").And.Contains("마지막"));
+        }
+
+        [Test]
+        public void Scenes_Empty_Fails()
+        {
+            var errors = ValidateScenes();
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("sections[1].scenes"));
+        }
+
+        [Test]
+        public void Scene_DuplicateId_Fails()
+        {
+            var errors = ValidateScenes(Scene("a"), Scene("a"));
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("sections[1].scenes[1].id"));
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        public void Scene_EmptyId_Fails(string id)
+        {
+            var errors = ValidateScenes(Scene(id));
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("sections[1].scenes[0].id"));
+        }
+
+        [TestCase(0.0)]
+        [TestCase(-1.0)]
+        [TestCase(double.PositiveInfinity)]
+        [TestCase(double.NaN)]
+        public void Scene_LengthNotPositiveOrInfinite_Fails(double length)
+        {
+            var errors = ValidateScenes(Scene("a", length));
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("sections[1].scenes[0].lengthM"));
+        }
+
+        [Test]
+        public void Override_RunDecayNegative_Fails()
+        {
+            var o = new SceneOverrides(runDecayPerSec: -0.1);
+
+            Assert.That(ValidateScenes(Scene("a", overrides: o)), Has.Exactly(1).Contains("sections[1].scenes[0].runDecayPerSec"));
+            Assert.That(ValidateType2Scenes(Scene("a", overrides: o)), Has.Exactly(1).Contains("sections[1].scenes[0].runDecayPerSec"));
+            Assert.That(ValidateScenes(Scene("a", overrides: new SceneOverrides(runDecayPerSec: 0))), Is.Empty);
+        }
+
+        [TestCase(-0.1)]
+        [TestCase(1.1)]
+        [TestCase(double.NaN)]
+        public void Override_SuddenDropChanceOutOfRange_Fails(double chance)
+        {
+            var errors = ValidateScenes(Scene("a", overrides: new SceneOverrides(suddenDropChancePerSec: chance)));
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("sections[1].scenes[0].suddenDropChancePerSec"));
+        }
+
+        [Test]
+        public void Override_MinAboveGlobalMax_Fails()
+        {
+            var builder = new ConfigBuilder { TrackSnackIntervalMinSec = 8, TrackSnackIntervalMaxSec = 10 };
+
+            var minOnly = builder.WithScenes(Scene("a", overrides: new SceneOverrides(trackSnackIntervalMinSec: 12)));
+            Assert.That(GameConfigValidator.Validate(minOnly.Build()),
+                Has.Exactly(1).Contains("sections[1].scenes[0].trackSnackIntervalMinSec"));
+
+            var both = builder.WithScenes(Scene("a",
+                overrides: new SceneOverrides(trackSnackIntervalMinSec: 12, trackSnackIntervalMaxSec: 15)));
+            Assert.That(GameConfigValidator.Validate(both.Build()), Is.Empty);
+        }
+
+        [Test]
+        public void Override_Type2Interval_UsesType2GlobalPair()
+        {
+            var builder = new ConfigBuilder { FoodRowIntervalMinSec = 4, FoodRowIntervalMaxSec = 6 };
+
+            var food = builder.WithScenes(Scene("a", overrides: new SceneOverrides(foodRowIntervalMinSec: 7)));
+            Assert.That(GameConfigValidator.Validate(food.BuildType2()),
+                Has.Exactly(1).Contains("sections[1].scenes[0].foodRowIntervalMinSec"));
+
+            var rest = builder.WithScenes(Scene("a", overrides: new SceneOverrides(restIntervalMaxSec: 0)));
+            Assert.That(GameConfigValidator.Validate(rest.BuildType2()),
+                Has.Exactly(1).Contains("sections[1].scenes[0].restIntervalMinSec"));
+
+            var ok = builder.WithScenes(Scene("a",
+                overrides: new SceneOverrides(foodRowIntervalMaxSec: 20, restIntervalMinSec: 2, restIntervalMaxSec: 2)));
+            Assert.That(GameConfigValidator.Validate(ok.BuildType2()), Is.Empty);
+        }
+
+        [Test]
+        public void Override_TrackSnackIds_EmptyOrUnknown_Fails()
+        {
+            Assert.That(ValidateScenes(Scene("a", overrides: new SceneOverrides(trackSnackIds: new string[0]))),
+                Has.Exactly(1).Contains("sections[1].scenes[0].trackSnackIds"));
+            Assert.That(ValidateScenes(Scene("a", overrides: new SceneOverrides(trackSnackIds: new[] { "nope" }))),
+                Has.Exactly(1).Contains("sections[1].scenes[0].trackSnackIds"));
+            Assert.That(ValidateScenes(Scene("a",
+                overrides: new SceneOverrides(trackSnackIds: new[] { "juice", "juice", "cracker" }))), Is.Empty);
+        }
+
+        private static IEnumerable<TestCaseData> OtherTypeKeys()
+        {
+            yield return new TestCaseData(TrackType.Type1, new SceneOverrides(foodRowIntervalMinSec: 4), "foodRowIntervalMinSec")
+                .SetName("Override_OtherTypeKey_Fails_Type1FoodRow");
+            yield return new TestCaseData(TrackType.Type1, new SceneOverrides(restIntervalMinSec: 10), "restIntervalMinSec")
+                .SetName("Override_OtherTypeKey_Fails_Type1Rest");
+            yield return new TestCaseData(TrackType.Type2, new SceneOverrides(suddenDropChancePerSec: 0), "suddenDropChancePerSec")
+                .SetName("Override_OtherTypeKey_Fails_Type2SuddenDrop");
+            yield return new TestCaseData(TrackType.Type2, new SceneOverrides(trackSnackIds: new[] { "juice" }), "trackSnackIds")
+                .SetName("Override_OtherTypeKey_Fails_Type2TrackSnackIds");
+            yield return new TestCaseData(TrackType.Type2, new SceneOverrides(trackSnackIntervalMinSec: 8), "trackSnackIntervalMinSec")
+                .SetName("Override_OtherTypeKey_Fails_Type2TrackSnackInterval");
+        }
+
+        [TestCaseSource(nameof(OtherTypeKeys))]
+        public void Override_OtherTypeKey_Fails(TrackType type, SceneOverrides overrides, string key)
+        {
+            var errors = type == TrackType.Type1
+                ? ValidateScenes(Scene("a", overrides: overrides))
+                : ValidateType2Scenes(Scene("a", overrides: overrides));
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain($"sections[1].scenes[0].{key}"));
+        }
     }
 }
