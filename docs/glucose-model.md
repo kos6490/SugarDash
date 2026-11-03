@@ -2,6 +2,7 @@
 
 - 브랜치: `feat/glucose-model`
 - 상태: 설계 확정, 수치는 PLACEHOLDER (담당자 결정 전까지 `null`)
+- 범위: 1형 주행 기준이다. 2형 주행은 `docs/type-tracks.md`를 본다.
 - 단위: 혈당 mg/dL, 시간은 명시하지 않으면 게임 초(game seconds)
 
 ## 1. 혈당 변화 방식
