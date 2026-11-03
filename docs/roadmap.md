@@ -61,6 +61,8 @@
 | 구조 | 2형 설정·로더, notice·tell 판정, 점수·결과 요약, 기록, 유형별 주행(음식·쉬기), 유형 저장, 화면 흐름(계획 작업 1~9) | | 완료 |
 | 구조 | 기존 화면의 2형 대응, 빈 틀 6개 만들기, 조립·개발 씬·문서, 작업 브랜치 push(계획 작업 10~12). 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.6~6.8, 9.10~9.11절 | | 완료 |
 | 구조 | 팀원이 push한 스크립트 확인, 작업 브랜치를 `dev`에 머지 | | 대기(빈 틀 채우기) |
+| 구조 | 2구간 2-A 공통 틀: 장면 설정·검증, 장면 진행과 기록, 주행 중 배치 바꾸기, 빈 틀 2개(`SceneLook`, `SleepTransitionView`), 조립·개발 씬 문서 | [section2.md](section2.md) | 완료 |
+| 구조 | 2구간 2-B 유형별 조건 이벤트 설계 | [section2.md](section2.md) 7절 | 대기(출처 확인) |
 | 팀원1(캐릭터) | 주인공 모델, 기본 애니메이션(달리기, 점프, 슬라이드, 옆 이동) | | 시작 가능 |
 | 팀원1(캐릭터) | 2형 상태 애니메이션: 지친 표정·느린 걸음·처진 자세(고혈당·저혈당), 앉아 쉬기. 체형은 바꾸지 않음. 연출 방향은 출처 확인 뒤 고칠 수 있음 | [type-tracks.md](type-tracks.md) 5절 | 시작 가능 |
 | 팀원1(캐릭터) | `CharacterStateView` 채우기: 보통·쉬는 중·지침(높음)·지침(낮음) 상태를 애니메이터에 연결 | `Assets/_Project/Scripts/Presentation/Character/CharacterStateView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
@@ -69,6 +71,8 @@
 | 팀원2(월드) | 트랙 음식 모델 7종: 물, 주스, 탄산음료, 사과, 치킨, 피자, 햄버거 | [type-select.md](type-select.md) 4.2절 | 시작 가능 |
 | 팀원2(월드) | 음식 7종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 시작 가능 |
 | 팀원2(월드) | `TrackItemLook` 채우기: 장애물·음식 id·쉬는 곳마다 프리팹 연결 | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
+| 팀원2(월드) | `SceneLook` 채우기: 장면별 맵 배경(운동장, 놀이터, 나들이, 집), 때별 조명·하늘 | `Assets/_Project/Scripts/Presentation/World/SceneLook.cs`, [section2.md](section2.md) 5절 | 대기(빈 틀 push) |
+| 팀원2(월드) | `TrackItemLook` 장면별 장애물 모양(운동장 축구공, 놀이터 미끄럼틀 등) | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [section2.md](section2.md) 5절 | 대기(빈 틀 push) |
 | 팀원3(화면) | UI 디자인 시안(타이틀, 유형 선택, 설정, 혈당바, 측정기 버튼, 점수, 선택 패널, 카운트다운, 결과 화면) | | 시작 가능 |
 | 팀원3(화면) | 타이틀·유형 선택·설정 UI: 시안을 바탕으로 `Canvas` 아래 화면 오브젝트와 버튼 그림 만들기. 씬 연결 방법은 `dev-scene.md` 6.6절 | [dev-scene.md](dev-scene.md) 6.6절 | 시작 가능 |
 | 팀원3(화면) | 한글 글꼴 후보(무료 상업 이용 가능한 라이선스) | | 시작 가능 |
@@ -76,6 +80,7 @@
 | 팀원3(화면) | `TitleScreenView`, `TypeSelectView`, `SettingsView` 채우기: 화면 배치, 버튼 그림·소리 | `Assets/_Project/Scripts/Presentation/Screen/TitleScreenView.cs`, `TypeSelectView.cs`, `SettingsView.cs`, [type-select.md](type-select.md) 2·11절 | 시작 가능 |
 | 팀원3(화면) | notice 그림: 갈증 말풍선, 화장실 아이콘(고혈당). 지금 글자(`목말라요`)는 개발용이며 출처 확인 결과에 따라 바뀔 수 있음. 저혈당 신호 그림은 출처 확인 뒤 | [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
+| 팀원3(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 대기(빈 틀 push) |
 
 ## 3. 완료한 작업
 
@@ -133,10 +138,11 @@
 
 | 정할 것 | 분야 | 지금 상태 | 막고 있는 작업 |
 | --- | --- | --- | --- |
-| 생활 환경 맵 목록과 맵별 특성(예: 학교 급식·체육 시간, 놀이터 벤치, 나들이 외식) | 기획 | 학교 운동장, 놀이터, 가족 나들이 등이라는 데까지 정해짐 | 2구간 설계, 맵 그래픽 |
-| 하루 흐름: 하루 길이, 운동·수면 시점, 혈당 재 보는 습관 순간 | 기획 | 낮 → 밤 → 낮, 적절한 때 운동, 잘 시간에 짧은 수면이라는 데까지 정해짐 | 2구간 설계 |
-| 운동·수면의 유형별 혈당 영향과 출처 | 의학 | 미정 | 2구간 설계 |
-| 2구간 조건별 판단, 3구간 복합 상황의 유형별 이벤트 | 기획, 의학 | 미정 | 2·3구간 구현 |
+| 맵별 특성(2-B): 운동장 운동 구간, 놀이터 급하강·쉬는 곳, 나들이 간식·음식 줄, 집 수면 | 기획, 의학 | 맵 3종 + 집 장면과 순서(운동장 아침 → 놀이터 오후 → 나들이 저녁 → 집 밤)는 정해지고 구현함. 조건은 후보만([section2.md](section2.md) 7절) | 2구간 2-B |
+| 장면 길이(하루 길이)와 맵별 덮어쓰기 값 | 결정 | 빌드 설정 `null`·빈 값 | 2구간 실제 수치 |
+| 혈당 재 보는 습관 순간(1형), 2형 측정 습관 출처 | 기획, 의학 | 미정. 2형은 측정기가 없어 넣지 않음 | 2구간 2-B |
+| 운동·수면의 유형별 혈당 영향과 출처 | 의학 | 미정 | 2구간 2-B |
+| 3구간 복합 상황의 유형별 이벤트. 1형 "빈 간식 가방" 후보 | 기획, 의학 | 미정 | 3구간 구현 |
 
 ## 5. 1순위 남은 작업
 
@@ -147,7 +153,7 @@
 | 순서 | 작업 | 분야 | 선행 |
 | --- | --- | --- | --- |
 | 1 | 유형 선택 + 2형 1구간: 시작 화면 유형 선택, 2형 choose·move·notice·tell, 지친 캐릭터 연출, 음식 아이템 최소 확장 | 결정, 기획, 코드 | 2형 혈당 모델, 2형 오류 코드·탈락 규칙 결정 |
-| 2 | 2구간 + 생활 환경 맵 + 하루 흐름(두 유형 공통 틀 위에 유형별 조건 이벤트). 구간별 1단계 제한 시간 배율이 생기면 설정 불변식도 추가(`docs/glucose-model.md` 8.3절) | 결정, 기획, 코드 | 1, 생활 환경 맵·하루 흐름 결정 |
+| 2 | 2구간 + 생활 환경 맵 + 하루 흐름. 2-A 공통 틀(장면 순환, 장면별 덮어쓰기 자리, 기록, 맵·암전 빈 틀)은 구현함. 2-B 유형별 조건 이벤트는 출처 확인 뒤. 구간별 1단계 제한 시간 배율이 생기면 설정 불변식도 추가(`docs/glucose-model.md` 8.3절) | 결정, 기획, 코드 | 1, 2-B는 운동·수면 등 출처 확인 |
 | 3 | 3구간 복합 상황(두 유형) | 결정, 기획, 코드 | 2 |
 
 ### 5.2 코드
