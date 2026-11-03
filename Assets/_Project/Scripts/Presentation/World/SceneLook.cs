@@ -31,15 +31,26 @@ namespace SugarDash.Presentation
         public IDisposable Bind(DomainEventBus bus)
         {
             if (bus == null) throw new ArgumentNullException(nameof(bus));
-            var subscription = bus.Subscribe<SceneEntered>(OnSceneEntered);
-            return new Unbinder(() => subscription.Dispose());
+            // 구간에 들어가면 장면 없는 색으로 되돌린다. 장면 구간이면 바로 뒤의 SceneEntered가 장면 색을 칠한다.
+            var section = bus.Subscribe<SectionEntered>(_ => SetGround(null));
+            var scene = bus.Subscribe<SceneEntered>(OnSceneEntered);
+            return new Unbinder(() =>
+            {
+                section.Dispose();
+                scene.Dispose();
+            });
         }
 
         private void OnSceneEntered(SceneEntered e)
         {
-            if (ground != null) ground.material.color = GroundColorOf(e.Scene);
+            SetGround(e.Scene);
             // TODO(월드): 장면 id(e.Scene)별 맵 배경(운동장, 놀이터, 나들이, 집)을 켜고 끈다.
             // TODO(월드): 때(e.TimeOfDay)별 조명·하늘(아침, 오후, 저녁, 밤)을 바꾼다.
+        }
+
+        private void SetGround(string sceneId)
+        {
+            if (ground != null) ground.material.color = GroundColorOf(sceneId);
         }
     }
 }
