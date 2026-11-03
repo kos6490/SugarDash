@@ -29,6 +29,9 @@ namespace SugarDash.App
         private int _sectionIndex;
         // 지금 구간이 끝나는 누적 거리(m). 마지막 구간(lengthM 없음)이면 양의 무한대.
         private double _sectionEndM;
+        private int _sceneIndex;
+        private int _dayIndex;
+        private double _sceneEndM;
         // 쉬는 중이 끝나는 worldDt 누적 시각.
         private double _restEnd;
 
@@ -75,6 +78,13 @@ namespace SugarDash.App
         /// <summary>지금 구간의 id. 열린 주행이 없으면 null.</summary>
         public string CurrentSectionId => _session == null ? null : Sections[_sectionIndex].Id;
 
+        /// <summary>지금 장면. 장면 없는 구간이거나 열린 주행이 없으면 null.</summary>
+        public SceneConfig CurrentScene =>
+            _session == null || !Sections[_sectionIndex].HasScenes ? null : Sections[_sectionIndex].Scenes[_sceneIndex];
+
+        /// <summary>장면 구간의 하루 번호(첫날 0). 장면이 없으면 0.</summary>
+        public int DayIndex => CurrentScene == null ? 0 : _dayIndex;
+
         // HUD·패널이 읽는 값. 주행이 없으면 기본값.
         public double Displayed => _session?.Model.Displayed ?? 0;
         public double Actual => _session?.Model.Actual ?? 0;
@@ -112,6 +122,7 @@ namespace SugarDash.App
             _sectionEndM = SectionLength(0);
             var model = _session.Model;
             _bus.Publish(new SectionEntered(Sections[0].Id, 0, model.SimTime, model.DecisionTime));
+            if (Sections[0].HasScenes) EnterScene(_session, 0, 0, 0);
             _session.Director.EvaluateTargetRange();
         }
 
@@ -241,10 +252,20 @@ namespace SugarDash.App
                 DistanceM += meters;
                 while (DistanceM >= _sectionEndM && _sectionIndex < Sections.Count - 1)
                 {
+                    double boundary = _sectionEndM;
                     _sectionIndex++;
                     _sectionEndM += SectionLength(_sectionIndex);
                     _bus.Publish(new SectionEntered(Sections[_sectionIndex].Id, DistanceM, s.Model.SimTime,
                         s.Model.DecisionTime));
+                    if (Sections[_sectionIndex].HasScenes) EnterScene(s, 0, 0, boundary);
+                }
+
+                // 장면 구간은 마지막 구간이라 장면은 끝없이 되풀이된다.
+                var scenes = Sections[_sectionIndex].Scenes;
+                while (scenes != null && DistanceM >= _sceneEndM)
+                {
+                    int next = (_sceneIndex + 1) % scenes.Count;
+                    EnterScene(s, next, next == 0 ? _dayIndex + 1 : _dayIndex, _sceneEndM);
                 }
             });
         }
@@ -259,6 +280,23 @@ namespace SugarDash.App
 
             s.Fsm.EliminateObstacleHit();
         });
+
+        /// <summary>
+        /// 지금 구간의 index번째 장면에 들어간다. 장면 덮어쓰기를 적용하고 SceneEntered를 발행한다.
+        /// 경계는 누적 거리라 한 번에 여러 경계를 넘어도 장면 길이가 어긋나지 않는다.
+        /// </summary>
+        /// <param name="boundaryM">이 장면이 시작하는 거리(m).</param>
+        private void EnterScene(RunSession s, int index, int day, double boundaryM)
+        {
+            var scene = Sections[_sectionIndex].Scenes[index];
+            _sceneIndex = index;
+            _dayIndex = day;
+            _sceneEndM = boundaryM + scene.LengthM.Value;
+            s.Model.SetRunDecayPerSec(scene.Overrides.RunDecayPerSec);
+            s.Director.SetSuddenDropChancePerSec(scene.Overrides.SuddenDropChancePerSec);
+            _bus.Publish(new SceneEntered(scene.Id, scene.TimeOfDay, day, DistanceM, s.Model.SimTime,
+                s.Model.DecisionTime));
+        }
 
         /// <summary>i번째 구간의 길이. 마지막 구간(lengthM 없음)이면 양의 무한대라 그 뒤 경계는 없다.</summary>
         private double SectionLength(int index) => Sections[index].LengthM ?? double.PositiveInfinity;

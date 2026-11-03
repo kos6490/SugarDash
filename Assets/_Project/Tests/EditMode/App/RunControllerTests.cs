@@ -79,6 +79,7 @@ namespace SugarDash.App.Tests
                 Collect<RunEliminated>();
                 Collect<TrackSnackEaten>();
                 Collect<SectionEntered>();
+                Collect<SceneEntered>();
                 Collect<GlucoseRangeEntered>();
 
                 Run = new RunController(_ =>
@@ -835,6 +836,173 @@ namespace SugarDash.App.Tests
             var answer = rig.All<StepAnswered>().Single();
             Assert.That(answer.ErrorCode, Is.EqualTo(HypoErrorCode.HyJuice));
             Assert.That(answer.ChoiceId, Is.EqualTo("juice"));
+        }
+
+        // 장면 테스트 구성: signal 10m → condition(A 아침 5m, B 밤 3m, 물체 없음). 하루 = 8m.
+        private static SceneConfig SceneA(SceneOverrides o = null) => new SceneConfig("A", TimeOfDay.Morning, 5, true, o);
+        private static SceneConfig SceneB(SceneOverrides o = null) => new SceneConfig("B", TimeOfDay.Night, 3, false, o);
+
+        [Test]
+        public void EnteringScenesSection_PublishesSectionThenFirstScene()
+        {
+            var rig = new Rig(b => b.WithScenes(SceneA(), SceneB()));
+            rig.Run.StartRun(TrackType.Type1);
+            Assert.That(rig.Run.CurrentScene, Is.Null, "signal에는 장면이 없다");
+            Assert.That(rig.All<SceneEntered>(), Is.Empty);
+
+            rig.Run.AdvanceDistance(12);
+            rig.Run.Tick(1);
+
+            var entries = rig.Events.Where(e => e is SectionEntered || e is SceneEntered).ToList();
+            Assert.That(entries, Has.Count.EqualTo(3));
+            Assert.That(((SectionEntered)entries[1]).Section, Is.EqualTo("condition"));
+            var scene = (SceneEntered)entries[2];
+            Assert.That(scene.Scene, Is.EqualTo("A"));
+            Assert.That(scene.TimeOfDay, Is.EqualTo(TimeOfDay.Morning));
+            Assert.That(scene.DayIndex, Is.EqualTo(0));
+            Assert.That(scene.DistanceM, Is.EqualTo(12));
+            Assert.That(rig.Run.CurrentScene.Id, Is.EqualTo("A"));
+            Assert.That(rig.Run.DayIndex, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void LargeDistance_EntersEachSceneOnce_AndWrapsDay()
+        {
+            var rig = new Rig(b => b.WithScenes(SceneA(), SceneB()));
+            rig.Run.StartRun(TrackType.Type1);
+
+            rig.Run.AdvanceDistance(30);
+            rig.Run.Tick(1);
+
+            var scenes = rig.All<SceneEntered>();
+            Assert.That(scenes.Select(e => e.Scene + e.DayIndex), Is.EqualTo(new[] { "A0", "B0", "A1", "B1", "A2" }));
+            Assert.That(scenes.Select(e => e.TimeOfDay),
+                Is.EqualTo(new[] { TimeOfDay.Morning, TimeOfDay.Night, TimeOfDay.Morning, TimeOfDay.Night, TimeOfDay.Morning }));
+            Assert.That(scenes.Select(e => e.DistanceM), Is.All.EqualTo(30));
+            Assert.That(rig.Run.DayIndex, Is.EqualTo(2));
+            Assert.That(rig.Run.CurrentScene.Id, Is.EqualTo("A"));
+
+            // 경계는 누적 거리다: A2는 26~31m. 1m 더 가면 B2.
+            rig.Run.AdvanceDistance(1);
+            rig.Run.Tick(1);
+            Assert.That(rig.All<SceneEntered>().Last().Scene + rig.Run.DayIndex, Is.EqualTo("B2"));
+        }
+
+        [Test]
+        public void Scene_AppliesAndClearsOverrides()
+        {
+            // Rig 기본: 달리기 감소 2/s, 기본 하강 0.
+            var rig = new Rig(b => b.WithScenes(SceneA(new SceneOverrides(runDecayPerSec: 5)), SceneB()));
+            rig.Run.StartRun(TrackType.Type1);
+
+            rig.Run.AdvanceDistance(10);
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.Actual, Is.EqualTo(115).Within(Eps), "A에 들어간 그 Tick부터 덮어쓰기");
+
+            rig.Run.AdvanceDistance(5);
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.CurrentScene.Id, Is.EqualTo("B"));
+            Assert.That(rig.Run.Actual, Is.EqualTo(113).Within(Eps), "B는 덮어쓰기가 없어 전역 값");
+        }
+
+        [Test]
+        public void Scene_SuddenDropChanceOverride_AppliesInScene()
+        {
+            // 전역 확률 1이지만 A에서는 0. NoRandom은 난수를 읽으면 예외를 낸다.
+            var rig = new Rig(b =>
+            {
+                b.SuddenDropChancePerSec = 1;
+                b.Sections = new List<SectionConfig>
+                {
+                    new SectionConfig("condition", null, new List<SceneConfig>
+                        { SceneA(new SceneOverrides(suddenDropChancePerSec: 0)), SceneB(new SceneOverrides(suddenDropChancePerSec: 0)) }),
+                };
+            });
+            rig.Run.StartRun(TrackType.Type1);
+
+            Assert.DoesNotThrow(() => rig.Ticks(5));
+        }
+
+        [Test]
+        public void SceneChange_DuringRecognize_SwitchesOverrides()
+        {
+            var rig = new Rig(b => b.WithScenes(SceneA(new SceneOverrides(runDecayPerSec: 5)), SceneB())).Triggered();
+            double before = rig.Run.Actual;
+
+            rig.Run.AdvanceDistance(10);
+            rig.Run.Tick(1);
+
+            Assert.That(rig.All<SceneEntered>().Single().Scene, Is.EqualTo("A"));
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Recognize), "대처는 끊기지 않는다");
+            Assert.That(rig.Run.Actual, Is.EqualTo(before - 5).Within(Eps));
+        }
+
+        [Test]
+        public void WorldFrozen_DoesNotChangeScene()
+        {
+            var rig = new Rig(b => b.WithScenes(SceneA(), SceneB())).Triggered();
+            rig.Run.PressMeter();
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.IsWorldFrozen, Is.True);
+
+            rig.Run.AdvanceDistance(12);
+            rig.Run.Tick(1);
+
+            Assert.That(rig.All<SceneEntered>(), Is.Empty);
+            Assert.That(rig.Run.CurrentScene, Is.Null);
+        }
+
+        [Test]
+        public void StartRun_FirstSectionWithScenes_EntersFirstScene()
+        {
+            var rig = new Rig(b => b.Sections = new List<SectionConfig>
+            {
+                new SectionConfig("condition", null, new List<SceneConfig> { SceneA(), SceneB() }),
+            });
+
+            rig.Run.StartRun(TrackType.Type1);
+
+            var entries = rig.Events.Where(e => e is SectionEntered || e is SceneEntered).ToList();
+            Assert.That(entries, Has.Count.EqualTo(2));
+            Assert.That(entries[0], Is.TypeOf<SectionEntered>());
+            var scene = (SceneEntered)entries[1];
+            Assert.That(scene.Scene + scene.DayIndex, Is.EqualTo("A0"));
+            Assert.That(scene.DistanceM, Is.EqualTo(0));
+            Assert.That(rig.Run.CurrentScene.Id, Is.EqualTo("A"));
+        }
+
+        [Test]
+        public void NewRun_ResetsSceneAndDay()
+        {
+            var rig = new Rig(b => b.WithScenes(SceneA(), SceneB(new SceneOverrides(runDecayPerSec: 5))));
+            rig.Run.StartRun(TrackType.Type1);
+            rig.Run.AdvanceDistance(30);
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.DayIndex, Is.EqualTo(2));
+
+            rig.Run.EndRun();
+            Assert.That(rig.Run.CurrentScene, Is.Null);
+            Assert.That(rig.Run.DayIndex, Is.EqualTo(0));
+            rig.Run.StartRun(TrackType.Type1);
+            Assert.That(rig.Run.DayIndex, Is.EqualTo(0));
+            Assert.That(rig.Run.CurrentScene, Is.Null);
+
+            rig.Run.AdvanceDistance(15);
+            rig.Run.Tick(1);
+            Assert.That(rig.All<SceneEntered>().Last().Scene + rig.Run.DayIndex, Is.EqualTo("B0"));
+        }
+
+        [Test]
+        public void Type2_SceneOverride_AppliesRunDecay()
+        {
+            var rig = new Rig2(b => b.WithScenes(SceneA(new SceneOverrides(runDecayPerSec: 5)), SceneB()));
+            rig.Run.StartRun(TrackType.Type2);
+
+            rig.Run.AdvanceDistance(10);
+            rig.Run.Tick(1);
+
+            Assert.That(rig.Run.CurrentScene.Id, Is.EqualTo("A"));
+            Assert.That(rig.Run.Actual, Is.EqualTo(115).Within(Eps));
         }
     }
 }
