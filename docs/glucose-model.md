@@ -2,7 +2,7 @@
 
 - 브랜치: `feat/glucose-model`
 - 상태: 설계 확정, 수치는 PLACEHOLDER (담당자 결정 전까지 `null`)
-- 범위: 1형 주행 기준이다. 2형 주행은 `docs/type-tracks.md`를 본다.
+- 범위: 1형 주행 기준이다. 2형도 GlucoseModel(`dBG/dt` 합산식, 음식 흡수)을 그대로 쓰지만 별도 설정 파일(`game-config.type2.json`)과 규칙을 갖는다. 2형 혈당과 설정은 `docs/type-select.md` 4절과 8절, 방향은 `docs/type-tracks.md`를 본다. 이 문서의 표시 혈당 지연, 측정기, 4단계, 급하강은 1형 전용이다.
 - 단위: 혈당 mg/dL, 시간은 명시하지 않으면 게임 초(game seconds)
 
 ## 1. 혈당 변화 방식

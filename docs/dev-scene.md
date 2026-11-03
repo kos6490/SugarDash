@@ -10,7 +10,8 @@
 > 5. 6.5절(결과 화면)을 따라 만들고, 8절 3번 표의 `Result Screen` 칸에 `ResultScreen`을 끌어다 놓는다.
 > 6. 결과 화면을 이미 만들었으면 6.5.3절만 따라 한다.
 > 7. 점수 표시가 없는 씬이면 5.2절 표대로 `Hud` 아래에 `ScoreText`를 만들고 5.3절대로 `Hud Presenter`의 `Score Text` 칸에 연결한다. 예전에 만든 `HeartsText`가 있으면 선택해 Delete 키로 지운다(하트는 없어졌다). 결과 화면은 씬 변경이 없다.
-> 8. Cmd+S로 저장하고 9절 순서로 확인한다.
+> 8. 유형 선택·2형을 더한 뒤라면 6.6~6.8절을 따라 화면 오브젝트를 만들고, 6.5.4절대로 `ResultScreen`에 `타이틀로` 버튼을 더한다. 8절 3번 표에서 새로 생긴 칸(`Build Config Type2`, `Title Screen`, `Type Select`, `Settings`, `Character State`, `Notice Signal`)을 연결한다.
+> 9. Cmd+S로 저장하고 9절 순서로 확인한다.
 
 ## 0. 화면 구성과 기본 조작
 
@@ -188,6 +189,7 @@ Unity 에디터 기본 배치:
 | Title Text | `ResultScreen > Root > Box` 아래의 `TitleText` |
 | Summary Text | `SummaryText` |
 | Retry Button | `ResultScreen > Root > Box` 아래의 `RetryButton` |
+| Title Button | `ResultScreen > Root > Box` 아래의 `TitleButton` (6.5.4절에서 만든다) |
 
 `HypoChoice`에도 `Root`, `TitleText`가 있으므로 같은 이름을 끌어다 놓을 때 `ResultScreen` 아래의 것인지 확인한다. `Root` 칸에는 `Box`가 아니라 `Root`를 넣는다(어두운 배경과 박스가 함께 껐다 켜진다).
 
@@ -196,6 +198,89 @@ Unity 에디터 기본 배치:
 1. Hierarchy에서 `ResultScreen > Root > Box > Events`를 선택하고 Delete 키로 지운다(자식 `EventTemplate`도 함께 지워진다).
 2. `Box`, `TitleText`, `SummaryText`, `RetryButton`의 위치·크기·글자 크기를 6.5.1절 3, 4번 값으로 고친다. 고혈당 줄이 안 보이면 `SummaryText`가 옛 값(Pos Y `25`, Height `110`)이라 세 번째 줄이 잘린 것이다.
 3. Cmd+S로 저장한다.
+
+### 6.5.4 `타이틀로` 버튼 더하기
+결과 화면에서 타이틀(유형 고르기, 설정)로 돌아가는 버튼이다.
+1. `Box` 위에서 오른쪽 클릭 → `UI > Legacy > Button`. 이름 `TitleButton`.
+2. Pos X `0`, Pos Y `-270`, Width `440`, Height `90`. 자식 글자: Text `타이틀로`, Font Size 36.
+3. `Box`의 Height가 `500`이면 버튼이 박스 밖으로 나가 잘린다. `Box`의 Height를 `640`으로 키우고, 다른 오브젝트 위치는 그대로 둔다.
+4. `ResultScreen`을 선택하고 `Result Screen View`의 `Title Button` 칸에 `TitleButton`을 끌어다 놓는다.
+5. 기대 결과: 탈락해 결과 화면이 뜨면 `다시 하기` 아래에 `타이틀로`가 보이고, 누르면 타이틀 화면으로 간다(9.10절).
+
+## 6.6 화면 흐름 (타이틀, 유형 선택, 설정)
+
+실행하면 처음에 유형 선택 화면(저장된 유형이 없을 때) 또는 타이틀 화면이 뜨고, `시작`을 눌러야 주행이 시작된다. 세 화면은 모두 `Canvas` 아래에 만든다.
+
+공통 규칙:
+- 화면마다 `Root`라는 **자식** 오브젝트를 둔다. 화면 스크립트(`TitleScreenView` 등)는 빈 오브젝트에 붙이고, 보이고 숨기는 것은 그 아래 `Root`만 한다.
+- `Root` 칸에 **스크립트가 붙은 오브젝트 자신**을 넣으면 안 된다. 자신을 끄면 스크립트도 같이 멈춰서 화면이 다시는 나타나지 않는다. 반드시 자식 `Root`를 넣는다.
+- 스크립트가 붙은 오브젝트(`TitleScreen` 등)는 항상 켜 둔다(Inspector 이름 왼쪽 체크박스가 켜진 상태).
+- 세 화면은 `Hud`, `HypoChoice`보다 **아래**에 둔다(아래에 있을수록 앞에 그려진다). `ResultScreen`보다는 위에 둬도 된다.
+- 버튼 글자는 씬의 Text로 적는다(코드가 바꾸지 않는다). 아래 표의 글자를 그대로 쓴다.
+- `UI > Legacy > Button`, `UI > Legacy > Text`로 만든다. 위치와 크기는 예시이며 마음대로 바꿔도 된다.
+
+### 6.6.1 TitleScreen
+1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TitleScreen`. `Add Component` → `TitleScreenView`.
+2. `TitleScreen` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Root`. 화면 전체를 덮는 그대로 둔다. `Image`의 `Color` A를 `255`로 올려 뒤 화면을 가린다.
+3. `Root` 아래에 만든다.
+
+| 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
+| --- | --- | --- | --- | --- |
+| `TypeText` | `UI > Legacy > Text` | 0, 200 | 800 × 100 | Text 비움(코드가 `1형으로 달려요`/`2형으로 달려요`를 넣는다), Font Size 48, 가운데 정렬 |
+| `StartButton` | `UI > Legacy > Button` | 0, 0 | 440 × 120 | 자식 글자: Text `시작`, Font Size 44 |
+| `SettingsButton` | `UI > Legacy > Button` | 0, -160 | 440 × 120 | 자식 글자: Text `설정`, Font Size 44 |
+
+4. `TitleScreen`을 선택하고 `Title Screen View`의 칸을 연결한다.
+
+| 필드 | 끌어다 놓을 것 |
+| --- | --- |
+| Root | `TitleScreen` 아래의 `Root` |
+| Type Text | `TypeText` |
+| Start Button | `StartButton` |
+| Settings Button | `SettingsButton` |
+
+### 6.6.2 TypeSelect
+1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TypeSelect`. `Add Component` → `TypeSelectView`.
+2. `TypeSelect` 아래에 `UI > Panel`을 `Root`로 만들고(6.6.1절 2번과 같게), `Root` 아래에 만든다.
+
+| 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
+| --- | --- | --- | --- | --- |
+| `TitleText` | `UI > Legacy > Text` | 0, 300 | 900 × 100 | Text 비움(코드가 `어떤 당뇨인가요?`를 넣는다), Font Size 52, 가운데 정렬 |
+| `GuideText` | `UI > Legacy > Text` | 0, 190 | 900 × 80 | Text 비움(코드가 `보호자와 함께 골라 주세요`를 넣는다), Font Size 34, 가운데 정렬 |
+| `Type1Button` | `UI > Legacy > Button` | 0, 20 | 440 × 140 | 자식 글자: Text `1형`, Font Size 48 |
+| `Type2Button` | `UI > Legacy > Button` | 0, -150 | 440 × 140 | 자식 글자: Text `2형`, Font Size 48 |
+
+3. `TypeSelect`를 선택하고 `Type Select View`의 칸을 연결한다: `Root`(`TypeSelect` 아래의 `Root`), `Title Text`, `Guide Text`, `Type 1 Button`, `Type 2 Button`.
+
+### 6.6.3 Settings
+1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `Settings`. `Add Component` → `SettingsView`.
+2. `Settings` 아래에 `UI > Panel`을 `Root`로 만들고, `Root` 아래에 만든다.
+
+| 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
+| --- | --- | --- | --- | --- |
+| `TitleText` | `UI > Legacy > Text` | 0, 300 | 900 × 100 | Text 비움(코드가 `설정`을 넣는다), Font Size 52, 가운데 정렬 |
+| `CurrentTypeText` | `UI > Legacy > Text` | 0, 190 | 900 × 80 | Text 비움(코드가 지금 유형 `1형`/`2형`을 넣는다), Font Size 40, 가운데 정렬 |
+| `Type1Button` | `UI > Legacy > Button` | 0, 20 | 440 × 120 | 자식 글자: Text `1형`, Font Size 44 |
+| `Type2Button` | `UI > Legacy > Button` | 0, -130 | 440 × 120 | 자식 글자: Text `2형`, Font Size 44 |
+| `BackButton` | `UI > Legacy > Button` | 0, -300 | 440 × 120 | 자식 글자: Text `돌아가기`, Font Size 44 |
+
+3. `Settings`를 선택하고 `Settings View`의 칸을 연결한다: `Root`(`Settings` 아래의 `Root`), `Title Text`, `Current Type Text`, `Type 1 Button`, `Type 2 Button`, `Back Button`.
+4. 같은 이름(`Root`, `TitleText`, `Type1Button`)이 여러 화면에 있으므로 끌어다 놓을 때 맞는 화면 아래의 것인지 확인한다.
+
+## 6.7 2형 신호 글자 (NoticeSignal)
+
+2형에서 고혈당·저혈당 신호(notice)가 나올 때 글자를 보여 준다. 글자만 있는 단순한 오브젝트다.
+1. `Canvas` 위에서 오른쪽 클릭 → `UI > Legacy > Text`. 이름 `NoticeSignal`. Pos X `0`, Pos Y `600`, Width `800`, Height `100`, Text 비움, Font Size 44, 가운데 정렬.
+2. `Add Component` → `NoticeSignalView`. `Signal Text` 칸에 `NoticeSignal` 자신(같은 오브젝트의 Text)을 끌어다 놓는다.
+   - 이 화면은 `Root`가 없다. 신호가 없으면 코드가 글자를 비우므로 켜 둔 채로 둔다.
+3. 기대 결과: 2형 주행 중 고혈당 신호가 나오면 `목말라요`, 저혈당 쪽 신호가 나오면 `(개발용) 낮음 신호`가 보인다(9.10절). 문구는 개발용이다.
+
+## 6.8 캐릭터 상태 (CharacterStateView)
+
+2형에서 캐릭터 상태(보통, 쉬는 중, 지침)를 받아 보여 주는 빈 틀이다. 지금은 화면에 보이는 것이 없다.
+1. Hierarchy의 `Player`를 선택하고 `Add Component` → `CharacterStateView`. 칸은 건드리지 않는다.
+   - `Sandbox Mode`는 연습용 씬에서 주행과 상관없이 상태를 바꿔 볼 때만 쓴다. 이 씬에서는 꺼 둔다.
+2. 8절 3번 표의 `Character State` 칸에 `Player`를 끌어다 놓는다.
 
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
@@ -206,7 +291,8 @@ Unity 에디터 기본 배치:
 3. 세 오브젝트 모두 위치를 원점으로 맞춘다. 하나씩 선택하고 Inspector의 `Transform` 칸 오른쪽 끝 `⋮`(점 세 개) → `Reset`. Position이 0, 0, 0이 되면 된다.
 4. `Player`를 선택하고 `Player Controller`의 `Camera Rig` 칸에 Hierarchy의 `Main Camera`를 끌어다 놓는다. 카메라 위치는 실행하면 코드가 맞춘다.
 5. `Main Camera`를 선택하고 `Add Component` → `SymptomEffectPresenter`. `Camera Target` 칸에 `Main Camera` 자신을 끌어다 놓는다(실제 혈당이 낮을수록 카메라만 흔들리고 UI는 흔들리지 않는다).
-6. 그 밖의 값(속도, 점프 높이, 흔들림 폭 등)은 기본값 그대로 둔다. 나중에 감각을 맞출 때 Inspector에서 바꾼다(Play 중에 바꾼 값은 멈추면 되돌아간다).
+6. `Track`의 `TrackSpawner`에 `Look` 칸(`TrackItemLook`)이 있다. 월드 담당 팀원이 프리팹을 연결하기 전에는 비워 둔다. 비어 있으면 코드가 만든 기본 도형(상자, 구)이 나온다.
+7. 그 밖의 값(속도, 점프 높이, 흔들림 폭 등)은 기본값 그대로 둔다. 나중에 감각을 맞출 때 Inspector에서 바꾼다(Play 중에 바꾼 값은 멈추면 되돌아간다).
 
 ## 8. 조립 지점 (GameBootstrapper)
 
@@ -216,7 +302,8 @@ Unity 에디터 기본 배치:
 
 | 필드 | 넣을 것 |
 | --- | --- |
-| Build Config | Project 창에서 `Assets > _Project > Config` 폴더를 열고 `game-config` 파일을 끌어다 놓는다 |
+| Build Config | Project 창에서 `Assets > _Project > Config` 폴더를 열고 `game-config` 파일(1형)을 끌어다 놓는다 |
+| Build Config Type2 | 같은 폴더의 `game-config.type2` 파일(`Assets/_Project/Config/game-config.type2.json`)을 끌어다 놓는다. 에디터에서 `Use Dev Config In Editor`가 체크되어 있으면 개발용 파일(`Config/Dev/game-config.type2.dev.json`)을 대신 쓰지만, 빌드에는 이 칸의 파일이 실리므로 비워 두지 않는다 |
 | Use Dev Config In Editor | 체크 |
 | Hud | Hierarchy의 `Hud` |
 | Choice Panel | Hierarchy의 `HypoChoice` |
@@ -225,6 +312,13 @@ Unity 에디터 기본 배치:
 | Track | Hierarchy의 `Track` |
 | Symptom Effect | Hierarchy의 `Main Camera` (Symptom Effect Presenter가 붙은 오브젝트) |
 | Input | Hierarchy의 `Input` |
+| Title Screen | Hierarchy의 `TitleScreen` (`TitleScreenView`가 붙은 오브젝트, 6.6.1절) |
+| Type Select | Hierarchy의 `TypeSelect` (6.6.2절) |
+| Settings | Hierarchy의 `Settings` (6.6.3절) |
+| Character State | Hierarchy의 `Player` (`CharacterStateView`가 붙은 오브젝트, 6.8절) |
+| Notice Signal | Hierarchy의 `NoticeSignal` (6.7절) |
+
+화면 칸(`Title Screen`~`Notice Signal`)은 비워 두면 그 화면은 연결되지 않고 건너뛴다. 단 `Title Screen`, `Type Select`가 비면 화면 흐름이 진행되지 않으므로 둘은 꼭 연결한다.
 
 4. Cmd+S로 저장한다.
 
@@ -250,14 +344,22 @@ DevRun
 │   │       ├── RecheckText
 │   │       └── Buttons
 │   │           └── ButtonTemplate
-│   └── ResultScreen
-│       └── Root
-│           └── Box
-│               ├── TitleText
-│               ├── SummaryText
-│               └── RetryButton
+│   ├── ResultScreen
+│   │   └── Root
+│   │       └── Box
+│   │           ├── TitleText
+│   │           ├── SummaryText
+│   │           ├── RetryButton
+│   │           └── TitleButton
+│   ├── TitleScreen
+│   │   └── Root           (TypeText, StartButton, SettingsButton)
+│   ├── TypeSelect
+│   │   └── Root           (TitleText, GuideText, Type1Button, Type2Button)
+│   ├── Settings
+│   │   └── Root           (TitleText, CurrentTypeText, Type1Button, Type2Button, BackButton)
+│   └── NoticeSignal
 ├── EventSystem
-├── Player
+├── Player               (PlayerController, CharacterStateView)
 ├── Track
 ├── Input
 └── Bootstrapper
@@ -266,6 +368,8 @@ DevRun
 ## 9. 실행해서 확인하기
 
 ▶(Play)를 누르면 실행되고, 다시 누르면 멈춘다. Console에 노란 경고 `개발용 임시 설정(실제 수치 아님)으로 실행한다`가 한 번 뜨는 것은 정상이다. 빨간 에러가 뜨면 그 문구를 그대로 전달한다.
+
+유형 선택·타이틀 화면이 있는 씬이면 Play 뒤 먼저 유형 선택(또는 타이틀) 화면이 뜬다. 시나리오 A~G는 1형이므로 `1형`을 고르고 타이틀에서 `시작`을 눌러 시작한다(9.10절). 아래 표의 "Play"는 이 시작까지를 뜻한다.
 
 시나리오마다 Play를 새로 누르거나, 끝난 뒤 `다시 하기`를 눌러 처음부터 시작한다. 숫자는 누르는 속도에 따라 조금씩 다르므로 "약"으로 적었다.
 
@@ -370,6 +474,46 @@ A의 3번까지 진행한 뒤 아래 중 하나를 해 본다. 오류가 나면 
 ### 9.9 기록 확인
 macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Support/ZeroSugar/SugarDash/logs/`로 이동한다. 주행마다 `{runId}.jsonl` 파일이 하나씩 생긴다. 텍스트 편집기로 열면 한 줄에 기록 하나가 있고, 모든 줄의 `configVersion`이 `dev-not-real`이다.
 
+### 9.10 시나리오 H: 유형 선택과 화면 흐름
+저장된 유형 파일(`settings.json`)이 없는 첫 실행을 기준으로 한다. 파일은 `~/Library/Application Support/ZeroSugar/SugarDash/` 폴더에 생긴다. 이 파일을 지우면 다시 첫 실행이 된다.
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | Play | 유형 선택 화면: `어떤 당뇨인가요?`, `보호자와 함께 골라 주세요`, `1형`, `2형` 버튼. 주행은 아직 시작하지 않는다 |
+| 2 | `1형` | 타이틀 화면: `1형으로 달려요`, `시작`, `설정` |
+| 3 | `설정` | 설정 화면: `설정`, 지금 유형 `1형`, 버튼 `1형`, `2형`, `돌아가기` |
+| 4 | `2형` | 타이틀 화면으로 돌아가고 `2형으로 달려요`로 바뀐다 |
+| 5 | Play를 멈추고 다시 Play | 유형 선택 없이 바로 타이틀 화면, `2형으로 달려요`(고른 유형이 저장되어 있다) |
+| 6 | 타이틀에서 `설정` → `돌아가기` | 유형이 그대로인 채 타이틀로 돌아온다 |
+
+### 9.11 시나리오 I: 2형 한 판
+9.10절 4번 뒤 타이틀에서 `시작`을 누른다. 개발 설정(`game-config.type2.dev.json`, 실제 수치 아님) 기준이다.
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | `시작` | 캐릭터가 달린다. 혈당 숫자는 `120 mg/dL`에서 시작하고 바로 반영된다(1형의 3초 지연이 없다). `측정기` 버튼, `혈당 경고!`, 측정 글자는 없다. 약 3초 뒤부터 장애물이 온다 |
+| 2 | 음식 줄을 본다 | 4~7초마다 음식이 2레인에 하나씩, 나머지 한 레인은 비어 나온다. 두 음식은 서로 다르다. 개발용 기본 도형이라 이름은 코드가 정한 모양으로만 보인다 |
+| 3 | `juice`·`soda` 쪽 레인으로 계속 먹는다 | 먹은 순간부터 혈당이 서서히 오른다. 먹었다고 점수나 정답·오답 표시는 없다. `water`는 혈당이 오르지 않는다 |
+| 4 | 혈당이 `180` 이상인 채 약 4초 이어진다 | 말풍선 글자 `목말라요`가 보이고 주행은 계속된다. 약 2초 뒤 캐릭터와 트랙이 멈춘다 |
+| 5 | 패널 확인 | 제목 `몸이 힘들어요. 어떻게 할까요?`, 버튼 `계속 달리기`, `주스 마시기`(순서는 매번 다름), 맨 아래 `어른에게 알리기`. 제한 시간 8초 |
+| 6 | `어른에게 알리기` | 정답. 결과 글자가 1초 보이고 `3`, `2`, `1` 카운트다운 뒤 다시 달린다 |
+| 7 | 15~25초마다 나오는 쉬는 곳(개발용 도형)과 같은 레인으로 들어간다 | 캐릭터가 3초 동안 멈춘다(거리 점수가 쌓이지 않는다). 그동안 방향키는 듣지 않는다. 쉬는 중에도 혈당 숫자는 움직이되 달릴 때보다 덜 내려간다 |
+| 8 | 음식을 피하며 오래 달린다 | 혈당이 `70` 아래로 내려가 약 4초 이어지면 `(개발용) 낮음 신호`가 보이고, 이어서 패널이 뜬다. 제목은 같고 버튼은 `계속 달리기`, `어른에게 알리기` |
+| 9 | `어른에게 알리기` | 어른이 `juice`를 건네 혈당이 오른다. 카운트다운 뒤 다시 달린다 |
+| 10 | 장애물에 한 번 부딪힌다 | 결과 화면이 뜬다. 제목 `어른이 도와주러 왔어요`. 요약은 2형 문구다. 예: `혈당이 높을 때 1번 모두 바로 알렸어요`, `혈당이 낮을 때 1번 모두 바로 알렸어요`(이벤트가 있었을 때만). 아래에 `다시 하기`, `타이틀로` |
+| 11 | `타이틀로` | 타이틀 화면. 설정에서 `1형`으로 바꾸고 `시작`하면 9.2절과 같은 1형 주행이 된다 |
+
+2형에서 확인할 오답:
+
+| 할 일 | 결과 |
+| --- | --- |
+| 5번에서 `주스 마시기` | 주스 1회분이 혈당에 반영되고 오류로 기록된다. `도움이 필요해요!`가 뜨고 `어른에게 알리기`를 누르면 이어 간다 |
+| 5번에서 `계속 달리기` 또는 8초 기다리기 | 오류. 위와 같이 `도움이 필요해요!` |
+| `도움이 필요해요!`에서 `다시 달리기` 또는 5초 기다리기 | 탈락. 결과 화면 |
+| tell 제한 시간을 넘긴 순간 혈당이 `40` 미만이거나 `300` 초과 | 오류 처리 없이 바로 탈락 |
+
+2형 화면에 1형 모습(화면 흔들림, 측정기)이 보이면 `Bootstrapper`의 `Build Config Type2` 연결과 고른 유형을 확인한다. 최고 점수는 1형 `best-score.json`, 2형 `best-score.type2.json`으로 따로 저장된다.
+
 ## 10. 자주 생기는 문제
 
 | 증상 | 확인할 것 |
@@ -386,3 +530,7 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | 화면 가운데에 작은 `Button`이나 `New Text`가 보인다 | 실수로 하나 더 만든 오브젝트다. Hierarchy에서 `Canvas` 바로 아래의 `Button (Legacy)`, `Text (Legacy)`를 선택하고 Delete 키로 지운다 |
 | 바꾼 값이 사라졌다 | Play 중에 바꿨다. 멈춘 상태에서 다시 바꾸고 Cmd+S |
 | Console에 `설정을 불러오지 못했다`가 뜬다 | `Use Dev Config In Editor`가 체크되어 있는지 |
+| 실행하면 아무 화면도 안 나오고 주행도 안 된다 | `Bootstrapper`의 `Title Screen`, `Type Select` 칸이 연결됐는지(8절) |
+| 타이틀·유형 선택·설정 화면이 한 번 사라진 뒤 다시 안 나온다 | 화면 스크립트의 `Root` 칸에 스크립트가 붙은 오브젝트 자신을 넣었다. 자식 `Root`를 넣는다(6.6절) |
+| 결과 화면에 `타이틀로` 버튼이 없거나 눌러도 반응이 없다 | `ResultScreen`의 `Title Button` 칸이 비어 있다(6.5.4절). 비어 있어도 오류는 없지만 타이틀로 갈 길이 없다 |
+| 2형을 골랐는데 `설정을 불러오지 못했다`가 뜬다 | `Bootstrapper`의 `Build Config Type2`와 `Use Dev Config In Editor` 칸. 오류 문구에 어느 유형인지 적혀 있다 |

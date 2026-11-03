@@ -55,7 +55,7 @@
 
 - `atUtc`: `yyyy-MM-ddTHH:mm:ss.fffZ`
 - `step`: `recognize`, `respond`, `dose`, `remeasure`, `notify` (`remeasure`와 `notify`가 함께 4단계), `hyper_notify`(고혈당 알리기, `docs/hyper-event.md`), `low_notify`(2형 저혈당 쪽 tell)
-- `errorCode`: CLAUDE.md 2절의 코드 그대로(`S_MISSED`, `RS_SLOW`, ..., `HELP_INSTEAD`, `HY_KEEP_RUNNING`, `HY_TIMEOUT`, 2형 `HY_JUICE`, `LO_KEEP_RUNNING`, `LO_TIMEOUT`)
+- `errorCode`: 1형 오류 코드는 `docs/glucose-model.md`, 고혈당은 `docs/hyper-event.md`의 코드 그대로(`S_MISSED`, `RS_SLOW`, ..., `HELP_INSTEAD`, `HY_KEEP_RUNNING`, `HY_TIMEOUT`, 2형 `HY_JUICE`, `LO_KEEP_RUNNING`, `LO_TIMEOUT`)
 - `cause`: `declined`(알리기 대기에서 "다시 달리기"), `prompt_timeout`(알리기 제한 시간 초과), `obstacle_hit`(장애물에 부딪힘), `glucose_low`·`glucose_high`(실제 혈당이 안전 범위를 벗어남)
 - `RunCompleted`는 없앴다(한 판은 탈락으로만 끝난다).
 - 점수는 저장하지 않는다. `StepAnswered`의 선택, `GlucoseRangeEntered/Exited`, `RecheckFastForward`, `RunEliminated.distanceM`으로 ScoringService가 다시 계산한다.
