@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SugarDash.Domain.Config;
 using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Glucose;
@@ -25,7 +26,7 @@ namespace SugarDash.App.Tests
             public int Begun;
             public int Ended;
 
-            public string BeginRun(string configVersion, SugarDash.Domain.Config.TrackType trackType) => "run-" + ++Begun;
+            public string BeginRun(string configVersion, TrackType trackType) => "run-" + ++Begun;
 
             public void EndRun() => Ended++;
         }
@@ -71,7 +72,22 @@ namespace SugarDash.App.Tests
             }
         }
 
+        private sealed class FakeSettings : ISettingsStore
+        {
+            public TrackType? Stored;
+            public int Saves;
+            public TrackType? LoadTrackType() => Stored;
+
+            public void SaveTrackType(TrackType type)
+            {
+                Saves++;
+                Stored = type;
+            }
+        }
+
         private FakeBest _best;
+        private FakeBest _best2;
+        private FakeSettings _settings;
         private FakeLog _log;
         private FakeQuery _query;
         private RunController _run;
@@ -94,8 +110,19 @@ namespace SugarDash.App.Tests
             bus.Subscribe<GlucoseRangeExited>(e => _query.Published.Add(e));
             bus.Subscribe<RecheckFastForward>(e => _query.Published.Add(e));
             bus.Subscribe<SectionEntered>(e => _query.Published.Add(e));
-            _run = new RunController(_ =>
+            var config2 = builder.BuildType2();
+            _run = new RunController(type =>
             {
+                if (type == TrackType.Type2)
+                {
+                    var model2 = new GlucoseModel(config2.Glucose);
+                    var director2 = new EventDirector(config2.Glucose, model2, new NoRandom(), bus, config2.Type2);
+                    var fsm2 = new HypoEventFsm(config2, model2, director2, bus, () => _run.DistanceM);
+                    var scoring2 = new SugarDash.Domain.Scoring.ScoringService(config2.Score);
+                    return new RunSession(config2, model2, director2, fsm2, scoring2, scoring2.Subscribe(bus),
+                        bus.Subscribe<LowEventTriggered>(fsm2.BeginLow),
+                        bus.Subscribe<HyperEventTriggered>(fsm2.BeginHyper));
+                }
                 var model = new GlucoseModel(config.Glucose);
                 var director = new EventDirector(config.Glucose, model, new NoRandom(), bus);
                 var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
@@ -104,7 +131,23 @@ namespace SugarDash.App.Tests
                     scoring.Subscribe(bus));
             }, _log, bus);
             _best = new FakeBest();
-            _flow = new GameFlowController(_run, _query, config.Score, _best, "cfg-test");
+            _best2 = new FakeBest();
+            _settings = new FakeSettings { Stored = TrackType.Type1 };
+            _flow = new GameFlowController(_run, _query, _settings, Profiles(config.Score, config2.Score));
+        }
+
+        private IReadOnlyDictionary<TrackType, TrackTypeProfile> Profiles(
+            SugarDash.Domain.Config.ScoreConfig score1, SugarDash.Domain.Config.ScoreConfig score2) => new Dictionary<TrackType, TrackTypeProfile>
+        {
+            { TrackType.Type1, new TrackTypeProfile(score1, _best, "cfg-test") },
+            { TrackType.Type2, new TrackTypeProfile(score2, _best2, "cfg-test-2") },
+        };
+
+        /// <summary>저장된 유형(1형)으로 타이틀을 거쳐 주행을 시작한다.</summary>
+        private void StartType1()
+        {
+            _flow.Begin();
+            _flow.StartRun();
         }
 
         /// <summary>GameBootstrapper처럼 RunController.Tick 뒤 GameFlowController.Tick을 부른다.</summary>
@@ -125,11 +168,51 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
-        public void Begin_StartsRunOnce()
+        public void Begin_NoSavedType_ShowsTypeSelect()
         {
-            _flow.Begin();
+            _settings.Stored = null;
+
             _flow.Begin();
 
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.TypeSelect));
+            Assert.That(_flow.CurrentType, Is.Null);
+            Assert.That(_run.State, Is.EqualTo(RunState.Idle));
+        }
+
+        [Test]
+        public void Begin_SavedType_ShowsTitle_DoesNotStartRun()
+        {
+            _settings.Stored = TrackType.Type2;
+
+            _flow.Begin();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+            Assert.That(_flow.CurrentType, Is.EqualTo(TrackType.Type2));
+            Assert.That(_run.State, Is.EqualTo(RunState.Idle));
+            Assert.That(_log.Begun, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void SelectType_SavesAndGoesToTitle()
+        {
+            _settings.Stored = null;
+            _flow.Begin();
+
+            _flow.SelectType(TrackType.Type2);
+
+            Assert.That(_settings.Stored, Is.EqualTo(TrackType.Type2));
+            Assert.That(_flow.CurrentType, Is.EqualTo(TrackType.Type2));
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+        }
+
+        [Test]
+        public void StartRun_FromTitle_StartsRunOnce()
+        {
+            _flow.Begin();
+            _flow.StartRun();
+            _flow.StartRun();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Running));
             Assert.That(_run.State, Is.EqualTo(RunState.Running));
             Assert.That(_log.Begun, Is.EqualTo(1));
             Assert.That(_flow.IsShowingResult, Is.False);
@@ -137,9 +220,90 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
-        public void ObstacleHit_ClosesLogThenLoadsResult()
+        public void SelectTypeInSettings_NextRunUsesNewTypeProfile()
+        {
+            StartType1();
+            HitObstacleOnce();
+            Assert.That(_best.Saves, Is.EqualTo(1));
+            _flow.BackToTitle();
+
+            _flow.OpenSettings();
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Settings));
+            _flow.SelectType(TrackType.Type2);
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+            _flow.StartRun();
+            Assert.That(_run.TrackType, Is.EqualTo(TrackType.Type2));
+            HitObstacleOnce();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Result));
+            Assert.That(_best2.Saves, Is.EqualTo(1));
+            Assert.That(_best2.LastConfigVersion, Is.EqualTo("cfg-test-2"));
+            Assert.That(_best.Saves, Is.EqualTo(1), "1형 저장소는 그대로");
+        }
+
+        [Test]
+        public void CloseSettings_ReturnsToTitle()
         {
             _flow.Begin();
+            _flow.OpenSettings();
+
+            _flow.CloseSettings();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+        }
+
+        [Test]
+        public void BackToTitle_FromResult_ClearsResult()
+        {
+            StartType1();
+            HitObstacleOnce();
+            Assert.That(_flow.LastScore, Is.Not.Null);
+
+            _flow.BackToTitle();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+            Assert.That(_flow.LastResult, Is.Null);
+            Assert.That(_flow.LastScore, Is.Null);
+            Assert.That(_flow.BestScore, Is.Null);
+            Assert.That(_flow.IsNewBest, Is.False);
+        }
+
+        [Test]
+        public void CommandsInWrongScreen_AreIgnored()
+        {
+            _flow.Begin();
+            _flow.Retry();
+            _flow.BackToTitle();
+            _flow.CloseSettings();
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+            Assert.That(_log.Begun, Is.EqualTo(0));
+
+            _flow.StartRun();
+            _flow.SelectType(TrackType.Type2);
+            _flow.OpenSettings();
+            _flow.StartRun();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Running));
+            Assert.That(_flow.CurrentType, Is.EqualTo(TrackType.Type1));
+            Assert.That(_settings.Saves, Is.EqualTo(0));
+            Assert.That(_log.Begun, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Constructor_MissingProfile_Throws()
+        {
+            var only1 = new Dictionary<TrackType, TrackTypeProfile>
+            {
+                { TrackType.Type1, new TrackTypeProfile(new ConfigBuilder().Build().Score, _best, "v") },
+            };
+
+            Assert.Throws<ArgumentException>(() => new GameFlowController(_run, _query, _settings, only1));
+        }
+
+        [Test]
+        public void ObstacleHit_ClosesLogThenLoadsResult()
+        {
+            StartType1();
             HitObstacleOnce();
 
             Assert.That(_flow.IsShowingResult, Is.True);
@@ -158,7 +322,7 @@ namespace SugarDash.App.Tests
         {
             var builder = new ConfigBuilder { RunDecayPerSec = 2 };
             SetUpWith(builder);
-            _flow.Begin();
+            StartType1();
 
             Frames(36);
 
@@ -176,7 +340,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void LastScore_MatchesLiveScore_AfterCopingAndFastForward()
         {
-            _flow.Begin();
+            StartType1();
             for (int i = 0; i < 26; i++)
             {
                 if (i % 5 == 0) _run.AdvanceDistance(10);
@@ -215,7 +379,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void Retry_WhileRunning_IsIgnored()
         {
-            _flow.Begin();
+            StartType1();
             Frames(3);
 
             _flow.Retry();
@@ -227,7 +391,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void Retry_FromResult_StartsFreshRun()
         {
-            _flow.Begin();
+            StartType1();
             HitObstacleOnce();
             Assert.That(_flow.CanRetry, Is.True);
 
@@ -244,7 +408,7 @@ namespace SugarDash.App.Tests
         public void MissingRecord_StillShowsResultScreen()
         {
             _query.ReturnsNothing = true;
-            _flow.Begin();
+            StartType1();
 
             HitObstacleOnce();
 
@@ -255,7 +419,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void FirstRun_IsNewBestAndSaved()
         {
-            _flow.Begin();
+            StartType1();
             HitObstacleOnce();
 
             Assert.That(_flow.LastScore, Is.Not.Null);
@@ -269,7 +433,7 @@ namespace SugarDash.App.Tests
         public void LowerScore_KeepsBest()
         {
             _best.Stored = 1e9;
-            _flow.Begin();
+            StartType1();
             HitObstacleOnce();
 
             Assert.That(_flow.LastScore, Is.Not.Null);
@@ -283,7 +447,7 @@ namespace SugarDash.App.Tests
         {
             _query.OmitEliminated = true;
             _best.Stored = 5;
-            _flow.Begin();
+            StartType1();
             HitObstacleOnce();
 
             Assert.That(_flow.LastScore, Is.Null);
@@ -295,7 +459,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void Retry_ClearsScores()
         {
-            _flow.Begin();
+            StartType1();
             HitObstacleOnce();
 
             _flow.Retry();
@@ -308,7 +472,7 @@ namespace SugarDash.App.Tests
         [Test]
         public void Shutdown_ClosesOpenRun()
         {
-            _flow.Begin();
+            StartType1();
 
             _flow.Shutdown();
             _flow.Shutdown();

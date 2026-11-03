@@ -27,7 +27,10 @@ namespace SugarDash.Bootstrap
         /// <summary>에디터 전용 개발 설정. 실제 게임 수치가 아니며 빌드에 포함하지 않는다.</summary>
         private const string DevConfigPath = "_Project/Config/Dev/game-config.dev.json";
 
+        private const string DevConfigType2Path = "_Project/Config/Dev/game-config.type2.dev.json";
+
         [SerializeField] private TextAsset buildConfig;
+        [SerializeField] private TextAsset buildConfigType2;
         [Tooltip("에디터에서 실행할 때 개발용 임시 설정(실제 수치 아님)을 쓴다. 빌드에서는 무시한다.")]
         [SerializeField] private bool useDevConfigInEditor = true;
         [SerializeField] private HudPresenter hud;
@@ -40,6 +43,7 @@ namespace SugarDash.Bootstrap
 
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private GameConfig _config;
+        private GameConfig _config2;
         private DomainEventBus _bus;
         private RunController _run;
         private GameFlowController _flow;
@@ -47,14 +51,9 @@ namespace SugarDash.Bootstrap
 
         private void Awake()
         {
-            try
+            if (!TryLoadConfig("1형", buildConfig, DevConfigPath, out _config) ||
+                !TryLoadConfig("2형", buildConfigType2, DevConfigType2Path, out _config2))
             {
-                _config = new ConfigProvider(ReadConfigJson()).Load();
-            }
-            catch (ConfigValidationException e)
-            {
-                Debug.LogError("설정을 불러오지 못했다. 빈 값: " + string.Join(", ", e.MissingPaths) +
-                               " / 위반: " + string.Join(" | ", e.Violations));
                 enabled = false;
                 return;
             }
@@ -65,9 +64,21 @@ namespace SugarDash.Bootstrap
             _subscriptions.Add(log.Subscribe(_bus));
 
             _run = new RunController(type => CreateSession(), log, _bus);
-            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory), _config.Score,
-                new BestScoreRepository(Path.Combine(Application.persistentDataPath, "best-score.json")),
-                _config.ConfigVersion);
+            var profiles = new Dictionary<TrackType, TrackTypeProfile>
+            {
+                {
+                    TrackType.Type1, new TrackTypeProfile(_config.Score,
+                        new BestScoreRepository(Path.Combine(Application.persistentDataPath, "best-score.json")),
+                        _config.ConfigVersion)
+                },
+                {
+                    TrackType.Type2, new TrackTypeProfile(_config2.Score,
+                        new BestScoreRepository(Path.Combine(Application.persistentDataPath, "best-score.type2.json")),
+                        _config2.ConfigVersion)
+                },
+            };
+            _flow = new GameFlowController(_run, new ReportQueryService(logDirectory),
+                new SettingsRepository(Path.Combine(Application.persistentDataPath, "settings.json")), profiles);
 
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
             _subscriptions.Add(choicePanel.Bind(_run, _bus, _config.Glucose.Snacks, Environment.TickCount));
@@ -138,20 +149,36 @@ namespace SugarDash.Bootstrap
                 _bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper), scoring.Subscribe(_bus));
         }
 
-        private string ReadConfigJson()
+        private bool TryLoadConfig(string label, TextAsset buildAsset, string devPath, out GameConfig config)
+        {
+            try
+            {
+                config = new ConfigProvider(ReadConfigJson(buildAsset, devPath)).Load();
+                return true;
+            }
+            catch (ConfigValidationException e)
+            {
+                Debug.LogError(label + " 설정을 불러오지 못했다. 빈 값: " + string.Join(", ", e.MissingPaths) +
+                               " / 위반: " + string.Join(" | ", e.Violations));
+                config = null;
+                return false;
+            }
+        }
+
+        private string ReadConfigJson(TextAsset buildAsset, string devPath)
         {
             if (useDevConfigInEditor && Application.isEditor)
             {
-                Debug.LogWarning("개발용 임시 설정(실제 수치 아님)으로 실행한다: " + DevConfigPath);
-                return ReadDevConfig();
+                Debug.LogWarning("개발용 임시 설정(실제 수치 아님)으로 실행한다: " + devPath);
+                return ReadDevConfig(devPath);
             }
-            return buildConfig.text;
+            return buildAsset.text;
         }
 
-        private static string ReadDevConfig()
+        private static string ReadDevConfig(string devPath)
         {
 #if UNITY_EDITOR
-            return File.ReadAllText(Path.Combine(Application.dataPath, DevConfigPath));
+            return File.ReadAllText(Path.Combine(Application.dataPath, devPath));
 #else
             throw new InvalidOperationException("개발용 설정은 에디터 전용이다");
 #endif
