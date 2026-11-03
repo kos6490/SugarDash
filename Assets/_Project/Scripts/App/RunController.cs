@@ -120,6 +120,9 @@ namespace SugarDash.App
             DistanceM = 0;
             _sectionIndex = 0;
             _sectionEndM = SectionLength(0);
+            _sceneIndex = 0;
+            _dayIndex = 0;
+            _sceneEndM = double.PositiveInfinity;
             var model = _session.Model;
             _bus.Publish(new SectionEntered(Sections[0].Id, 0, model.SimTime, model.DecisionTime));
             if (Sections[0].HasScenes) EnterScene(_session, 0, 0, 0);

@@ -424,6 +424,8 @@ namespace SugarDash.Domain.Hypo
         /// <summary>
         /// 재측정 간격만큼 혈당 시간만 진행한다. 표시 혈당 지연 버퍼가 채워지도록 작은 간격으로 나눠 Tick한다.
         /// 세계와 판단 시계는 멈춰 있다(실제로 기다리지 않음).
+        /// EventDirector.Evaluate를 부르지 않으므로 게이지 경고 상태는 다음 프레임의 Evaluate에서 따라잡는다.
+        /// 대처 중이라 그 사이 발동 판정은 없고, 한 프레임 늦는 것 말고는 동작 차이가 없다.
         /// </summary>
         private void FastForwardRecheckInterval()
         {

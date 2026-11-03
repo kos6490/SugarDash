@@ -20,7 +20,7 @@ namespace SugarDash.Domain.Events
         public TimeOfDay TimeOfDay { get; }
         /// <summary>장면 구간에 들어간 첫날이 0. 마지막 장면에서 첫 장면으로 돌아갈 때 하나 오른다.</summary>
         public int DayIndex { get; }
-        /// <summary>장면에 들어간 순간의 주행 거리(m).</summary>
+        /// <summary>장면에 들어간 것을 처리한 시점의 주행 거리(m). 그 프레임에 간 거리까지 더해져 장면 경계보다 클 수 있다.</summary>
         public double DistanceM { get; }
         /// <summary>simDt 누적 시각.</summary>
         public double SimT { get; }

@@ -13,7 +13,7 @@ namespace SugarDash.Domain.Events
 
         /// <summary>설정의 구간 이름.</summary>
         public string Section { get; }
-        /// <summary>구간에 들어간 순간의 주행 거리(m).</summary>
+        /// <summary>구간에 들어간 것을 처리한 시점의 주행 거리(m). 그 프레임에 간 거리까지 더해져 구간 경계보다 클 수 있다.</summary>
         public double DistanceM { get; }
         /// <summary>simDt 누적 시각.</summary>
         public double SimT { get; }
