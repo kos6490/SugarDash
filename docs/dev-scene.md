@@ -291,7 +291,7 @@ Unity 에디터 기본 배치:
 3. 세 오브젝트 모두 위치를 원점으로 맞춘다. 하나씩 선택하고 Inspector의 `Transform` 칸 오른쪽 끝 `⋮`(점 세 개) → `Reset`. Position이 0, 0, 0이 되면 된다.
 4. `Player`를 선택하고 `Player Controller`의 `Camera Rig` 칸에 Hierarchy의 `Main Camera`를 끌어다 놓는다. 카메라 위치는 실행하면 코드가 맞춘다.
 5. `Main Camera`를 선택하고 `Add Component` → `SymptomEffectPresenter`. `Camera Target` 칸에 `Main Camera` 자신을 끌어다 놓는다(실제 혈당이 낮을수록 카메라만 흔들리고 UI는 흔들리지 않는다).
-6. `Track`의 `TrackSpawner`에 `Look` 칸(`TrackItemLook`)이 있다. 월드 담당 팀원이 프리팹을 연결하기 전에는 비워 둔다. 비어 있으면 코드가 만든 기본 도형(상자, 구)이 나온다.
+6. `Track`의 `TrackSpawner`에 `Look` 칸(`TrackItemLook`)이 있다. 월드 담당 팀원이 `TrackItemLook`을 채워 push하면 구조 담당 팀원이 연결한다. 그전에는 비워 둔다. 비어 있으면 코드가 만든 기본 도형(상자, 구)이 나온다.
 7. 그 밖의 값(속도, 점프 높이, 흔들림 폭 등)은 기본값 그대로 둔다. 나중에 감각을 맞출 때 Inspector에서 바꾼다(Play 중에 바꾼 값은 멈추면 되돌아간다).
 
 ## 8. 조립 지점 (GameBootstrapper)
