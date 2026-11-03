@@ -282,6 +282,24 @@ Unity 에디터 기본 배치:
    - `Sandbox Mode`는 연습용 씬에서 주행과 상관없이 상태를 바꿔 볼 때만 쓴다. 이 씬에서는 꺼 둔다.
 2. 8절 3번 표의 `Character State` 칸에 `Player`를 끌어다 놓는다.
 
+## 6.9 2구간 맵 바닥 (SceneLook)
+
+2구간에서 장면(운동장, 놀이터, 나들이, 집)이 바뀔 때 바닥 색을 바꾸는 빈 틀이다. 트랙 바닥(회색)은 실행하면 코드가 만들므로, 트랙 양옆으로 넓게 깔리는 바닥을 따로 하나 만든다.
+1. Hierarchy **빈 곳**에서 오른쪽 클릭 → `Create Empty`. 이름 `SceneLook`. Transform `⋮` → `Reset`. `Add Component` → `SceneLook`.
+2. `SceneLook` 위에서 오른쪽 클릭 → `3D Object > Plane`. 이름 `SceneGround`. Position `0, -0.12, 40`, Rotation `0, 0, 0`, Scale `10, 1, 12`(가로 100m, 세로 120m).
+   - 트랙 바닥(두께 0.1, 맨 아래 -0.1)보다 조금 낮게 두어 겹쳐 깜빡이지 않게 한다.
+3. `SceneLook`을 선택하고 `Scene Look`의 `Ground` 칸에 `SceneGround`를 끌어다 놓는다.
+4. 기대 결과: 1구간에서는 Plane 기본 색(흰색)이다. 2구간에 들어가면 장면마다 색이 바뀐다(9.12절).
+
+## 6.10 수면 전환 (SleepTransition)
+
+하루가 넘어갈 때 화면을 어둡게 했다가 밝히는 빈 틀이다.
+1. `Canvas` 위에서 오른쪽 클릭 → `UI > Image`. 이름 `SleepTransition`.
+2. Rect Transform 왼쪽 위 네모(Anchor Presets)를 누르고 Alt(Mac은 Option)를 누른 채 오른쪽 아래 `stretch`·`stretch`를 고른다. Left, Top, Right, Bottom이 모두 `0`이 되어 화면 전체를 덮는다.
+3. `Image`의 Color를 검은색, 알파(A) `0`으로 한다. `Raycast Target` 체크를 끈다(꺼야 아래 버튼이 눌린다).
+4. Hierarchy에서 `SleepTransition`을 `Canvas` 자식 중 **맨 아래**로 끌어 둔다(다른 UI 위에 그려진다).
+5. `Add Component` → `SleepTransitionView`. `Fade` 칸에 `SleepTransition` 자신(같은 오브젝트의 Image)을 끌어다 놓는다. `Fade Out Sec` `0.4`, `Hold Sec` `0.2`, `Fade In Sec` `0.6`은 기본값 그대로 둔다.
+
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
 캐릭터와 트랙의 모양(캡슐, 상자, 구)은 실행하면 코드가 만든다. 여기서는 빈 오브젝트 3개에 컴포넌트를 붙이고 카메라만 연결한다.
@@ -317,8 +335,10 @@ Unity 에디터 기본 배치:
 | Settings | Hierarchy의 `Settings` (6.6.3절) |
 | Character State | Hierarchy의 `Player` (`CharacterStateView`가 붙은 오브젝트, 6.8절) |
 | Notice Signal | Hierarchy의 `NoticeSignal` (6.7절) |
+| Scene Look | Hierarchy의 `SceneLook` (6.9절) |
+| Sleep Transition | Hierarchy의 `SleepTransition` (6.10절) |
 
-화면 칸(`Title Screen`~`Notice Signal`)은 비워 두면 그 화면은 연결되지 않고 건너뛴다. 단 `Title Screen`, `Type Select`가 비면 화면 흐름이 진행되지 않으므로 둘은 꼭 연결한다.
+화면 칸(`Title Screen`~`Sleep Transition`)은 비워 두면 그 화면은 연결되지 않고 건너뛴다. 단 `Title Screen`, `Type Select`가 비면 화면 흐름이 진행되지 않으므로 둘은 꼭 연결한다.
 
 4. Cmd+S로 저장한다.
 
@@ -357,11 +377,14 @@ DevRun
 │   │   └── Root           (TitleText, GuideText, Type1Button, Type2Button)
 │   ├── Settings
 │   │   └── Root           (TitleText, CurrentTypeText, Type1Button, Type2Button, BackButton)
-│   └── NoticeSignal
+│   ├── NoticeSignal
+│   └── SleepTransition  (맨 아래)
 ├── EventSystem
 ├── Player               (PlayerController, CharacterStateView)
 ├── Track
 ├── Input
+├── SceneLook
+│   └── SceneGround
 └── Bootstrapper
 ```
 
@@ -513,6 +536,22 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | tell 제한 시간을 넘긴 순간 혈당이 `40` 미만이거나 `300` 초과 | 오류 처리 없이 바로 탈락 |
 
 2형 화면에 1형 모습(화면 흔들림, 측정기)이 보이면 `Bootstrapper`의 `Build Config Type2` 연결과 고른 유형을 확인한다. 최고 점수는 1형 `best-score.json`, 2형 `best-score.type2.json`으로 따로 저장된다.
+
+### 9.12 시나리오 J: 2구간 하루 흐름
+1형·2형 각각 한 번씩 한다. 개발 설정(실제 수치 아님) 기준: 1구간 300m, 운동장·놀이터·나들이 200m씩, 집 80m. 장애물은 피하고 대처가 나오면 정답으로 넘긴다.
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | `시작` 뒤 달린다 | 1구간 동안 `SceneGround`는 흰색이다 |
+| 2 | 300m를 넘는다 | 바닥이 운동장 색(모래색)으로 바뀐다 |
+| 3 | 200m마다 | 놀이터(초록) → 나들이(파랑) → 집(보라) 색으로 바뀐다 |
+| 4 | 1형 나들이 | 간식이 3~4초 간격으로 자주 나온다(개발 설정의 덮어쓰기 값) |
+| 5 | 집 | 새 장애물·간식·음식·쉬는 곳이 나오지 않는다. 집에 들어가기 전에 놓인 것은 지나갈 때까지 남는다 |
+| 6 | 집 끝(80m) | 화면이 약 1초 동안 어두워졌다 밝아지고 바닥이 운동장 색으로 돌아간다. 암전 중에도 캐릭터는 계속 달린다. 바로 앞에 장애물이 갑자기 생기지 않는다 |
+| 7 | 계속 달린다 | 하루가 끝없이 되풀이된다. 속도는 하루가 넘어가도 처음으로 돌아가지 않는다 |
+| 8 | 결과 화면 → `다시 하기` | 바닥이 흰색(1구간)으로 돌아가고 암전이 남아 있지 않다 |
+
+기록 파일(9.9절)에 `SceneEntered` 줄이 장면마다 하나씩 생기고, `dayIndex`가 둘째 날부터 `1`, `2`로 오른다.
 
 ## 10. 자주 생기는 문제
 

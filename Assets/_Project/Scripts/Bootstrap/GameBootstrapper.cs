@@ -47,6 +47,8 @@ namespace SugarDash.Bootstrap
         [SerializeField] private SettingsView settings;
         [SerializeField] private CharacterStateView characterState;
         [SerializeField] private NoticeSignalView noticeSignal;
+        [SerializeField] private SceneLook sceneLook;
+        [SerializeField] private SleepTransitionView sleepTransition;
 
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private GameConfig _config;
@@ -122,6 +124,15 @@ namespace SugarDash.Bootstrap
             if (settings != null) _subscriptions.Add(settings.Bind(_flow));
             if (characterState != null) _subscriptions.Add(characterState.Bind(_run));
             if (noticeSignal != null) _subscriptions.Add(noticeSignal.Bind(_run));
+            if (sceneLook != null) _subscriptions.Add(sceneLook.Bind(_bus));
+            if (sleepTransition != null) _subscriptions.Add(sleepTransition.Bind(_bus));
+
+            // 장면이 바뀌면 트랙 배치를 그 장면 값으로 바로 바꾼다. 발행 시점에 CurrentScene은 이미 새 장면이다.
+            _subscriptions.Add(_bus.Subscribe<SceneEntered>(e =>
+            {
+                track.ChangeLayout(BuildLayout(_configs[_run.TrackType], _run.CurrentScene));
+                track.SetScene(e.Scene);
+            }));
 
             player.Init(_run, true);
             track.Init(BuildLayout(_config), Environment.TickCount, true);
@@ -143,8 +154,10 @@ namespace SugarDash.Bootstrap
             {
                 _shownRunCount = _run.RunCount;
                 player.ResetRun();
-                track.SetLayout(BuildLayout(_configs[_run.TrackType]));
+                // 첫 구간에 장면이 있으면 첫 장면 배치로 시작한다(전역 배치로 덮어쓰지 않는다).
+                track.SetLayout(BuildLayout(_configs[_run.TrackType], _run.CurrentScene));
                 track.ResetRun(Environment.TickCount);
+                track.SetScene(_run.CurrentScene?.Id);
             }
 
             double worldDt = _run.LastWorldDt;
@@ -176,16 +189,25 @@ namespace SugarDash.Bootstrap
             _subscriptions.Clear();
         }
 
-        /// <summary>설정에서 트랙 배치 값을 만든다. 2형은 음식 줄과 쉬는 곳을 놓고 1형은 간식만 놓는다.</summary>
-        public static TrackLayout BuildLayout(GameConfig config)
+        /// <summary>
+        /// 설정에서 트랙 배치 값을 만든다. 2형은 음식 줄과 쉬는 곳을 놓고 1형은 간식만 놓는다.
+        /// 장면이 있으면 그 장면의 덮어쓰기 값을 쓰고(없는 키는 전역 값), 물체를 놓지 않는 장면이면 배치를 끈다.
+        /// </summary>
+        public static TrackLayout BuildLayout(GameConfig config, SceneConfig scene = null)
         {
-            var ids = config.Glucose.Snacks.Select(s => s.Id).ToList();
+            var o = scene?.Overrides ?? SceneOverrides.None;
+            bool spawns = scene?.Spawns ?? true;
             var t2 = config.Type2;
             if (t2 == null)
-                return new TrackLayout(ids, config.Runner.TrackSnackIntervalMinSec,
-                    config.Runner.TrackSnackIntervalMaxSec, false, 0, 0);
-            return new TrackLayout(ids, t2.FoodRowIntervalMinSec, t2.FoodRowIntervalMaxSec, true,
-                t2.RestIntervalMinSec, t2.RestIntervalMaxSec);
+            {
+                var ids = o.TrackSnackIds ?? config.Glucose.Snacks.Select(s => s.Id).ToList();
+                return new TrackLayout(ids, o.TrackSnackIntervalMinSec ?? config.Runner.TrackSnackIntervalMinSec,
+                    o.TrackSnackIntervalMaxSec ?? config.Runner.TrackSnackIntervalMaxSec, false, 0, 0, spawns);
+            }
+            var foods = config.Glucose.Snacks.Select(s => s.Id).ToList();
+            return new TrackLayout(foods, o.FoodRowIntervalMinSec ?? t2.FoodRowIntervalMinSec,
+                o.FoodRowIntervalMaxSec ?? t2.FoodRowIntervalMaxSec, true,
+                o.RestIntervalMinSec ?? t2.RestIntervalMinSec, o.RestIntervalMaxSec ?? t2.RestIntervalMaxSec, spawns);
         }
 
         /// <summary>주행마다 그 유형의 설정으로 새 도메인 객체를 만들고 이벤트 발동을 상태 기계에 연결한다.</summary>
