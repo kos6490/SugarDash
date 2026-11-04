@@ -143,7 +143,7 @@ namespace SugarDash.Presentation
         /// <summary>
         /// 배치 값을 지금 주행에 바로 바꾼다(장면이 바뀔 때). 이미 놓인 물체는 그대로 두고 앞으로 놓을 물체부터 새 값을 쓴다.
         /// 간식·쉬는 곳 타이머는 처음부터 다시 잰다. 물체는 계속 spawnAheadDistance 앞에만 놓는다.
-        /// 물체를 놓지 않는 배치(집 장면)면 앞에 놓인 장애물·간식·쉬는 곳도 치운다.
+        /// 물체를 놓지 않는 배치(집 장면)면 앞에 놓인 장애물·간식·쉬는 곳도 치운다. 튜토리얼 대상은 남긴다.
         /// </summary>
         public void ChangeLayout(TrackLayout layout)
         {
@@ -342,7 +342,8 @@ namespace SugarDash.Presentation
             for (int i = _items.Count - 1; i >= 0; i--)
             {
                 var item = _items[i];
-                if (item.Kind == TrackItemKind.Marker || !(item.Z > 0)) continue;
+                // 튜토리얼 대상은 남긴다. 지우면 안내가 대상을 기다리며 멈춘다.
+                if (item.Kind == TrackItemKind.Marker || item.IsTutorialTarget || !(item.Z > 0)) continue;
                 DestroyView(item);
                 _items.RemoveAt(i);
             }

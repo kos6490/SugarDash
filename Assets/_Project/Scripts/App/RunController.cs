@@ -115,6 +115,9 @@ namespace SugarDash.App
         /// <summary>튜토리얼 설명 창 때문에 멈춰 있다. 카운트다운 중에는 false.</summary>
         public bool IsTutorialHeld { get; private set; }
 
+        /// <summary>튜토리얼 때문에 세계가 서 있다(설명 창, "다시 해봐요", 풀린 뒤 3-2-1). 이 동안 캐릭터 입력을 받지 않는다.</summary>
+        public bool IsTutorialStopped => IsTutorialHeld || _tutorialCountdown > 0;
+
         /// <summary>튜토리얼 안내 주행. 장애물에 부딪혀도 탈락하지 않고 FSM이 연습 모드다.</summary>
         public bool IsTutorialGuided { get; private set; }
 

@@ -70,6 +70,8 @@ namespace SugarDash.Domain.Hypo
         public bool IsPractice { get; private set; }
         /// <summary>연습 모드에서 오답으로 같은 단계를 다시 연 횟수.</summary>
         public int PracticeRetryCount { get; private set; }
+        // 마지막 연습 오답의 DecisionTime. 결과 문구 창이 없는 알리기 단계에서 같은 순간의 두 번째 오답(두 번 누름)을 거른다.
+        private double _lastPracticeRetryAt = double.NaN;
 
         public void SetPractice(bool on) => IsPractice = on;
 
@@ -458,6 +460,12 @@ namespace SugarDash.Domain.Hypo
         /// </summary>
         private bool PracticeRetry(HypoStep step, string choiceId)
         {
+            // 고혈당·저혈당 알리기는 결과 문구 창이 없어 같은 프레임의 두 번째 누름도 받아진다. 시간이 흐르지 않았으면 무시한다.
+            if ((Phase == HypoPhase.HyperNotify || Phase == HypoPhase.LowNotify) &&
+                _model.DecisionTime == _lastPracticeRetryAt)
+                return false;
+
+            _lastPracticeRetryAt = _model.DecisionTime;
             PracticeRetryCount++;
             Publish(new PracticeRetried(EventId, step, choiceId, _model.SimTime, _model.DecisionTime));
             Enter(Phase, PhaseLimit(Phase));

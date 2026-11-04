@@ -70,6 +70,13 @@ namespace SugarDash.Bootstrap
 
         private void Awake()
         {
+            if (track == null)
+            {
+                Debug.LogError("track(TrackSpawner)이 비어 있다. Bootstrapper의 track 칸에 TrackSpawner를 연결해야 한다.");
+                enabled = false;
+                return;
+            }
+
             // 대상은 spawnAheadDistance 앞에 놓이므로 멈춤 거리가 그보다 크면 놓자마자 멈춘다.
             if (tutorialStopDistance >= track.SpawnAheadDistance)
             {
@@ -175,8 +182,10 @@ namespace SugarDash.Bootstrap
             _tutorial.Tick(Time.deltaTime);
 
             // 새 주행 초기화(ResetRun)가 앞쪽 장애물을 바로 놓으므로 그 전에 안내 구간 여부를 트랙에 알린다.
+            // 캐릭터는 안내 구간 동안 달리기 속도를 늘리지 않는다.
             bool guided = _tutorial.IsGuided;
             track.SetTutorialGuided(guided);
+            player.SetTutorialGuided(guided);
 
             if (_run.RunCount != _shownRunCount)
             {

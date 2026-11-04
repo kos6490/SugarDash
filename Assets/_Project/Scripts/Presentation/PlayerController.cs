@@ -52,6 +52,7 @@ namespace SugarDash.Presentation
         private float _slideLeft;
         private float _stumbleLeft;
         private float _speed;
+        private bool _tutorialGuided;
 
         public float LaneWidth => laneWidth;
         public float LaneChangeSec => laneChangeSec;
@@ -84,6 +85,12 @@ namespace SugarDash.Presentation
             if (createView && _view == null) _view = PrimitiveViews.CreatePlayer(transform);
             ResetRun();
         }
+
+        /// <summary>
+        /// true인 동안 달리기 속도가 늘지 않는다. 튜토리얼 안내 구간은 시작 속도로 달리고, 끝나면 그 속도부터 다시 는다.
+        /// GameBootstrapper가 매 프레임 넘긴다.
+        /// </summary>
+        public void SetTutorialGuided(bool guided) => _tutorialGuided = guided;
 
         /// <summary>새 주행 시작 시 가운데 레인, 서 있는 상태로 되돌린다.</summary>
         public void ResetRun()
@@ -138,7 +145,7 @@ namespace SugarDash.Presentation
             _jumpLeft = Mathf.Max(0, _jumpLeft - dt);
             _slideLeft = Mathf.Max(0, _slideLeft - dt);
             _stumbleLeft = Mathf.Max(0, _stumbleLeft - dt);
-            _speed = Mathf.Min(maxRunSpeed, _speed + speedGainPerSec * dt);
+            if (!_tutorialGuided) _speed = Mathf.Min(maxRunSpeed, _speed + speedGainPerSec * dt);
             UpdateView();
         }
 

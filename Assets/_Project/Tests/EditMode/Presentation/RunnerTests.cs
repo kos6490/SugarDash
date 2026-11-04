@@ -211,6 +211,20 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void TutorialGuided_NoSpeedGain_ResumesFromStartSpeedAfter()
+        {
+            _player.SetTutorialGuided(true);
+            _player.MoveLeft();
+            _player.Advance(10);
+            Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed).Within(Eps), "안내 구간은 시작 속도로 달린다");
+            Assert.That(_player.X, Is.EqualTo(-_player.LaneWidth).Within(Eps), "속도 말고는 그대로 움직인다");
+
+            _player.SetTutorialGuided(false);
+            _player.Advance(10);
+            Assert.That(_player.CurrentSpeed, Is.EqualTo(_player.RunSpeed + _player.SpeedGainPerSec * 10).Within(Eps));
+        }
+
+        [Test]
         public void Speed_IncreasesAndCaps()
         {
             _player.Advance(10);
@@ -538,6 +552,22 @@ namespace SugarDash.Presentation.Tests
 
             Assert.That(_track.Items.Where(x => x.Z > 0).Select(x => x.Kind), Is.All.EqualTo(TrackItemKind.Marker),
                 "물체를 놓지 않는 장면에는 앞 장면의 물체도 남기지 않는다");
+        }
+
+        [Test]
+        public void ChangeLayout_NoSpawns_KeepsTutorialTargets()
+        {
+            Run(10);
+            _track.SetTutorialGuided(true);
+            _track.PlaceTutorial(new TutorialPlacement(TutorialObject.LowObstacle, new[] { -1, 0, 1 }));
+            double z = _track.NearestTutorialTargetZ.Value;
+
+            _track.ChangeLayout(NoSpawns());
+
+            var ahead = _track.Items.Where(x => x.Z > 0 && x.Kind != TrackItemKind.Marker).ToList();
+            Assert.That(ahead, Has.Count.EqualTo(3), "튜토리얼 대상만 남는다");
+            Assert.That(ahead.All(x => x.IsTutorialTarget), Is.True);
+            Assert.That(_track.NearestTutorialTargetZ, Is.EqualTo(z).Within(1e-9));
         }
 
         [Test]

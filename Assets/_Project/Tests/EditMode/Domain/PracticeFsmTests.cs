@@ -197,6 +197,8 @@ namespace SugarDash.Domain.Tests
             var control = HyperT2();
             control.Fsm.SetPractice(false);
             Assert.That(h.Fsm.ChooseJuice(), Is.True);
+            // 같은 순간의 두 번째 오답은 두 번 누름으로 보고 거르므로 판단 시간을 흘린 뒤 고른다.
+            h.Frame(0.1); control.Frame(0.1);
             Assert.That(h.Fsm.ChooseKeepRunning(), Is.True);
             Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.HyperNotify));
             Assert.That(h.All<PracticeRetried>(), Has.Count.EqualTo(2));
@@ -216,6 +218,30 @@ namespace SugarDash.Domain.Tests
             Assert.That(h.Fsm.ChooseKeepRunning(), Is.True);
             AssertStayed(h, HypoPhase.LowNotify, HypoStep.LowNotify, "keep_running");
             Assert.That(h.All<DoseApplied>(), Is.Empty);
+        }
+
+        [Test]
+        public void Practice_NotifyPhase_SameInstantSecondWrongChoiceIgnored()
+        {
+            var hy = HyperT2();
+            Assert.That(hy.Fsm.ChooseJuice(), Is.True);
+            Assert.That(hy.Fsm.ChooseKeepRunning(), Is.False, "같은 순간의 두 번째 오답은 무시한다");
+            Assert.That(hy.Fsm.PracticeRetryCount, Is.EqualTo(1));
+            Assert.That(hy.All<PracticeRetried>(), Has.Count.EqualTo(1));
+            hy.Frame(0.1);
+            Assert.That(hy.Fsm.ChooseKeepRunning(), Is.True, "시간이 흐른 뒤의 오답은 센다");
+            Assert.That(hy.Fsm.PracticeRetryCount, Is.EqualTo(2));
+            Assert.That(hy.Fsm.Phase, Is.EqualTo(HypoPhase.HyperNotify));
+
+            var lo = LowT2();
+            Assert.That(lo.Fsm.ChooseKeepRunning(), Is.True);
+            Assert.That(lo.Fsm.ChooseKeepRunning(), Is.False);
+            Assert.That(lo.Fsm.PracticeRetryCount, Is.EqualTo(1));
+            Assert.That(lo.All<PracticeRetried>(), Has.Count.EqualTo(1));
+            lo.Frame(0.1);
+            Assert.That(lo.Fsm.ChooseKeepRunning(), Is.True);
+            Assert.That(lo.Fsm.PracticeRetryCount, Is.EqualTo(2));
+            Assert.That(lo.Fsm.Phase, Is.EqualTo(HypoPhase.LowNotify));
         }
 
         [Test]

@@ -8,7 +8,7 @@ namespace SugarDash.Presentation
     /// <summary>
     /// 터치·마우스 쓸기와 키보드 입력을 캐릭터 명령으로 바꾼다(Input System 전용).
     /// 짧은 탭은 쓸기로 보지 않아 화면 버튼(측정기 등)을 눌러도 캐릭터가 움직이지 않는다.
-    /// 세계가 멈춘 동안(대처 패널, 일시정지, 주행 종료)의 입력은 무시한다.
+    /// 세계가 멈춘 동안(대처 패널, 일시정지, 주행 종료, 튜토리얼 설명 창과 그 뒤 3-2-1)의 입력은 무시한다.
     /// </summary>
     public sealed class InputAdapter : MonoBehaviour
     {
@@ -49,7 +49,7 @@ namespace SugarDash.Presentation
             var swipe = ReadPointer();
             if (swipe == Swipe.None) swipe = ReadKeyboard();
             if (swipe == Swipe.None) return;
-            if (_run.State != RunState.Running || _run.IsWorldFrozen) return;
+            if (_run.State != RunState.Running || _run.IsWorldFrozen || _run.IsTutorialStopped) return;
 
             switch (swipe)
             {

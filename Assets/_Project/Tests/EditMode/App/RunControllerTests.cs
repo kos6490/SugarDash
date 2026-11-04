@@ -200,6 +200,33 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
+        public void IsTutorialStopped_TrueWhileHeldAndDuringCountdown()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            Assert.That(rig.Run.IsTutorialStopped, Is.False);
+
+            rig.Run.HoldForTutorial();
+            Assert.That(rig.Run.IsTutorialStopped, Is.True);
+
+            rig.Run.ReleaseTutorialHold(2);
+            Assert.That(rig.Run.IsTutorialHeld, Is.False);
+            Assert.That(rig.Run.IsTutorialStopped, Is.True, "3-2-1 동안에도 입력을 받지 않는다");
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.IsTutorialStopped, Is.True);
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.IsTutorialStopped, Is.False);
+
+            rig.Run.HoldForTutorial();
+            rig.Run.ReleaseTutorialHold(0);
+            Assert.That(rig.Run.IsTutorialStopped, Is.False);
+
+            rig.Run.HoldForTutorial();
+            rig.Run.EndRun();
+            Assert.That(rig.Run.IsTutorialStopped, Is.False);
+        }
+
+        [Test]
         public void TutorialHold_SurvivesPauseResume()
         {
             var rig = new Rig();

@@ -192,6 +192,9 @@ namespace SugarDash.App
         {
             if (!IsGuided || Stage != TutorialStage.Approach || !IsTrack(CurrentStep) || !_placementTaken) return;
 
+            // 트랙 안내 동안 발동은 막혀 있는데 혈당은 계속 내려간다. 이벤트 없이 흔들림·게이지 경고가 나오지 않게
+            // 설명 창 아래에서 시작 값으로 되돌린다. 간식 안내의 간식은 이 뒤(Trying)에 먹으므로 그대로 반영된다.
+            _run.ResetGlucose(_run.CurrentConfig.Glucose.Levels.Initial);
             EnterPrompt();
         }
 
@@ -267,8 +270,11 @@ namespace SugarDash.App
 
             // 이동이 끝났는데 발동하지 않았다(기본 하강·흡수 중인 간식 때문에 기준 밖으로 밀림).
             // 같은 시간 동안 같은 만큼 밀린다고 보고, 모자랐던 만큼 목표를 더 멀리 잡아 다시 옮긴다.
+            // 목표는 탈락 안전 범위 안으로만 잡는다.
+            var cfg = _run.CurrentConfig;
             double target = Target(step);
-            _moveAim = target + (_moveAim - _run.Actual);
+            _moveAim = Math.Max(cfg.Elimination.GlucoseLow,
+                Math.Min(cfg.Elimination.GlucoseHigh, target + (_moveAim - _run.Actual)));
             _run.MoveGlucoseTo(_moveAim, _glucoseMoveSec);
         }
 

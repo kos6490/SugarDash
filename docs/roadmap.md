@@ -84,7 +84,7 @@
 | 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
 | 팀원3(화면) | `TutorialPromptView` 채우기: 화면 전체를 덮어 아래 터치를 막는 설명 창, 문구, 그림 자리, `알겠어요`·`건너뛰기`, `다시 해봐요`. `SettingsView`의 `튜토리얼 다시 하기` 버튼 그림 | `Assets/_Project/Scripts/Presentation/Screen/TutorialPromptView.cs`, [tutorial.md](tutorial.md) 8절 | 대기(빈 틀 push) |
-| 기획 | 튜토리얼 안내 문구 확정(`TutorialText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/TutorialText.cs`, [tutorial.md](tutorial.md) 6절 | 시작 가능 |
+| 기획 | 튜토리얼 안내 문구 확정(`TutorialText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/TutorialText.cs`, [tutorial.md](tutorial.md) 6절 | 대기(빈 틀 push) |
 
 ## 3. 완료한 작업
 

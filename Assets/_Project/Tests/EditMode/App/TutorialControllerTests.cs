@@ -81,6 +81,7 @@ namespace SugarDash.App.Tests
                 Collect<StepAnswered>();
                 Collect<PracticeRetried>();
                 Collect<RunEliminated>();
+                Collect<TrackSnackEaten>();
 
                 Run = new RunController(_ =>
                 {
@@ -420,6 +421,76 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.HyperNotify));
             Assert.That(rig.Run.IsTutorialHeld, Is.True);
             Assert.That(rig.Run.Actual, Is.LessThanOrEqualTo(rig.Config.Elimination.GlucoseHigh));
+        }
+
+        [TestCase(TrackType.Type1)]
+        [TestCase(TrackType.Type2)]
+        public void TrackStep_PromptResetsGlucose_RetriesNeverReachShake(TrackType type)
+        {
+            var rig = new Rig(type).Begin();
+            rig.AdvanceToTrying(TutorialStep.Jump);
+            double min = rig.Run.Actual;
+
+            for (int retry = 0; retry < 20; retry++)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    rig.Frame(1);
+                    min = Math.Min(min, rig.Run.Actual);
+                }
+                rig.Tutorial.ReportAttempt(new TutorialAttempt(true, false, false));
+                rig.Frame(1);
+                rig.Frame(1);
+                Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Approach));
+                Assert.That(rig.Tutorial.TakePlacement(0), Is.Not.Null);
+                rig.Tutorial.NotifyTargetNear();
+                Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Prompt));
+                Assert.That(rig.Run.Actual, Is.EqualTo(rig.Config.Glucose.Levels.Initial).Within(Eps));
+                rig.Tutorial.Acknowledge();
+                rig.Frame(1); // 3-2-1
+            }
+
+            Assert.That(rig.Tutorial.Step, Is.EqualTo(TutorialStep.Jump));
+            Assert.That(min, Is.GreaterThanOrEqualTo(rig.Config.Symptom.ShakeStartGlucose));
+            Assert.That(min, Is.GreaterThanOrEqualTo(rig.Config.Glucose.Levels.HypoThreshold));
+        }
+
+        [Test]
+        public void SnackStep_EatenSnackAppliesAfterPromptReset()
+        {
+            var eaten = new Rig(TrackType.Type1).Begin();
+            var control = new Rig(TrackType.Type1).Begin();
+            eaten.AdvanceToTrying(TutorialStep.Snack);
+            control.AdvanceToTrying(TutorialStep.Snack);
+            Assert.That(eaten.Run.Actual, Is.EqualTo(control.Run.Actual).Within(Eps));
+
+            eaten.Run.PickUpSnack("juice");
+            for (int i = 0; i < 5; i++)
+            {
+                eaten.Frame(1);
+                control.Frame(1);
+            }
+
+            Assert.That(eaten.All<TrackSnackEaten>(), Has.Count.EqualTo(1));
+            Assert.That(eaten.Run.Actual, Is.GreaterThan(control.Run.Actual + 1));
+        }
+
+        [Test]
+        public void GlucoseStep_ReAimClampedToEliminationRange()
+        {
+            var rig = new Rig(TrackType.Type1, b => b.RunDecayPerSec = 0).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.HypoRecognize);
+            Assert.That(rig.Run.IsGlucoseMoveActive, Is.True);
+
+            // 이동을 끊고 혈당을 높여 둔다. 다시 옮길 목표 55 + (55 - 150) = -40은 glucoseLow(40)로 잘려야 한다.
+            rig.Run.ResetGlucose(150);
+            rig.Frame(1);
+            Assert.That(rig.Run.IsGlucoseMoveActive, Is.True);
+
+            rig.Frame(GlucoseMoveSec);
+
+            Assert.That(rig.Run.Actual, Is.EqualTo(rig.Config.Elimination.GlucoseLow).Within(1e-6));
+            Assert.That(rig.Run.Phase, Is.EqualTo(HypoPhase.Recognize));
         }
 
         [Test]
