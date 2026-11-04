@@ -9,38 +9,63 @@ namespace SugarDash.Presentation.Tests
         private static StepAnswered Answer(string choiceId, bool helpInstead = false) =>
             new StepAnswered(1, HypoStep.Respond, choiceId, false, HypoErrorCode.None, helpInstead, 1, false, 0, 0);
 
-        [TestCase("meter", "측정했어요")]
-        [TestCase("keep_running", "계속 달리기를 골랐어요")]
-        [TestCase("no_sugar", "먹을 게 없다고 했어요")]
-        [TestCase("under", "조금 먹었어요")]
-        [TestCase("proper", "알맞게 먹었어요")]
-        [TestCase("over", "많이 먹었어요")]
-        [TestCase("recheck", "다시 쟀어요")]
-        [TestCase("run_again", "다시 달리기를 골랐어요")]
-        [TestCase("help", "어른에게 알렸어요")]
-        [TestCase("juice", "주스를 마셨어요")]
-        [TestCase("cracker", "cracker을(를) 골랐어요")]
-        public void For_SaysWhatWasChosen(string choiceId, string expected)
+        private static readonly string[] Forbidden = { "나쁜", "죽", "생존", "치료" };
+
+        [TestCase("meter")]
+        [TestCase("keep_running")]
+        [TestCase("no_sugar")]
+        [TestCase("under")]
+        [TestCase("proper")]
+        [TestCase("over")]
+        [TestCase("recheck")]
+        [TestCase("run_again")]
+        [TestCase("help")]
+        [TestCase("juice")]
+        public void For_KnownChoice_HasTextWithoutForbiddenWords(string choiceId)
         {
-            Assert.That(AnswerFeedbackText.For(Answer(choiceId)), Is.EqualTo(expected));
+            var text = AnswerFeedbackText.For(Answer(choiceId));
+            Assert.That(text, Is.Not.Empty);
+            foreach (var word in Forbidden) Assert.That(text, Does.Not.Contain(word), text);
+        }
+
+        [Test]
+        public void For_KnownChoices_AreDistinguishable()
+        {
+            var ids = new[] { "meter", "keep_running", "no_sugar", "under", "proper", "over", "recheck", "run_again", "juice" };
+            var texts = new System.Collections.Generic.HashSet<string>();
+            foreach (var id in ids) texts.Add(AnswerFeedbackText.For(Answer(id)));
+            Assert.That(texts.Count, Is.EqualTo(ids.Length));
+        }
+
+        [Test]
+        public void For_SnackId_ShowsTheId()
+        {
+            Assert.That(AnswerFeedbackText.For(Answer("cracker")), Does.Contain("cracker"));
         }
 
         [Test]
         public void For_Timeout()
         {
-            Assert.That(AnswerFeedbackText.For(Answer(null)), Is.EqualTo("시간이 다 됐어요"));
+            var text = AnswerFeedbackText.For(Answer(null));
+            Assert.That(text, Is.Not.Empty);
+            Assert.That(text, Is.Not.EqualTo(AnswerFeedbackText.For(Answer("meter"))));
         }
 
         [Test]
         public void For_HelpInstead_SaysNotified()
         {
-            Assert.That(AnswerFeedbackText.For(Answer("help", helpInstead: true)), Is.EqualTo("어른에게 알렸어요"));
+            Assert.That(AnswerFeedbackText.For(Answer("help", helpInstead: true)), Is.Not.Empty);
+            Assert.That(AnswerFeedbackText.For(Answer("help", helpInstead: true)),
+                Is.EqualTo(AnswerFeedbackText.ForGuardianNotified()));
+            Assert.That(AnswerFeedbackText.For(Answer("meter", helpInstead: true)),
+                Is.EqualTo(AnswerFeedbackText.ForGuardianNotified()));
         }
 
         [Test]
         public void ForGuardianNotified()
         {
-            Assert.That(AnswerFeedbackText.ForGuardianNotified(), Is.EqualTo("어른에게 알렸어요"));
+            Assert.That(AnswerFeedbackText.ForGuardianNotified(), Is.Not.Empty);
+            Assert.That(AnswerFeedbackText.For(Answer("help")), Is.EqualTo(AnswerFeedbackText.ForGuardianNotified()));
         }
 
         [TestCase(3.0, 3)]

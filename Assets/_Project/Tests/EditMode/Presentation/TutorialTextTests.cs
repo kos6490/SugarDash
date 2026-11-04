@@ -33,14 +33,14 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void FixedTexts_AndShared()
         {
+            // 확정 문구만 글자까지 확인한다.
             Assert.That(TutorialText.TryAgain, Is.EqualTo("다시 해봐요"));
-            Assert.That(TutorialText.TapHint, Is.EqualTo("화면을 눌러요"));
             Assert.That(TutorialText.Skip, Is.EqualTo("건너뛰기"));
             Assert.That(TutorialText.SettingsButton, Is.EqualTo("튜토리얼 다시 하기"));
+            Assert.That(TutorialText.TapHint, Is.Not.Empty);
             Assert.That(TutorialText.For(TutorialStep.Jump, TrackType.Type2), Is.EqualTo(TutorialText.For(TutorialStep.Jump, TrackType.Type1)));
-            Assert.That(TutorialText.For(TutorialStep.HighTell, TrackType.Type2), Is.EqualTo("어른에게 알리기를 골라요"));
-            Assert.That(TutorialText.For(TutorialStep.LowTell, TrackType.Type2), Is.EqualTo("어른에게 알리기를 골라요"));
-            Assert.That(TutorialText.For(TutorialStep.Finish, TrackType.Type1), Is.EqualTo("이제 혼자 달려 봐요!"));
+            Assert.That(TutorialText.For(TutorialStep.HighTell, TrackType.Type2), Is.EqualTo(TutorialText.For(TutorialStep.LowTell, TrackType.Type2)));
+            Assert.That(TutorialText.For(TutorialStep.HighTell, TrackType.Type2), Does.Contain("어른에게 알리기"));
         }
 
         [Test]

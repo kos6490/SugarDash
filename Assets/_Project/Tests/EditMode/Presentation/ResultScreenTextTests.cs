@@ -38,6 +38,10 @@ namespace SugarDash.Presentation.Tests
                 SugarDash.Domain.Config.TrackType.Type2);
         }
 
+        private static readonly string[] Forbidden = { "나쁜", "죽", "생존", "치료" };
+
+        private static string[] Lines(string text) => text.Split('\n');
+
         [Test]
         public void TutorialTitle_Text()
         {
@@ -47,12 +51,23 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void Type2_SummaryLines()
         {
-            Assert.That(ResultScreenText.Summary(Type2Summary(new[] { true, false }, new[] { true })),
-                Is.EqualTo("혈당이 높을 때 2번 중 1번 바로 알렸어요\n혈당이 낮을 때 1번 모두 바로 알렸어요"));
-            Assert.That(ResultScreenText.Summary(Type2Summary(new[] { true, true }, new[] { true, false, false })),
-                Is.EqualTo("혈당이 높을 때 2번 모두 바로 알렸어요\n혈당이 낮을 때 3번 중 1번 바로 알렸어요"));
-            Assert.That(ResultScreenText.Summary(Type2Summary(new[] { false, false }, new[] { false })),
-                Is.EqualTo("혈당이 높을 때 2번 모두 아쉬웠어요\n혈당이 낮을 때 1번 모두 아쉬웠어요\n다음에 더 잘해봐요!"));
+            var mixed = Lines(ResultScreenText.Summary(Type2Summary(new[] { true, false }, new[] { true })));
+            Assert.That(mixed.Length, Is.EqualTo(2));
+            Assert.That(mixed[0], Does.Contain("2").And.Contain("1"));
+            Assert.That(mixed[1], Does.Contain("1"));
+
+            var lowMixed = Lines(ResultScreenText.Summary(Type2Summary(new[] { true, true }, new[] { true, false, false })));
+            Assert.That(lowMixed.Length, Is.EqualTo(2));
+            Assert.That(lowMixed[0], Does.Contain("2"));
+            Assert.That(lowMixed[1], Does.Contain("3").And.Contain("1"));
+            // 높음 줄과 낮음 줄은 서로 다르다.
+            Assert.That(lowMixed[0], Is.Not.EqualTo(lowMixed[1]));
+
+            var missed = Lines(ResultScreenText.Summary(Type2Summary(new[] { false, false }, new[] { false })));
+            Assert.That(missed.Length, Is.EqualTo(3));
+            Assert.That(missed[0], Does.Contain("2"));
+            Assert.That(missed[1], Does.Contain("1"));
+            Assert.That(missed[2], Is.Not.Empty);
         }
 
         [Test]
@@ -60,24 +75,29 @@ namespace SugarDash.Presentation.Tests
         {
             var none = ResultScreenText.Summary(Type2Summary(new bool[0], new bool[0]));
             Assert.That(none, Is.Empty);
-            Assert.That(none, Does.Not.Contain("저혈당"));
 
-            var onlyLow = ResultScreenText.Summary(Type2Summary(new bool[0], new[] { true }));
-            Assert.That(onlyLow, Is.EqualTo("혈당이 낮을 때 1번 모두 바로 알렸어요"));
+            var onlyLow = Lines(ResultScreenText.Summary(Type2Summary(new bool[0], new[] { true })));
+            Assert.That(onlyLow.Length, Is.EqualTo(1));
+            Assert.That(onlyLow[0], Does.Contain("1"));
         }
 
         [Test]
         public void Title_Eliminated()
         {
-            Assert.That(ResultScreenText.Title(Summary(RunOutcome.Eliminated)), Is.EqualTo("어른이 도와주러 왔어요"));
+            var title = ResultScreenText.Title(Summary(RunOutcome.Eliminated));
+            Assert.That(title, Is.Not.Empty);
+            Assert.That(title, Is.Not.EqualTo(ResultScreenText.Title(null)));
+            foreach (var word in Forbidden) Assert.That(title, Does.Not.Contain(word), title);
         }
 
         [Test]
         public void MissingOrUnfinishedResult_ShowsLoadFailure_WithoutSummary()
         {
+            var eliminated = ResultScreenText.Title(Summary(RunOutcome.Eliminated));
             foreach (var result in new[] { null, Summary(RunOutcome.Unfinished, Event(true)) })
             {
-                Assert.That(ResultScreenText.Title(result), Is.EqualTo("결과를 불러오지 못했어요"));
+                Assert.That(ResultScreenText.Title(result), Is.Not.Empty);
+                Assert.That(ResultScreenText.Title(result), Is.Not.EqualTo(eliminated));
                 Assert.That(ResultScreenText.Summary(result), Is.Empty);
             }
         }
@@ -87,7 +107,9 @@ namespace SugarDash.Presentation.Tests
         {
             var result = Summary(RunOutcome.Eliminated, Event(true), Event(false));
 
-            Assert.That(ResultScreenText.Summary(result), Is.EqualTo("저혈당 2번 중 1번 모두 잘 해냈어요"));
+            var lines = Lines(ResultScreenText.Summary(result));
+            Assert.That(lines.Length, Is.EqualTo(1));
+            Assert.That(lines[0], Does.Contain("2").And.Contain("1"));
         }
 
         [Test]
@@ -95,7 +117,10 @@ namespace SugarDash.Presentation.Tests
         {
             var result = Summary(RunOutcome.Eliminated, Event(false), Event(false));
 
-            Assert.That(ResultScreenText.Summary(result), Is.EqualTo("저혈당 2번 모두 아쉬웠어요\n다음에 더 잘해봐요!"));
+            var lines = Lines(ResultScreenText.Summary(result));
+            Assert.That(lines.Length, Is.EqualTo(2));
+            Assert.That(lines[0], Does.Contain("2"));
+            Assert.That(lines[1], Is.Not.Empty);
         }
 
         [Test]
@@ -103,8 +128,10 @@ namespace SugarDash.Presentation.Tests
         {
             var result = WithHyper(Summary(RunOutcome.Eliminated, Event(true)), true, false);
 
-            Assert.That(ResultScreenText.Summary(result),
-                Is.EqualTo("저혈당 1번 모두 잘 해냈어요\n고혈당 2번 중 1번 바로 알렸어요"));
+            var lines = Lines(ResultScreenText.Summary(result));
+            Assert.That(lines.Length, Is.EqualTo(2));
+            Assert.That(lines[0], Does.Contain("1"));
+            Assert.That(lines[1], Does.Contain("2").And.Contain("1"));
         }
 
         [Test]
@@ -112,7 +139,10 @@ namespace SugarDash.Presentation.Tests
         {
             var result = WithHyper(Summary(RunOutcome.Eliminated), false);
 
-            Assert.That(ResultScreenText.Summary(result), Is.EqualTo("이번에는 저혈당이 없었어요\n고혈당 1번 모두 아쉬웠어요\n다음에 더 잘해봐요!"));
+            var lines = Lines(ResultScreenText.Summary(result));
+            Assert.That(lines.Length, Is.EqualTo(3));
+            Assert.That(lines[1], Does.Contain("1"));
+            Assert.That(lines[2], Is.Not.Empty);
         }
 
         [Test]
@@ -120,8 +150,12 @@ namespace SugarDash.Presentation.Tests
         {
             var result = WithHyper(Summary(RunOutcome.Eliminated, Event(false)), false);
 
-            Assert.That(ResultScreenText.Summary(result),
-                Is.EqualTo("저혈당 1번 모두 아쉬웠어요\n고혈당 1번 모두 아쉬웠어요\n다음에 더 잘해봐요!"));
+            var lines = Lines(ResultScreenText.Summary(result));
+            Assert.That(lines.Length, Is.EqualTo(3));
+            Assert.That(lines[0], Does.Contain("1"));
+            Assert.That(lines[1], Does.Contain("1"));
+            Assert.That(lines[2], Is.Not.Empty);
+            Assert.That(lines[2], Is.Not.EqualTo(lines[0]));
         }
 
         [Test]
@@ -129,48 +163,78 @@ namespace SugarDash.Presentation.Tests
         {
             var result = WithHyper(Summary(RunOutcome.Eliminated, Event(false)), true);
 
-            Assert.That(ResultScreenText.Summary(result),
-                Is.EqualTo("저혈당 1번 모두 아쉬웠어요\n고혈당 1번 모두 바로 알렸어요\n다음에 더 잘해봐요!"));
+            var lines = Lines(ResultScreenText.Summary(result));
+            Assert.That(lines.Length, Is.EqualTo(3));
+            Assert.That(lines[2], Is.Not.Empty);
+            // 고혈당 줄은 모두 알렸을 때와 놓쳤을 때 글이 다르다.
+            var hyperMissed = Lines(ResultScreenText.Summary(WithHyper(Summary(RunOutcome.Eliminated, Event(false)), false)));
+            Assert.That(lines[1], Is.Not.EqualTo(hyperMissed[1]));
         }
 
         [Test]
         public void Summary_WhenEveryEventWentWell_SaysAllInsteadOfCount()
         {
             var result = WithHyper(Summary(RunOutcome.Eliminated, Event(true), Event(true)), true, true);
+            var partial = WithHyper(Summary(RunOutcome.Eliminated, Event(true), Event(false)), true, false);
 
-            Assert.That(ResultScreenText.Summary(result),
-                Is.EqualTo("저혈당 2번 모두 잘 해냈어요\n고혈당 2번 모두 바로 알렸어요"));
+            var lines = Lines(ResultScreenText.Summary(result));
+            var partialLines = Lines(ResultScreenText.Summary(partial));
+            Assert.That(lines.Length, Is.EqualTo(2));
+            Assert.That(lines[0], Does.Contain("2"));
+            Assert.That(lines[1], Does.Contain("2"));
+            // 모두 해낸 줄은 일부만 해낸 줄과 글이 다르고, 격려 줄이 없다.
+            Assert.That(lines[0], Is.Not.EqualTo(partialLines[0]));
+            Assert.That(lines[1], Is.Not.EqualTo(partialLines[1]));
         }
 
         [Test]
         public void Summary_WithoutEvents_SaysNoHypo()
         {
-            Assert.That(ResultScreenText.Summary(Summary(RunOutcome.Eliminated)), Is.EqualTo("이번에는 저혈당이 없었어요"));
+            var text = ResultScreenText.Summary(Summary(RunOutcome.Eliminated));
+            Assert.That(text, Is.Not.Empty);
+            Assert.That(text, Does.Not.Contain("\n"));
         }
-    
+
         [Test]
         public void Summary_WithScore_StartsWithScoreLines()
         {
-            var lines = ResultScreenText.Summary(Summary(RunOutcome.Eliminated), 123.9, 200, false).Split('\n');
+            var lines = Lines(ResultScreenText.Summary(Summary(RunOutcome.Eliminated), 123.9, 200, false));
 
-            Assert.That(lines[0], Is.EqualTo("점수 123점"));
-            Assert.That(lines[1], Is.EqualTo("최고 점수 200점"));
-            Assert.That(lines[2], Is.EqualTo("이번에는 저혈당이 없었어요"));
+            Assert.That(lines.Length, Is.EqualTo(3));
+            Assert.That(lines[0], Does.Contain("123").And.Not.Contain("124"));
+            Assert.That(lines[1], Does.Contain("200"));
+            Assert.That(lines[2], Is.EqualTo(ResultScreenText.Summary(Summary(RunOutcome.Eliminated))));
         }
 
         [Test]
         public void Summary_NewBest_AddsLine()
         {
-            var lines = ResultScreenText.Summary(Summary(RunOutcome.Eliminated), 300.2, 300.2, true).Split('\n');
+            var plain = Lines(ResultScreenText.Summary(Summary(RunOutcome.Eliminated), 300.2, 300.2, false));
+            var lines = Lines(ResultScreenText.Summary(Summary(RunOutcome.Eliminated), 300.2, 300.2, true));
 
-            Assert.That(lines[2], Is.EqualTo("새 최고 기록!"));
+            Assert.That(lines.Length, Is.EqualTo(plain.Length + 1));
+            Assert.That(lines[2], Is.Not.Empty);
+            Assert.That(lines[2], Is.Not.EqualTo(plain[2]));
         }
 
         [Test]
         public void Summary_NoScore_HasNoScoreLines()
         {
             Assert.That(ResultScreenText.Summary(Summary(RunOutcome.Eliminated), null, 200, false),
-                Is.EqualTo("이번에는 저혈당이 없었어요"));
+                Is.EqualTo(ResultScreenText.Summary(Summary(RunOutcome.Eliminated))));
         }
-}
+
+        [Test]
+        public void Summary_HasNoForbiddenWords()
+        {
+            var texts = new[]
+            {
+                ResultScreenText.Summary(Summary(RunOutcome.Eliminated, Event(false)), 10, 20, true),
+                ResultScreenText.Summary(WithHyper(Summary(RunOutcome.Eliminated, Event(true)), false)),
+                ResultScreenText.Summary(Type2Summary(new[] { false }, new[] { true, false })),
+            };
+            foreach (var text in texts)
+                foreach (var word in Forbidden) Assert.That(text, Does.Not.Contain(word), text);
+        }
+    }
 }

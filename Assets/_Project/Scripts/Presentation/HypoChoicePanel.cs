@@ -23,8 +23,6 @@ namespace SugarDash.Presentation
         [SerializeField] private Transform buttonContainer;
         [SerializeField] private Button buttonTemplate;
 
-        private const string Type2TellTitle = "몸이 힘들어요. 어떻게 할까요?";
-
         private readonly List<Button> _buttons = new List<Button>();
         private RunController _run;
         private IReadOnlyList<SnackConfig> _snacks;
@@ -52,7 +50,7 @@ namespace SugarDash.Presentation
                 bus.Subscribe<StepAnswered>(e => _feedback = AnswerFeedbackText.For(e)),
                 bus.Subscribe<PracticeRetried>(_ => _feedback = TutorialText.TryAgain),
                 bus.Subscribe<GuardianNotified>(_ => _feedback = AnswerFeedbackText.ForGuardianNotified()),
-                bus.Subscribe<RecheckFastForward>(e => recheckText.text = $"다시 잰 혈당: {e.GlucoseAfter:0} mg/dL"),
+                bus.Subscribe<RecheckFastForward>(e => recheckText.text = ChoicePanelText.RecheckResult(e.GlucoseAfter)),
             };
 
             return new Unbinder(() =>
@@ -89,67 +87,67 @@ namespace SugarDash.Presentation
             switch (phase)
             {
                 case HypoPhase.Respond:
-                    Show("무엇을 먹을까요?");
+                    Show(ChoicePanelText.RespondTitle);
                     var respond = new List<(string, Action)>();
                     foreach (var snack in _snacks)
                     {
                         string id = snack.Id;
                         respond.Add((id, () => _run.ChooseSnack(id)));
                     }
-                    respond.Add(("계속 달리기", () => _run.ChooseKeepRunning()));
-                    respond.Add(("먹을 게 없어요", () => _run.ChooseNoSugar()));
+                    respond.Add((ChoicePanelText.KeepRunning, () => _run.ChooseKeepRunning()));
+                    respond.Add((ChoicePanelText.NoSugar, () => _run.ChooseNoSugar()));
                     AddShuffled(respond);
                     AddHelp(phase);
                     break;
                 case HypoPhase.Dose:
-                    Show($"{_run.DoseSnackId}을(를) 얼마나 먹을까요?");
+                    Show(ChoicePanelText.DoseTitle(_run.DoseSnackId));
                     AddShuffled(new List<(string, Action)>
                     {
-                        ("조금", () => _run.ChooseDose(DoseLevel.Under)),
-                        ("알맞게", () => _run.ChooseDose(DoseLevel.Proper)),
-                        ("많이", () => _run.ChooseDose(DoseLevel.Over)),
+                        (ChoicePanelText.DoseUnder, () => _run.ChooseDose(DoseLevel.Under)),
+                        (ChoicePanelText.DoseProper, () => _run.ChooseDose(DoseLevel.Proper)),
+                        (ChoicePanelText.DoseOver, () => _run.ChooseDose(DoseLevel.Over)),
                     });
                     AddHelp(phase);
                     break;
                 case HypoPhase.Remeasure:
-                    Show("이제 무엇을 할까요?");
+                    Show(ChoicePanelText.NextActionTitle);
                     AddShuffled(new List<(string, Action)>
                     {
-                        ("다시 재기", () => _run.ChooseRecheck()),
-                        ("다시 달리기", () => _run.ChooseRunAgain(phase)),
+                        (ChoicePanelText.Recheck, () => _run.ChooseRecheck()),
+                        (ChoicePanelText.RunAgain, () => _run.ChooseRunAgain(phase)),
                     });
                     AddHelp(phase);
                     break;
                 case HypoPhase.Notify:
-                    Show("이제 무엇을 할까요?");
-                    Add("다시 달리기", () => _run.ChooseRunAgain(phase));
+                    Show(ChoicePanelText.NextActionTitle);
+                    Add(ChoicePanelText.RunAgain, () => _run.ChooseRunAgain(phase));
                     AddHelp(phase);
                     break;
                 case HypoPhase.HyperNotify:
                     if (_run.TrackType == TrackType.Type2)
                     {
-                        Show(Type2TellTitle);
+                        Show(ChoicePanelText.Type2TellTitle);
                         AddShuffled(new List<(string, Action)>
                         {
-                            ("계속 달리기", () => _run.ChooseKeepRunning()),
-                            ("주스 마시기", () => _run.ChooseJuice()),
+                            (ChoicePanelText.KeepRunning, () => _run.ChooseKeepRunning()),
+                            (ChoicePanelText.Juice, () => _run.ChooseJuice()),
                         });
                     }
                     else
                     {
-                        Show("혈당이 높아요. 어떻게 할까요?");
-                        Add("계속 달리기", () => _run.ChooseKeepRunning());
+                        Show(ChoicePanelText.HighTitle);
+                        Add(ChoicePanelText.KeepRunning, () => _run.ChooseKeepRunning());
                     }
                     AddHelp(phase);
                     break;
                 case HypoPhase.LowNotify:
-                    Show(Type2TellTitle);
-                    Add("계속 달리기", () => _run.ChooseKeepRunning());
+                    Show(ChoicePanelText.Type2TellTitle);
+                    Add(ChoicePanelText.KeepRunning, () => _run.ChooseKeepRunning());
                     AddHelp(phase);
                     break;
                 case HypoPhase.GuardianPrompt:
-                    Show("도움이 필요해요!");
-                    Add("다시 달리기", () => _run.ChooseRunAgain(phase));
+                    Show(ChoicePanelText.GuardianPromptTitle);
+                    Add(ChoicePanelText.RunAgain, () => _run.ChooseRunAgain(phase));
                     AddHelp(phase);
                     break;
                 default:
@@ -169,7 +167,7 @@ namespace SugarDash.Presentation
             foreach (var (label, action) in ChoiceOrder.Shuffle(choices, _random)) Add(label, action);
         }
 
-        private void AddHelp(HypoPhase phase) => Add("어른에게 알리기", () => _run.PressHelp(phase));
+        private void AddHelp(HypoPhase phase) => Add(ChoicePanelText.TellAdult, () => _run.PressHelp(phase));
 
         private void Add(string label, Action onClick)
         {

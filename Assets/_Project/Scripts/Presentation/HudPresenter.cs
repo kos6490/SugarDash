@@ -51,7 +51,7 @@ namespace SugarDash.Presentation
             {
                 bus.Subscribe<MeterPressed>(e =>
                 {
-                    meterText.text = $"측정: {e.Measured:0} mg/dL";
+                    meterText.text = HudText.Measured(e.Measured);
                     _meterTextHideAt = Time.time + meterTextShowSec;
                 }),
             };
@@ -75,7 +75,7 @@ namespace SugarDash.Presentation
                 meterButton.interactable = false;
                 if (countdownText != null) countdownText.text = "";
                 if (scoreText != null && _flow.LastScore != null)
-                    scoreText.text = $"점수 {(int)Math.Floor(_flow.LastScore.Value)}";
+                    scoreText.text = HudText.Score((int)Math.Floor(_flow.LastScore.Value));
                 return;
             }
 
@@ -103,7 +103,7 @@ namespace SugarDash.Presentation
                                         phase == HypoPhase.Grace) &&
                                        IsMeterAllowed(_flow.Tutorial.AllowedControls);
 
-            if (scoreText != null) scoreText.text = $"점수 {(int)Math.Floor(_run.Score)}";
+            if (scoreText != null) scoreText.text = HudText.Score((int)Math.Floor(_run.Score));
 
             if (countdownText != null)
             {
@@ -111,7 +111,7 @@ namespace SugarDash.Presentation
                 countdownText.text = number.HasValue ? number.Value.ToString() : "";
             }
 
-            statusText.text = _run.State == RunState.Paused ? "잠시 멈춤" : "";
+            statusText.text = _run.State == RunState.Paused ? HudText.Paused : "";
         }
 
         /// <summary>튜토리얼 조작 잠금에서 측정기가 허용되는지. 일반 판은 All이라 항상 허용된다.</summary>
