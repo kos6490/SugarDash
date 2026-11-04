@@ -71,6 +71,18 @@ namespace SugarDash.Domain.Director
             IsGaugeWarningOn = type2 == null && IsDisplayedBelowWarning();
         }
 
+        /// <summary>
+        /// 발동 허용 범위. 기본 All. All이 아니면 급하강은 일어나지 않고, 막힌 쪽은 발동과 2형 hold 누적을 하지 않는다.
+        /// 상태(cooldown, 해제, 재발) 갱신은 그대로 한다.
+        /// </summary>
+        public TriggerGate Gate { get; private set; } = TriggerGate.All;
+
+        public void SetTriggerGate(TriggerGate gate) => Gate = gate;
+
+        private bool LowAllowed => Gate == TriggerGate.All || Gate == TriggerGate.LowOnly;
+
+        private bool HighAllowed => Gate == TriggerGate.All || Gate == TriggerGate.HighOnly;
+
         /// <summary>장면 덮어쓰기. null이면 설정 값(suddenDrop.chancePerSec)으로 돌아간다.</summary>
         public void SetSuddenDropChancePerSec(double? chancePerSec) => _suddenDropChanceOverride = chancePerSec;
 
@@ -208,8 +220,8 @@ namespace SugarDash.Domain.Director
                 return;
             }
 
-            bool high = _hyperState == HyperState.Armed && actual >= levels.HyperThreshold;
-            bool low = _lowState == LowState.Armed && actual < levels.HypoThreshold;
+            bool high = HighAllowed && _hyperState == HyperState.Armed && actual >= levels.HyperThreshold;
+            bool low = LowAllowed && _lowState == LowState.Armed && actual < levels.HypoThreshold;
             _highHold = high ? _highHold + simDt : 0;
             _lowHold = low ? _lowHold + simDt : 0;
 
@@ -244,7 +256,7 @@ namespace SugarDash.Domain.Director
 
         private void EvaluateSuddenDrop(double simDt)
         {
-            if (_hypoState == HypoState.Active || _hyperState == HyperState.Active || _suppressed || simDt <= 0 ||
+            if (Gate != TriggerGate.All || _hypoState == HypoState.Active || _hyperState == HyperState.Active || _suppressed || simDt <= 0 ||
                 _model.IsSuddenDropActive) return;
 
             // 1초당 확률을 simDt에 맞춰 환산해 프레임 길이와 무관하게 한다.
@@ -268,7 +280,7 @@ namespace SugarDash.Domain.Director
             switch (_hypoState)
             {
                 case HypoState.Armed:
-                    if (below) Trigger(false);
+                    if (below && LowAllowed) Trigger(false);
                     break;
 
                 case HypoState.Active:
@@ -282,11 +294,12 @@ namespace SugarDash.Domain.Director
                     if (_rearmedDuringCooldown)
                     {
                         _hypoState = HypoState.Armed;
-                        if (below) Trigger(false);
+                        if (below && LowAllowed) Trigger(false);
                     }
                     else if (below)
                     {
-                        Trigger(true);
+                        // 막혀 있으면 cooldown에 머물며 열릴 때까지 다시 판정한다.
+                        if (LowAllowed) Trigger(true);
                     }
                     else
                     {
@@ -295,7 +308,7 @@ namespace SugarDash.Domain.Director
                     break;
 
                 case HypoState.PendingRecurrence:
-                    if (below) Trigger(true);
+                    if (below) { if (LowAllowed) Trigger(true); }
                     else if (released) _hypoState = HypoState.Armed;
                     break;
             }
@@ -335,7 +348,7 @@ namespace SugarDash.Domain.Director
 
         // 저혈당 대처 중이거나 유예 중이면 유예가 끝난 뒤 판정한다.
         private bool CanTriggerHyper() =>
-            _hyperState == HyperState.Armed && _model.Actual >= _config.Levels.HyperThreshold &&
+            HighAllowed && _hyperState == HyperState.Armed && _model.Actual >= _config.Levels.HyperThreshold &&
             _hypoState != HypoState.Active && !_suppressed;
 
         private void EvaluateGaugeWarning()

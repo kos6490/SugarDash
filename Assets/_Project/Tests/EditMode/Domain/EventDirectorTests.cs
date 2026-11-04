@@ -22,6 +22,7 @@ namespace SugarDash.Domain.Tests
         private EventDirector _director;
         private List<HypoEventTriggered> _hypos;
         private List<SuddenDropStarted> _drops;
+        private List<HyperEventTriggered> _hypers;
         private List<GaugeWarningRaised> _warnings;
         private List<GlucoseRangeEntered> _entered;
         private List<GlucoseRangeExited> _exited;
@@ -36,6 +37,8 @@ namespace SugarDash.Domain.Tests
             _drops = new List<SuddenDropStarted>();
             bus.Subscribe<HypoEventTriggered>(_hypos.Add);
             bus.Subscribe<SuddenDropStarted>(_drops.Add);
+            _hypers = new List<HyperEventTriggered>();
+            bus.Subscribe<HyperEventTriggered>(_hypers.Add);
             _warnings = new List<GaugeWarningRaised>();
             bus.Subscribe<GaugeWarningRaised>(_warnings.Add);
             _entered = new List<GlucoseRangeEntered>();
@@ -360,6 +363,54 @@ namespace SugarDash.Domain.Tests
             _director.SetSuddenDropChancePerSec(null);
             Run(1);
             Assert.That(_drops, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void Gate_None_BlocksHypoHyperAndSuddenDrop()
+        {
+            Setup(b => { b.Initial = 60; b.SuddenDropChancePerSec = 1; }, 0.5, 0.5, 0.5);
+            Assert.That(_director.Gate, Is.EqualTo(TriggerGate.All));
+            _director.SetTriggerGate(TriggerGate.None);
+
+            Run(3);
+
+            Assert.That(_hypos, Is.Empty);
+            Assert.That(_drops, Is.Empty);
+            Assert.That(_hypers, Is.Empty);
+
+            _director.SetTriggerGate(TriggerGate.All);
+            Run(1);
+            Assert.That(_hypos, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void Gate_LowOnly_AllowsHypo_BlocksHyper()
+        {
+            Setup(b => { b.Initial = 60; b.SuddenDropChancePerSec = 1; }, 0.5, 0.5);
+            _director.SetTriggerGate(TriggerGate.LowOnly);
+            Run(1);
+            Assert.That(_hypos, Has.Count.EqualTo(1));
+            Assert.That(_drops, Is.Empty);
+
+            Setup(b => b.Initial = 260);
+            _director.SetTriggerGate(TriggerGate.LowOnly);
+            Run(2);
+            Assert.That(_hypers, Is.Empty);
+            Assert.That(_director.IsHyperTriggerPending, Is.False);
+        }
+
+        [Test]
+        public void Gate_HighOnly_AllowsHyper_BlocksHypo()
+        {
+            Setup(b => b.Initial = 260);
+            _director.SetTriggerGate(TriggerGate.HighOnly);
+            Run(1);
+            Assert.That(_hypers, Has.Count.EqualTo(1));
+
+            Setup(b => b.Initial = 60);
+            _director.SetTriggerGate(TriggerGate.HighOnly);
+            Run(2);
+            Assert.That(_hypos, Is.Empty);
         }
     }
 }

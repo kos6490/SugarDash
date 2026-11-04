@@ -219,5 +219,29 @@ namespace SugarDash.Domain.Tests
             Setup();
             Assert.Throws<InvalidOperationException>(() => _director.NotifyLowEventEnded());
         }
+
+        [Test]
+        public void Type2_Gate_HighOnly_AccumulatesHighOnly()
+        {
+            Setup(b => b.Initial = 260);
+            _director.SetTriggerGate(TriggerGate.LowOnly);
+            Run(5);
+            Assert.That(Count<NoticeStarted>(), Is.EqualTo(0));
+
+            _director.SetTriggerGate(TriggerGate.HighOnly);
+            Run(1.5); // 누적은 이때부터 시작한다
+            Assert.That(Count<NoticeStarted>(), Is.EqualTo(0));
+            Run(0.5);
+            Assert.That(Count<NoticeStarted>(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Type2_Gate_HighOnly_BlocksLow()
+        {
+            Setup(b => b.Initial = 60);
+            _director.SetTriggerGate(TriggerGate.HighOnly);
+            Run(5);
+            Assert.That(Count<NoticeStarted>(), Is.EqualTo(0));
+        }
     }
 }
