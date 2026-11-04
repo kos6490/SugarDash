@@ -34,6 +34,8 @@ namespace SugarDash.App
         private double _sceneEndM;
         // 쉬는 중이 끝나는 worldDt 누적 시각.
         private double _restEnd;
+        // 튜토리얼 멈춤(Pause/Resume과 따로 움직인다)과 풀린 뒤 3-2-1 남은 시간.
+        private double _tutorialCountdown;
 
         /// <param name="sessionFactory">유형에 맞는 새 도메인 객체 묶음을 만든다. GameBootstrapper가 주입한다.
         /// runner·구간은 세션의 설정에서 읽는다(구간 0개 검사는 설정 검증이 맡는다).</param>
@@ -94,7 +96,8 @@ namespace SugarDash.App
         /// <summary>선택 뒤 결과 문구 창이 열려 있다. 이 동안 패널은 문구만 보여 주고 선택 명령은 무시된다.</summary>
         public bool IsShowingAnswerFeedback => _session?.Fsm.IsShowingAnswerFeedback ?? false;
         /// <summary>재개 카운트다운의 남은 시간(초). 카운트다운 중이 아니면 0.</summary>
-        public double ResumeCountdownRemaining => _session?.Fsm.ResumeCountdownRemaining ?? 0;
+        public double ResumeCountdownRemaining =>
+            _tutorialCountdown > 0 ? _tutorialCountdown : _session?.Fsm.ResumeCountdownRemaining ?? 0;
         /// <summary>3단계에서 양을 고를 간식.</summary>
         public string DoseSnackId => _session?.Fsm.DoseSnackId;
 
@@ -103,12 +106,37 @@ namespace SugarDash.App
             ? 0
             : _session.Scoring.Total(_session.Model.SimTime, DistanceM);
 
-        public void StartRun(TrackType type)
+        /// <summary>이번 주행이 기록 파일을 남긴다. 튜토리얼 판은 false.</summary>
+        public bool IsRecorded { get; private set; } = true;
+
+        /// <summary>세션 설정. 열린 주행이 없으면 null.</summary>
+        public GameConfig CurrentConfig => _session?.Config;
+
+        /// <summary>튜토리얼 설명 창 때문에 멈춰 있다. 카운트다운 중에는 false.</summary>
+        public bool IsTutorialHeld { get; private set; }
+
+        /// <summary>튜토리얼 안내 주행. 장애물에 부딪혀도 탈락하지 않고 FSM이 연습 모드다.</summary>
+        public bool IsTutorialGuided { get; private set; }
+
+        public bool IsGlucoseMoveActive => _session?.Model.IsScriptedMoveActive ?? false;
+        public int PracticeRetryCount => _session?.Fsm.PracticeRetryCount ?? 0;
+
+        public void StartRun(TrackType type, bool recorded = true)
         {
             if (State != RunState.Idle) throw new InvalidOperationException($"이미 주행 중이다 ({State})");
 
             _session = _sessionFactory(type) ?? throw new InvalidOperationException("세션 팩토리가 null을 반환했다");
-            CurrentRunId = _log.BeginRun(_session.Config.ConfigVersion, _session.Config.TrackType);
+            if (recorded)
+            {
+                CurrentRunId = _log.BeginRun(_session.Config.ConfigVersion, _session.Config.TrackType);
+            }
+            else
+            {
+                _log.BeginUnrecordedRun();
+                CurrentRunId = null;
+            }
+            IsRecorded = recorded;
+            ClearTutorialState();
             TrackType = _session.Config.TrackType;
             IsResting = false;
             _commands.Clear();
@@ -141,6 +169,7 @@ namespace SugarDash.App
             _session = null;
             IsResting = false;
             _commands.Clear();
+            ClearTutorialState();
             _log.EndRun();
             CurrentRunId = null;
             State = RunState.Idle;
@@ -164,6 +193,13 @@ namespace SugarDash.App
             LastWorldDt = 0;
             if (State != RunState.Running) return;
 
+            if (IsTutorialHeld) return;
+            if (_tutorialCountdown > 0)
+            {
+                _tutorialCountdown = Math.Max(0, _tutorialCountdown - dt);
+                return;
+            }
+
             var s = _session;
             while (_commands.Count > 0)
             {
@@ -180,6 +216,48 @@ namespace SugarDash.App
             if (IsResting && (WorldTime >= _restEnd || s.Fsm.IsWorldFrozen)) EndRest(s);
 
             CheckEliminated();
+        }
+
+        // 튜토리얼 제어. 큐에 넣지 않고 바로 적용한다. 주행이 없으면 아무것도 하지 않는다.
+
+        /// <summary>설명 창을 띄우는 동안 세 시계와 명령 처리를 멈춘다. <see cref="Pause"/>/<see cref="Resume"/>으로는 풀리지 않는다.</summary>
+        public void HoldForTutorial()
+        {
+            if (_session == null) return;
+
+            IsTutorialHeld = true;
+            _tutorialCountdown = 0;
+        }
+
+        /// <param name="countdownSec">풀린 뒤 시계가 다시 흐르기 전 3-2-1 길이(초).</param>
+        public void ReleaseTutorialHold(double countdownSec)
+        {
+            if (_session == null || !IsTutorialHeld) return;
+
+            IsTutorialHeld = false;
+            _tutorialCountdown = Math.Max(0, countdownSec);
+        }
+
+        public void SetTutorialGuided(bool guided)
+        {
+            if (_session == null) return;
+
+            IsTutorialGuided = guided;
+            _session.Fsm.SetPractice(guided);
+        }
+
+        public void SetTriggerGate(TriggerGate gate) => _session?.Director.SetTriggerGate(gate);
+
+        public void MoveGlucoseTo(double target, double durationSec) =>
+            _session?.Model.StartScriptedMove(target, durationSec);
+
+        public void ResetGlucose(double value) => _session?.Model.ResetTo(value);
+
+        private void ClearTutorialState()
+        {
+            IsTutorialHeld = false;
+            IsTutorialGuided = false;
+            _tutorialCountdown = 0;
         }
 
         // 화면 명령. 주행이 열려 있을 때만 받아 다음 Tick에서 처리한다.
@@ -279,7 +357,7 @@ namespace SugarDash.App
         /// </summary>
         public void HitObstacle() => Enqueue(s =>
         {
-            if (s.Fsm.IsWorldFrozen) return;
+            if (s.Fsm.IsWorldFrozen || IsTutorialGuided) return;
 
             s.Fsm.EliminateObstacleHit();
         });

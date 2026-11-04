@@ -68,6 +68,7 @@ namespace SugarDash.App.Tests
             public readonly List<object> Events = new List<object>();
             public readonly List<Flag> Sessions = new List<Flag>();
             public readonly RunController Run;
+            public GlucoseModel Model;
 
             public Rig(Action<ConfigBuilder> configure = null)
             {
@@ -89,6 +90,7 @@ namespace SugarDash.App.Tests
                 Run = new RunController(_ =>
                 {
                     var model = new GlucoseModel(config.Glucose);
+                    Model = model;
                     var director = new EventDirector(config.Glucose, model, new NoRandom(), Bus);
                     var fsm = new HypoEventFsm(config, model, director, Bus, () => Run.DistanceM);
                     var flag = new Flag(Bus.Subscribe<HypoEventTriggered>(fsm.Begin));
@@ -129,6 +131,140 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Log.Begun, Is.EqualTo(1));
             Assert.That(rig.Run.Actual, Is.EqualTo(120));
             Assert.Throws<InvalidOperationException>(() => rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1));
+        }
+
+        [Test]
+        public void UnrecordedRun_NoRunId_LogUnrecordedBegun()
+        {
+            var rig = new Rig();
+
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1, recorded: false);
+
+            Assert.That(rig.Run.CurrentRunId, Is.Null);
+            Assert.That(rig.Run.IsRecorded, Is.False);
+            Assert.That(rig.Log.Begun, Is.EqualTo(0));
+            Assert.That(rig.Log.BegunUnrecorded, Is.EqualTo(1));
+            Assert.That(rig.Run.CurrentConfig, Is.Not.Null);
+        }
+
+        [Test]
+        public void TutorialHold_FreezesAllClocks_QueuesCommands()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            rig.Run.AdvanceDistance(5);
+            rig.Run.Tick(1);
+            double sim = rig.Model.SimTime, dec = rig.Model.DecisionTime, world = rig.Run.WorldTime, dist = rig.Run.DistanceM;
+
+            rig.Run.HoldForTutorial();
+            rig.Run.PickUpSnack("juice");
+            rig.Run.AdvanceDistance(5);
+            rig.Ticks(10);
+
+            Assert.That(rig.Run.IsTutorialHeld, Is.True);
+            Assert.That(rig.Model.SimTime, Is.EqualTo(sim));
+            Assert.That(rig.Model.DecisionTime, Is.EqualTo(dec));
+            Assert.That(rig.Run.WorldTime, Is.EqualTo(world));
+            Assert.That(rig.Run.DistanceM, Is.EqualTo(dist));
+            Assert.That(rig.Run.LastWorldDt, Is.EqualTo(0));
+            Assert.That(rig.All<TrackSnackEaten>(), Is.Empty);
+
+            rig.Run.ReleaseTutorialHold(0);
+            rig.Run.Tick(1);
+            Assert.That(rig.All<TrackSnackEaten>(), Has.Count.EqualTo(1));
+            Assert.That(rig.Run.DistanceM, Is.EqualTo(dist + 5));
+        }
+
+        [Test]
+        public void TutorialHold_CountdownThenRuns()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            rig.Run.HoldForTutorial();
+
+            rig.Run.ReleaseTutorialHold(3);
+            rig.Run.Tick(1);
+
+            Assert.That(rig.Run.IsTutorialHeld, Is.False);
+            Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(2).Within(Eps));
+            Assert.That(rig.Model.SimTime, Is.EqualTo(0));
+            Assert.That(rig.Run.WorldTime, Is.EqualTo(0));
+
+            rig.Ticks(2);
+            Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(0));
+            Assert.That(rig.Model.SimTime, Is.EqualTo(0));
+
+            rig.Run.Tick(1);
+            Assert.That(rig.Model.SimTime, Is.EqualTo(1).Within(Eps));
+            Assert.That(rig.Run.WorldTime, Is.EqualTo(1).Within(Eps));
+        }
+
+        [Test]
+        public void TutorialHold_SurvivesPauseResume()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            rig.Run.HoldForTutorial();
+
+            rig.Run.Pause();
+            rig.Run.Resume();
+            rig.Ticks(5);
+
+            Assert.That(rig.Run.IsTutorialHeld, Is.True);
+            Assert.That(rig.Model.SimTime, Is.EqualTo(0));
+            Assert.That(rig.Run.WorldTime, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Guided_ObstacleHitDoesNotEliminate()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+
+            rig.Run.SetTutorialGuided(true);
+            rig.Run.HitObstacle();
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running));
+            Assert.That(rig.Run.IsTutorialGuided, Is.True);
+
+            rig.Run.SetTutorialGuided(false);
+            rig.Run.HitObstacle();
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Eliminated));
+        }
+
+        [Test]
+        public void StartRun_ClearsTutorialFlags()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1, recorded: false);
+            rig.Run.SetTutorialGuided(true);
+            rig.Run.HoldForTutorial();
+            rig.Run.EndRun();
+            Assert.That(rig.Run.IsTutorialHeld, Is.False);
+            Assert.That(rig.Run.IsTutorialGuided, Is.False);
+
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            Assert.That(rig.Run.IsTutorialHeld, Is.False);
+            Assert.That(rig.Run.IsTutorialGuided, Is.False);
+            Assert.That(rig.Run.IsRecorded, Is.True);
+        }
+
+        [Test]
+        public void TutorialPassThroughs_ReachDomain()
+        {
+            var rig = new Rig();
+            Assert.That(rig.Run.IsGlucoseMoveActive, Is.False);
+            rig.Run.MoveGlucoseTo(50, 3);
+            rig.Run.ResetGlucose(100);
+
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            rig.Run.MoveGlucoseTo(50, 3);
+            Assert.That(rig.Run.IsGlucoseMoveActive, Is.True);
+            rig.Run.ResetGlucose(100);
+            Assert.That(rig.Run.Actual, Is.EqualTo(100));
+            rig.Run.SetTriggerGate(TriggerGate.None);
+            Assert.That(rig.Run.PracticeRetryCount, Is.EqualTo(0));
         }
 
         [Test]
