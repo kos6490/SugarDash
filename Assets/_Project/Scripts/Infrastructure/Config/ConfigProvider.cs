@@ -28,9 +28,10 @@ namespace SugarDash.Infrastructure.Config
         public GameConfig Load()
         {
             string trackType;
+            JObject root;
             try
             {
-                var root = JObject.Parse(_json);
+                root = JObject.Parse(_json);
                 trackType = root.Value<string>("trackType");
             }
             catch (Exception e) when (e is JsonException || e is InvalidCastException)
@@ -57,6 +58,7 @@ namespace SugarDash.Infrastructure.Config
                 throw new ConfigValidationException(Array.Empty<string>(), new[] { "JSON 형식 오류: " + e.Message });
             }
 
+            reader.Missing.AddRange(NullOverrideKeys(root));
             if (reader.Missing.Count > 0 || reader.Violations.Count > 0)
                 throw new ConfigValidationException(reader.Missing, reader.Violations);
 
@@ -64,6 +66,26 @@ namespace SugarDash.Infrastructure.Config
             if (violations.Count > 0) throw new ConfigValidationException(Array.Empty<string>(), violations);
 
             return config;
+        }
+
+        /// <summary>
+        /// 장면 덮어쓰기에서 적었지만 값이 null인 키의 경로. DTO로는 "적지 않음"과 구분되지 않아 JSON에서 직접 찾는다.
+        /// 빌드 설정은 값이 정해질 장면 조건을 이렇게 null로 적어 둔다.
+        /// </summary>
+        private static IEnumerable<string> NullOverrideKeys(JObject root)
+        {
+            if (!(root["sections"] is JArray sections)) yield break;
+            for (int i = 0; i < sections.Count; i++)
+            {
+                if (!(sections[i] is JObject section) || !(section["scenes"] is JArray scenes)) continue;
+                for (int j = 0; j < scenes.Count; j++)
+                {
+                    if (!(scenes[j] is JObject scene) || !(scene["overrides"] is JObject overrides)) continue;
+                    foreach (var key in overrides.Properties())
+                        if (key.Value.Type == JTokenType.Null)
+                            yield return $"sections[{i}].scenes[{j}].overrides.{key.Name}";
+                }
+            }
         }
 
         /// <summary>DTO를 도메인 설정으로 바꾸며 빈 값의 경로를 모은다. 빈 값이 있으면 결과는 버린다.</summary>
@@ -133,6 +155,10 @@ namespace SugarDash.Infrastructure.Config
                 var hyperConfig = new HyperConfig(
                     Number(hyper?.NotifyTimeLimitSec, "hyper.notifyTimeLimitSec", hyper));
 
+                var type1 = Section(dto.Type1, "type1");
+                var type1Config = new Type1Config(
+                    Number(type1?.HabitCheckWindowSec, "type1.habitCheckWindowSec", type1));
+
                 var drop = Section(dto.SuddenDrop, "suddenDrop");
                 var dropConfig = new SuddenDropConfig(
                     Number(drop?.ChancePerSec, "suddenDrop.chancePerSec", drop),
@@ -176,7 +202,8 @@ namespace SugarDash.Infrastructure.Config
                 var glucoseConfig = new GlucoseConfig(timeConfig, levels, recurrenceConfig, displayConfig, dropConfig,
                     snacks);
                 return new GameConfig(configVersion, unit, glucoseConfig, hypoConfig, hyperConfig,
-                    runnerConfig, eliminationConfig, symptomConfig, scoreConfig, sections);
+                    runnerConfig, eliminationConfig, symptomConfig, scoreConfig, sections,
+                    type1: type1Config);
             }
 
             public GameConfig MapType2(Type2ConfigDto dto)
@@ -312,13 +339,27 @@ namespace SugarDash.Infrastructure.Config
                         ? SceneOverrides.None
                         : new SceneOverrides(o.RunDecayPerSec, o.SuddenDropChancePerSec, o.TrackSnackIds,
                             o.TrackSnackIntervalMinSec, o.TrackSnackIntervalMaxSec, o.FoodRowIntervalMinSec,
-                            o.FoodRowIntervalMaxSec, o.RestIntervalMinSec, o.RestIntervalMaxSec);
+                            o.FoodRowIntervalMaxSec, o.RestIntervalMinSec, o.RestIntervalMaxSec, o.FoodRowIds);
                     if (!scene.LengthM.HasValue) Missing.Add(path + ".lengthM");
                     scenes.Add(new SceneConfig(Text(scene.Id, path + ".id", scene),
                         TimeOfDayOf(scene.TimeOfDay, path + ".timeOfDay", scene), scene.LengthM,
-                        scene.Spawns ?? true, overrides));
+                        scene.Spawns ?? true, overrides, HabitMomentOf(scene.HabitCheck, path + ".habitCheck")));
                 }
                 return scenes;
+            }
+
+            // 적지 않으면 습관 순간이 없다.
+            private HabitMoment? HabitMomentOf(string value, string path)
+            {
+                switch (value)
+                {
+                    case null: return null;
+                    case "preExercise": return HabitMoment.PreExercise;
+                    case "bedtime": return HabitMoment.Bedtime;
+                    default:
+                        Violations.Add($"{path}는 preExercise 또는 bedtime 이어야 한다 ({value})");
+                        return null;
+                }
             }
 
             private TimeOfDay TimeOfDayOf(string value, string path, object section)

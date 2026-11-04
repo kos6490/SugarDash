@@ -366,6 +366,31 @@ namespace SugarDash.Infrastructure.Tests
                 Assert.That(LogCodes.ParseNoticeKind(LogCodes.NoticeKind(kind)), Is.EqualTo(kind));
             foreach (EliminationCause cause in Enum.GetValues(typeof(EliminationCause)))
                 Assert.That(LogCodes.Cause(cause), Is.Not.Empty);
+            foreach (HabitMoment moment in Enum.GetValues(typeof(HabitMoment)))
+                Assert.That(LogCodes.ParseHabitMoment(LogCodes.HabitMoment(moment)), Is.EqualTo(moment));
+            foreach (HabitCheckOutcome outcome in Enum.GetValues(typeof(HabitCheckOutcome)))
+                Assert.That(LogCodes.ParseHabitOutcome(LogCodes.HabitOutcome(outcome)), Is.EqualTo(outcome));
+        }
+
+        [Test]
+        public void HabitCheck_IsRecorded_AndMeterMarksMoment()
+        {
+            _repo.BeginRun("cfg-test", TrackType.Type1);
+            _bus.Publish(new MeterPressed(0, 130, false, false, 30, 20, HabitMoment.Bedtime));
+            _bus.Publish(new HabitCheckEnded(HabitMoment.Bedtime, HabitCheckOutcome.Checked, 2.5, 30, 20));
+            _bus.Publish(new HabitCheckEnded(HabitMoment.PreExercise, HabitCheckOutcome.Missed, null, 40, 30));
+            _bus.Publish(new MeterPressed(0, 130, true, false, 41, 31));
+
+            var raw = RawLines();
+            var lines = Lines();
+            Assert.That(lines[1].Moment, Is.EqualTo("bedtime"));
+            Assert.That(lines[2].Type, Is.EqualTo("HabitCheck"));
+            Assert.That(lines[2].Moment, Is.EqualTo("bedtime"));
+            Assert.That(lines[2].Outcome, Is.EqualTo("checked"));
+            Assert.That(lines[2].ReactionSec, Is.EqualTo(2.5));
+            Assert.That(lines[3].Outcome, Is.EqualTo("missed"));
+            Assert.That(raw[3], Does.Not.Contain("reactionSec"));
+            Assert.That(raw[4], Does.Not.Contain("moment"));
         }
 
         [Test]

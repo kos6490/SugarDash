@@ -72,6 +72,7 @@ namespace SugarDash.Infrastructure.Tests
     ""guardianSnackId"": ""juice"", ""doses"": { ""under"": 1, ""proper"": 2, ""over"": 3 }
   },
   ""hyper"": { ""notifyTimeLimitSec"": 5 },
+  ""type1"": { ""habitCheckWindowSec"": 4 },
   ""suddenDrop"": { ""chancePerSec"": 0.01, ""amount"": 30, ""durationSec"": 5 },
   ""snacks"": [
     { ""id"": ""juice"", ""kind"": ""fast"", ""totalRise"": 30, ""onsetSec"": 1, ""absorbSec"": 2, ""source"": ""test"" },
@@ -138,6 +139,7 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Sections.Single().LengthM, Is.Null);
             Assert.That(config.Glucose.Levels.HyperReleaseMargin, Is.EqualTo(20));
             Assert.That(config.Hyper.NotifyTimeLimitSec, Is.EqualTo(5));
+            Assert.That(config.Type1.HabitCheckWindowSec, Is.EqualTo(4));
         }
 
         [Test]
@@ -430,7 +432,7 @@ namespace SugarDash.Infrastructure.Tests
         [Test]
         public void UnknownTrackType_FailsWithViolation()
         {
-            var json = With(ValidJson, "\"type1\"", "\"type3\"");
+            var json = With(ValidJson, "\"trackType\": \"type1\"", "\"trackType\": \"type3\"");
 
             var e = LoadFails(json);
 
@@ -504,8 +506,8 @@ namespace SugarDash.Infrastructure.Tests
         {
             var json = WithScenes(ValidJson,
                 "{ \"id\": \"a\", \"timeOfDay\": \"morning\", \"lengthM\": 100, " +
-                "\"overrides\": { \"trackSnackIntervalMinSec\": 3, \"trackSnackIntervalMaxSec\": null, \"trackSnackIds\": [\"juice\", \"juice\"] } }, " +
-                "{ \"id\": \"b\", \"timeOfDay\": \"night\", \"lengthM\": 50, \"spawns\": false }");
+                "\"overrides\": { \"trackSnackIntervalMinSec\": 3, \"trackSnackIds\": [\"juice\", \"juice\"] } }, " +
+                "{ \"id\": \"b\", \"timeOfDay\": \"night\", \"lengthM\": 50, \"spawns\": false, \"habitCheck\": \"bedtime\" }");
 
             var config = new ConfigProvider(json).Load();
 
@@ -523,6 +525,55 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(scenes[0].Overrides.TrackSnackIntervalMaxSec, Is.Null);
             Assert.That(scenes[0].Overrides.TrackSnackIds, Is.EqualTo(new[] { "juice", "juice" }));
             Assert.That(scenes[1].Overrides.RunDecayPerSec, Is.Null);
+            Assert.That(scenes[0].HabitCheck, Is.Null);
+            Assert.That(scenes[1].HabitCheck, Is.EqualTo(HabitMoment.Bedtime));
+        }
+
+        [Test]
+        public void Load_SceneOverrideWrittenAsNull_ReportsPath()
+        {
+            var json = WithScenes(ValidJson,
+                "{ \"id\": \"a\", \"timeOfDay\": \"morning\", \"lengthM\": 100, " +
+                "\"overrides\": { \"runDecayPerSec\": null, \"trackSnackIds\": null } }");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths, Is.EqualTo(new[]
+            {
+                "sections[1].scenes[0].overrides.runDecayPerSec", "sections[1].scenes[0].overrides.trackSnackIds",
+            }));
+        }
+
+        [Test]
+        public void Load_SceneUnknownHabitCheck_Fails()
+        {
+            var json = WithScenes(ValidJson,
+                "{ \"id\": \"a\", \"timeOfDay\": \"morning\", \"lengthM\": 100, \"habitCheck\": \"lunch\" }");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.Violations, Has.Count.EqualTo(1));
+            Assert.That(e.Violations[0], Does.Contain("habitCheck"));
+        }
+
+        [Test]
+        public void Load_Type1Missing_ReportsPath()
+        {
+            var json = With(ValidJson, "  \"type1\": { \"habitCheckWindowSec\": 4 },\n", "");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.MissingPaths, Is.EqualTo(new[] { "type1" }));
+        }
+
+        [Test]
+        public void Load_Type2WithType1Section_Fails()
+        {
+            var json = With(ValidType2Json, "  \"type2\": {", "  \"type1\": { \"habitCheckWindowSec\": 4 },\n  \"type2\": {");
+
+            var e = LoadFails(json);
+
+            Assert.That(e.Violations[0], Does.Contain("JSON 형식 오류"));
         }
 
         [Test]
@@ -530,13 +581,14 @@ namespace SugarDash.Infrastructure.Tests
         {
             var json = WithScenes(ValidType2Json,
                 "{ \"id\": \"a\", \"timeOfDay\": \"evening\", \"lengthM\": 100, " +
-                "\"overrides\": { \"runDecayPerSec\": 2, \"restIntervalMinSec\": 20 } }");
+                "\"overrides\": { \"runDecayPerSec\": 2, \"restIntervalMinSec\": 20, \"foodRowIds\": [\"water\", \"juice\"] } }");
 
             var scene = new ConfigProvider(json).Load().Sections[1].Scenes.Single();
 
             Assert.That(scene.TimeOfDay, Is.EqualTo(TimeOfDay.Evening));
             Assert.That(scene.Overrides.RunDecayPerSec, Is.EqualTo(2));
             Assert.That(scene.Overrides.RestIntervalMinSec, Is.EqualTo(20));
+            Assert.That(scene.Overrides.FoodRowIds, Is.EqualTo(new[] { "water", "juice" }));
         }
 
         [Test]
@@ -592,7 +644,39 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(scenes.Select(m => m.Groups[1].Value), Is.EqualTo(new[] { "schoolyard", "playground", "outing", "home" }));
             Assert.That(scenes.Select(m => m.Groups[2].Value), Is.EqualTo(new[] { "morning", "afternoon", "evening", "night" }));
             Assert.That(json, Does.Match("\"id\":\\s*\"home\"[^}]*\"spawns\":\\s*false"));
-            Assert.That(json, Does.Not.Match("\"overrides\":\\s*\\{\\s*[^}\\s]"), "빌드 설정의 overrides는 비어 있어야 한다");
+        }
+
+        // 2-B 장면 조건(docs/section2.md 7절). 값은 PLACEHOLDER(null)로 적어 두어 정하기 전에는 로드가 실패한다.
+        [Test]
+        public void BuildConfig_Type1SceneConditions_ArePlaceholders()
+        {
+            string json = File.ReadAllText(Path.Combine(Application.dataPath, BuildConfigPath));
+
+            var e = LoadFails(json);
+            Assert.That(e.MissingPaths, Is.SupersetOf(new[]
+            {
+                "type1.habitCheckWindowSec", "sections[1].scenes[0].overrides.runDecayPerSec",
+            }));
+            Assert.That(e.MissingPaths.Where(p => p.Contains(".overrides.")),
+                Is.EqualTo(new[] { "sections[1].scenes[0].overrides.runDecayPerSec" }));
+            Assert.That(json, Does.Match("\"id\":\\s*\"schoolyard\"[^}]*\"habitCheck\":\\s*\"preExercise\""));
+            Assert.That(json, Does.Match("\"id\":\\s*\"home\"[^}]*\"habitCheck\":\\s*\"bedtime\""));
+            Assert.That(Regex.Matches(json, "habitCheck\"").Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void BuildConfig_Type2SceneConditions_ArePlaceholders()
+        {
+            string json = File.ReadAllText(Path.Combine(Application.dataPath, BuildType2ConfigPath));
+
+            var e = LoadFails(json);
+            Assert.That(e.MissingPaths.Where(p => p.Contains(".overrides.")), Is.EqualTo(new[]
+            {
+                "sections[1].scenes[1].overrides.restIntervalMinSec", "sections[1].scenes[1].overrides.restIntervalMaxSec",
+                "sections[1].scenes[2].overrides.foodRowIntervalMinSec",
+                "sections[1].scenes[2].overrides.foodRowIntervalMaxSec", "sections[1].scenes[2].overrides.foodRowIds",
+            }));
+            Assert.That(json, Does.Not.Contain("habitCheck"));
         }
 
         [TestCase(DevConfigPath)]
@@ -605,6 +689,29 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(config.Sections[1].Scenes.Select(x => x.Id), Is.EqualTo(new[] { "schoolyard", "playground", "outing", "home" }));
             Assert.That(config.Sections[1].Scenes.Select(x => x.LengthM), Is.EqualTo(new double?[] { 200, 200, 200, 140 }));
             Assert.That(config.Sections[1].Scenes[3].Spawns, Is.False);
+        }
+
+        [Test]
+        public void DevConfig_Type1_HasHabitChecksAndSchoolyardDecay()
+        {
+            var config = new ConfigProvider(File.ReadAllText(Path.Combine(Application.dataPath, DevConfigPath))).Load();
+
+            var scenes = config.Sections[1].Scenes;
+            Assert.That(scenes.Select(x => x.HabitCheck),
+                Is.EqualTo(new HabitMoment?[] { HabitMoment.PreExercise, null, null, HabitMoment.Bedtime }));
+            Assert.That(scenes[0].Overrides.RunDecayPerSec, Is.GreaterThan(config.Glucose.Levels.RunDecayPerSec));
+            Assert.That(config.Type1.HabitCheckWindowSec, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void DevConfig_Type2_HasPlaygroundRestAndOutingFoodRows()
+        {
+            var config = new ConfigProvider(File.ReadAllText(Path.Combine(Application.dataPath, DevType2ConfigPath))).Load();
+
+            var scenes = config.Sections[1].Scenes;
+            Assert.That(scenes[1].Overrides.RestIntervalMaxSec, Is.LessThan(config.Type2.RestIntervalMinSec));
+            Assert.That(scenes[2].Overrides.FoodRowIntervalMaxSec, Is.LessThanOrEqualTo(config.Type2.FoodRowIntervalMinSec));
+            Assert.That(scenes[2].Overrides.FoodRowIds, Does.Contain("water"));
         }
     }
 }

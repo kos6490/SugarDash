@@ -96,6 +96,27 @@ namespace SugarDash.Infrastructure.Logging
             }
         }
 
+        public static string HabitMoment(HabitMoment moment)
+        {
+            switch (moment)
+            {
+                case Domain.Config.HabitMoment.PreExercise: return "preExercise";
+                case Domain.Config.HabitMoment.Bedtime: return "bedtime";
+                default: throw new ArgumentOutOfRangeException(nameof(moment), moment, null);
+            }
+        }
+
+        public static string HabitOutcome(HabitCheckOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case HabitCheckOutcome.Checked: return "checked";
+                case HabitCheckOutcome.Missed: return "missed";
+                case HabitCheckOutcome.Skipped: return "skipped";
+                default: throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null);
+            }
+        }
+
         // 조회(ReportQueryService)용 역변환. 모르는 코드면 FormatException.
 
         public static HypoStep ParseStep(string code) => Parse(code, StepValues, Step, "step");
@@ -116,6 +137,15 @@ namespace SugarDash.Infrastructure.Logging
         public static TimeOfDay ParseTimeOfDay(string code) =>
             Parse(code, TimeOfDayValues, TimeOfDay, "timeOfDay");
 
+        public static HabitMoment ParseHabitMoment(string code) =>
+            Parse(code, HabitMomentValues, HabitMoment, "moment");
+
+        public static HabitCheckOutcome ParseHabitOutcome(string code) =>
+            Parse(code, HabitOutcomeValues, HabitOutcome, "outcome");
+
+        private static readonly HabitMoment[] HabitMomentValues = (HabitMoment[])Enum.GetValues(typeof(HabitMoment));
+        private static readonly HabitCheckOutcome[] HabitOutcomeValues =
+            (HabitCheckOutcome[])Enum.GetValues(typeof(HabitCheckOutcome));
         private static readonly TimeOfDay[] TimeOfDayValues = (TimeOfDay[])Enum.GetValues(typeof(TimeOfDay));
         private static readonly NoticeKind[] NoticeKindValues = (NoticeKind[])Enum.GetValues(typeof(NoticeKind));
         private static readonly HypoStep[] StepValues = (HypoStep[])Enum.GetValues(typeof(HypoStep));

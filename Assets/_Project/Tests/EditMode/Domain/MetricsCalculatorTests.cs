@@ -1,5 +1,6 @@
 using System.Linq;
 using SugarDash.Domain.Config;
+using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Metrics;
@@ -181,6 +182,22 @@ namespace SugarDash.Domain.Tests
 
             Assert.That(m.UnnecessaryMeasureCount, Is.EqualTo(2));
             Assert.That(m.AccurateResponse.ToString(), Is.EqualTo("1/2"));
+        }
+
+        [Test]
+        public void HabitCheck_CountsCheckedOverCheckedAndMissed_SkippedExcluded()
+        {
+            var first = Run(
+                new HabitCheckEnded(HabitMoment.PreExercise, HabitCheckOutcome.Checked, 1.5, 0, 0),
+                new HabitCheckEnded(HabitMoment.Bedtime, HabitCheckOutcome.Missed, null, 0, 0));
+            var second = Run(
+                new HabitCheckEnded(HabitMoment.PreExercise, HabitCheckOutcome.Skipped, null, 0, 0),
+                new HabitCheckEnded(HabitMoment.Bedtime, HabitCheckOutcome.Checked, 2, 0, 0));
+
+            var m = MetricsCalculator.Calculate(new[] { first, second });
+
+            Assert.That(m.HabitCheck.ToString(), Is.EqualTo("2/3"));
+            Assert.That(MetricsCalculator.Calculate(new[] { Run() }).HabitCheck.Rate, Is.Null);
         }
 
         [Test]

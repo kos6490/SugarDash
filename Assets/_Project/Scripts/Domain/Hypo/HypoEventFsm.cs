@@ -237,7 +237,10 @@ namespace SugarDash.Domain.Hypo
             switch (Phase)
             {
                 case HypoPhase.Idle:
-                    PublishMeter(0, false);
+                    // 습관 순간의 측정은 불필요 측정으로 세지 않는다.
+                    var habit = _director.ActiveHabitMoment;
+                    PublishMeter(0, false, habit);
+                    _director.CompleteHabitCheck();
                     break;
                 case HypoPhase.Grace:
                     PublishMeter(0, true);
@@ -653,11 +656,12 @@ namespace SugarDash.Domain.Hypo
                 decisionSec, measuredBeforeWarning, _model.SimTime, _model.DecisionTime));
         }
 
-        private void PublishMeter(int eventId, bool inGrace)
+        private void PublishMeter(int eventId, bool inGrace, HabitMoment? habit = null)
         {
             double actual = _model.Actual;
-            bool unnecessary = actual >= _config.Glucose.Levels.HypoThreshold;
-            Publish(new MeterPressed(eventId, actual, unnecessary, inGrace, _model.SimTime, _model.DecisionTime));
+            bool unnecessary = habit == null && actual >= _config.Glucose.Levels.HypoThreshold;
+            Publish(new MeterPressed(eventId, actual, unnecessary, inGrace, _model.SimTime, _model.DecisionTime,
+                habit));
         }
 
         private void Publish<T>(T domainEvent) => _bus.Publish(domainEvent);

@@ -60,5 +60,12 @@ namespace SugarDash.Infrastructure.Logging.Dto
         /// <summary>NoticeStarted 전용. "high" 또는 "low".</summary>
         public string Kind { get; set; }
         public string FoodId { get; set; }
+
+        /// <summary>HabitCheck, MeterPressed(습관 순간에 누른 측정만). "preExercise" 또는 "bedtime".</summary>
+        public string Moment { get; set; }
+        /// <summary>HabitCheck 전용. "checked", "missed", "skipped".</summary>
+        public string Outcome { get; set; }
+        /// <summary>HabitCheck 전용. checked일 때만 있다.</summary>
+        public double? ReactionSec { get; set; }
     }
 }

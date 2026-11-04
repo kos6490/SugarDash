@@ -154,6 +154,10 @@ namespace SugarDash.Infrastructure.Tests
                 new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.ObstacleHit, 55.5, 5, 5),
                 new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.GlucoseLow, 56.5, 6, 6),
                 new RunEliminated(0, null, HypoErrorCode.None, EliminationCause.GlucoseHigh, 57.5, 7, 7),
+                new MeterPressed(0, 130.5, false, false, 8, 8, HabitMoment.PreExercise),
+                new HabitCheckEnded(HabitMoment.PreExercise, HabitCheckOutcome.Checked, 1.5, 8, 8),
+                new HabitCheckEnded(HabitMoment.Bedtime, HabitCheckOutcome.Missed, null, 9, 9),
+                new HabitCheckEnded(HabitMoment.Bedtime, HabitCheckOutcome.Skipped, null, 10, 10),
             };
             foreach (var e in published) Publish(e);
             _repo.EndRun();

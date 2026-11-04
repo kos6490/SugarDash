@@ -65,6 +65,8 @@ namespace SugarDash.Domain.Tests
 
         public double HyperNotifyTimeLimitSec = 5;
 
+        public double HabitCheckWindowSec = 5;
+
         public double TrackSnackServings = 0.5;
         public double TrackSnackIntervalMinSec = 8;
         public double TrackSnackIntervalMaxSec = 8;
@@ -133,7 +135,8 @@ namespace SugarDash.Domain.Tests
             new EliminationConfig(GlucoseLow, GlucoseHigh),
             new SymptomConfig(ShakeStartGlucose),
             BuildScore(),
-            Sections.ToList());
+            Sections.ToList(),
+            type1: new Type1Config(HabitCheckWindowSec));
 
         /// <summary>2형 설정. 음식은 기존 Snacks 목록을 그대로 쓴다.</summary>
         public GameConfig BuildType2() => GameConfig.ForType2(ConfigVersion, Unit, TimeScale,

@@ -86,6 +86,8 @@ namespace SugarDash.App.Tests
                 Collect<SectionEntered>();
                 Collect<SceneEntered>();
                 Collect<GlucoseRangeEntered>();
+                Collect<HabitPromptStarted>();
+                Collect<HabitCheckEnded>();
 
                 Run = new RunController(_ =>
                 {
@@ -1054,6 +1056,45 @@ namespace SugarDash.App.Tests
             Assert.That(scene.DistanceM, Is.EqualTo(12));
             Assert.That(rig.Run.CurrentScene.Id, Is.EqualTo("A"));
             Assert.That(rig.Run.DayIndex, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void HabitScene_OpensPrompt_MeterChecksIt()
+        {
+            var habit = new SceneConfig("A", TimeOfDay.Morning, 5, true, null, HabitMoment.PreExercise);
+            var rig = new Rig(b =>
+            {
+                b.HabitCheckWindowSec = 4;
+                b.WithScenes(habit, SceneB());
+            });
+            rig.Run.StartRun(TrackType.Type1);
+
+            rig.Run.AdvanceDistance(10);
+            rig.Run.Tick(1);
+            Assert.That(rig.Run.ActiveHabitMoment, Is.EqualTo(HabitMoment.PreExercise));
+            Assert.That(rig.All<HabitPromptStarted>().Single().WindowSec, Is.EqualTo(4));
+            Assert.That(rig.Run.IsWorldFrozen, Is.False);
+
+            rig.Run.Tick(1);
+            rig.Run.PressMeter();
+            rig.Run.Tick(1);
+
+            Assert.That(rig.Run.ActiveHabitMoment, Is.Null);
+            Assert.That(rig.All<HabitCheckEnded>().Single().Outcome, Is.EqualTo(HabitCheckOutcome.Checked));
+        }
+
+        [Test]
+        public void SceneWithoutHabit_OpensNoPrompt()
+        {
+            var rig = new Rig(b => b.WithScenes(SceneA(), SceneB()));
+            rig.Run.StartRun(TrackType.Type1);
+
+            rig.Run.AdvanceDistance(12);
+            rig.Run.Tick(1);
+
+            Assert.That(rig.Run.ActiveHabitMoment, Is.Null);
+            Assert.That(rig.All<HabitPromptStarted>(), Is.Empty);
+            Assert.That(rig.All<HabitCheckEnded>(), Is.Empty);
         }
 
         [Test]

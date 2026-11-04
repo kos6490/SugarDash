@@ -47,6 +47,7 @@ namespace SugarDash.Bootstrap
         [SerializeField] private SettingsView settings;
         [SerializeField] private CharacterStateView characterState;
         [SerializeField] private NoticeSignalView noticeSignal;
+        [SerializeField] private HabitPromptView habitPrompt;
         [SerializeField] private SceneLook sceneLook;
         [SerializeField] private SleepTransitionView sleepTransition;
         [SerializeField] private TutorialPromptView tutorialPrompt;
@@ -152,6 +153,7 @@ namespace SugarDash.Bootstrap
             if (settings != null) _subscriptions.Add(settings.Bind(_flow));
             if (characterState != null) _subscriptions.Add(characterState.Bind(_run));
             if (noticeSignal != null) _subscriptions.Add(noticeSignal.Bind(_run));
+            if (habitPrompt != null) _subscriptions.Add(habitPrompt.Bind(_run));
             if (sceneLook != null) _subscriptions.Add(sceneLook.Bind(_bus));
             if (sleepTransition != null) _subscriptions.Add(sleepTransition.Bind(_bus));
             if (tutorialPrompt == null) Debug.LogWarning("tutorialPrompt가 비어 있다. 튜토리얼 설명 창이 보이지 않는다. docs/dev-scene.md 튜토리얼 절을 본다.");
@@ -272,7 +274,7 @@ namespace SugarDash.Bootstrap
                 return new TrackLayout(ids, o.TrackSnackIntervalMinSec ?? config.Runner.TrackSnackIntervalMinSec,
                     o.TrackSnackIntervalMaxSec ?? config.Runner.TrackSnackIntervalMaxSec, false, 0, 0, spawns);
             }
-            var foods = config.Glucose.Snacks.Select(s => s.Id).ToList();
+            var foods = o.FoodRowIds ?? config.Glucose.Snacks.Select(s => s.Id).ToList();
             return new TrackLayout(foods, o.FoodRowIntervalMinSec ?? t2.FoodRowIntervalMinSec,
                 o.FoodRowIntervalMaxSec ?? t2.FoodRowIntervalMaxSec, true,
                 o.RestIntervalMinSec ?? t2.RestIntervalMinSec, o.RestIntervalMaxSec ?? t2.RestIntervalMaxSec, spawns);

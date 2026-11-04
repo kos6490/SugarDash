@@ -10,6 +10,7 @@ namespace SugarDash.Domain.Director
     /// 급하강, 저혈당·고혈당 이벤트 발생, 게이지 경고를 결정한다(docs/glucose-model.md 1.2·4절, docs/hyper-event.md).
     /// 혈당 계산은 GlucoseModel이 하고, 여기서는 판정과 이벤트 발행만 한다.
     /// 이벤트 진행 중과 이벤트 종료부터 유예 시간 끝까지는 발동과 급하강을 억제한다.
+    /// 1형 혈당 재기 습관 순간(docs/section2.md 7.1절)의 시작·끝 판정도 여기서 한다.
     /// </summary>
     public sealed class EventDirector
     {
@@ -53,6 +54,10 @@ namespace SugarDash.Domain.Director
         private bool _targetRangeEvaluated;
         private double? _suddenDropChanceOverride;
 
+        // 혈당 재기 습관 순간. 말풍선이 떠 있는 동안 ActiveHabitMoment에 값이 있다(decisionDt 기준 시각).
+        private double _habitStart;
+        private double _habitEnd;
+
         // 2형 판정 상태. type2가 null이면 쓰지 않는다.
         private LowState _lowState = LowState.Armed;
         private double _highHold;
@@ -93,6 +98,9 @@ namespace SugarDash.Domain.Director
 
         public bool IsHypoEventActive => _hypoState == HypoState.Active;
 
+        /// <summary>혈당 재기 습관 순간의 말풍선이 떠 있으면 그 순간. 없으면 null.</summary>
+        public HabitMoment? ActiveHabitMoment { get; private set; }
+
         public bool IsHyperEventActive => _hyperState == HyperState.Active;
 
         /// <summary>
@@ -128,6 +136,37 @@ namespace SugarDash.Domain.Director
             EvaluateHyper();
             EvaluateGaugeWarning();
             EvaluateTargetRange();
+            EvaluateHabitCheck();
+        }
+
+        /// <summary>
+        /// 1형 장면에 들어갈 때 RunController가 부른다. 저혈당·고혈당 대처 중이거나 유예 중이면 띄우지 않고 Skipped로 끝낸다.
+        /// 앞 습관 순간이 아직 떠 있으면 Missed로 끝낸 뒤 연다. 세계는 멈추지 않는다.
+        /// </summary>
+        /// <param name="windowSec">말풍선이 떠 있는 시간(decisionDt 기준 초).</param>
+        public void StartHabitPrompt(HabitMoment moment, double windowSec)
+        {
+            if (_type2 != null) throw new InvalidOperationException("혈당 재기 습관 순간은 1형에만 있다");
+            if (!(windowSec > 0)) throw new ArgumentOutOfRangeException(nameof(windowSec), windowSec, "0보다 커야 한다");
+
+            if (ActiveHabitMoment.HasValue) EndHabitCheck(HabitCheckOutcome.Missed);
+            if (IsCoping || _suppressed)
+            {
+                _bus.Publish(new HabitCheckEnded(moment, HabitCheckOutcome.Skipped, null, _model.SimTime,
+                    _model.DecisionTime));
+                return;
+            }
+
+            ActiveHabitMoment = moment;
+            _habitStart = _model.DecisionTime;
+            _habitEnd = _habitStart + windowSec;
+            _bus.Publish(new HabitPromptStarted(moment, windowSec, _model.SimTime, _model.DecisionTime));
+        }
+
+        /// <summary>습관 순간의 말풍선이 떠 있을 때 측정기를 누르면 HypoEventFsm이 부른다. 떠 있지 않으면 아무것도 하지 않는다.</summary>
+        public void CompleteHabitCheck()
+        {
+            if (ActiveHabitMoment.HasValue) EndHabitCheck(HabitCheckOutcome.Checked);
         }
 
         /// <summary>
@@ -252,6 +291,27 @@ namespace SugarDash.Domain.Director
                 _lowState = LowState.Active;
                 _bus.Publish(new LowEventTriggered(_lastEventId, _model.SimTime, _model.DecisionTime, _model.Actual));
             }
+        }
+
+        private bool IsCoping => _hypoState == HypoState.Active || _hyperState == HyperState.Active;
+
+        // 떠 있는 동안 대처가 시작되면 거두고(측정기는 1단계용이 된다), 시간이 지나면 놓친 것으로 끝낸다.
+        private void EvaluateHabitCheck()
+        {
+            if (!ActiveHabitMoment.HasValue) return;
+
+            if (IsCoping) EndHabitCheck(HabitCheckOutcome.Skipped);
+            else if (_model.DecisionTime >= _habitEnd) EndHabitCheck(HabitCheckOutcome.Missed);
+        }
+
+        private void EndHabitCheck(HabitCheckOutcome outcome)
+        {
+            var moment = ActiveHabitMoment.Value;
+            ActiveHabitMoment = null;
+            double? reaction = outcome == HabitCheckOutcome.Checked
+                ? Math.Min(_model.DecisionTime, _habitEnd) - _habitStart
+                : (double?)null;
+            _bus.Publish(new HabitCheckEnded(moment, outcome, reaction, _model.SimTime, _model.DecisionTime));
         }
 
         private void EvaluateSuddenDrop(double simDt)

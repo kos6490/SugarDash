@@ -55,6 +55,8 @@ namespace SugarDash.Domain.Tests
             Collect<GraceEnded>(bus);
             Collect<GlucoseRangeEntered>(bus);
             Collect<GlucoseRangeExited>(bus);
+            Collect<HabitPromptStarted>(bus);
+            Collect<HabitCheckEnded>(bus);
 
             Model = new GlucoseModel(config.Glucose);
             Director = new EventDirector(config.Glucose, Model, new NoRandom(), bus);

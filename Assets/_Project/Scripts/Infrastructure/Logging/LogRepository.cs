@@ -71,6 +71,7 @@ namespace SugarDash.Infrastructure.Logging
                     r.Measured = e.Measured;
                     r.Unnecessary = e.Unnecessary;
                     r.InGrace = e.InGrace;
+                    r.Moment = e.HabitMoment.HasValue ? LogCodes.HabitMoment(e.HabitMoment.Value) : null;
                 }))),
                 bus.Subscribe<StepAnswered>(e => Append(Event("StepAnswered", e.EventId, e.SimT, e.T, r =>
                 {
@@ -154,6 +155,12 @@ namespace SugarDash.Infrastructure.Logging
                 {
                     r.SnackId = e.SnackId;
                     r.Servings = e.Servings;
+                }))),
+                bus.Subscribe<HabitCheckEnded>(e => Append(Event("HabitCheck", null, e.SimT, e.T, r =>
+                {
+                    r.Moment = LogCodes.HabitMoment(e.Moment);
+                    r.Outcome = LogCodes.HabitOutcome(e.Outcome);
+                    r.ReactionSec = e.ReactionSec;
                 }))),
             });
         }

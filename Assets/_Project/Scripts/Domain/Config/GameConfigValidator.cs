@@ -144,7 +144,21 @@ namespace SugarDash.Domain.Config
             // 23. 구간
             ValidateSections(errors, config);
 
+            // 25. 혈당 재기 습관 순간(docs/section2.md 7.1절)
+            ValidateHabitCheck(errors, config);
+
             return errors;
+        }
+
+        private static void ValidateHabitCheck(List<string> errors, GameConfig config)
+        {
+            if (config.Type1 != null)
+            {
+                Positive(errors, "type1.habitCheckWindowSec", config.Type1.HabitCheckWindowSec);
+                return;
+            }
+            bool used = config.Sections.Where(s => s.HasScenes).SelectMany(s => s.Scenes).Any(s => s.HabitCheck.HasValue);
+            if (used) errors.Add("type1: habitCheck를 쓰는 장면이 있으면 type1.habitCheckWindowSec가 있어야 한다");
         }
 
         private static readonly HypoStep[] Type1Steps =
@@ -351,6 +365,7 @@ namespace SugarDash.Domain.Config
                 if (!(length.HasValue && length.Value > 0 && !double.IsInfinity(length.Value)))
                     errors.Add($"{path}.lengthM > 0 이고 유한해야 한다 ({length})");
 
+                if (config.TrackType == TrackType.Type2) OtherTypeKey(errors, path, "habitCheck", scene.HabitCheck.HasValue);
                 ValidateOverrides(errors, config, path, scene.Overrides);
             }
         }
@@ -367,6 +382,15 @@ namespace SugarDash.Domain.Config
                 OtherTypeKey(errors, path, "trackSnackIds", o.TrackSnackIds != null);
                 OtherTypeKey(errors, path, "trackSnackIntervalMinSec", o.TrackSnackIntervalMinSec.HasValue);
                 OtherTypeKey(errors, path, "trackSnackIntervalMaxSec", o.TrackSnackIntervalMaxSec.HasValue);
+                if (o.FoodRowIds != null)
+                {
+                    var foods = config.Glucose.Snacks;
+                    // 음식 줄에는 서로 다른 음식 2개가 놓인다.
+                    if (o.FoodRowIds.Distinct().Count() < 2)
+                        errors.Add($"{path}.foodRowIds: 서로 다른 id가 2개 이상이어야 한다");
+                    foreach (var id in o.FoodRowIds.Where(id => foods.All(f => f.Id != id)).Distinct())
+                        errors.Add($"{path}.foodRowIds는 foods에 있어야 한다 ({id})");
+                }
                 var t2 = config.Type2;
                 IntervalOverride(errors, path, "foodRowInterval", o.FoodRowIntervalMinSec, o.FoodRowIntervalMaxSec,
                     t2.FoodRowIntervalMinSec, t2.FoodRowIntervalMaxSec);
@@ -375,6 +399,7 @@ namespace SugarDash.Domain.Config
                 return;
             }
 
+            OtherTypeKey(errors, path, "foodRowIds", o.FoodRowIds != null);
             OtherTypeKey(errors, path, "foodRowIntervalMinSec", o.FoodRowIntervalMinSec.HasValue);
             OtherTypeKey(errors, path, "foodRowIntervalMaxSec", o.FoodRowIntervalMaxSec.HasValue);
             OtherTypeKey(errors, path, "restIntervalMinSec", o.RestIntervalMinSec.HasValue);

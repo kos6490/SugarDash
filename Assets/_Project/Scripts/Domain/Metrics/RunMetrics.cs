@@ -8,7 +8,7 @@ namespace SugarDash.Domain.Metrics
     {
         public RunMetrics(Ratio accurateResponse, IReadOnlyDictionary<MetricStep, Ratio> stepAccuracy,
             IReadOnlyDictionary<HypoErrorCode, int> errorCounts, IReadOnlyDictionary<HypoStep, double?> medianDecisionSec,
-            Ratio measuredFirst, int unnecessaryMeasureCount)
+            Ratio measuredFirst, int unnecessaryMeasureCount, Ratio habitCheck)
         {
             AccurateResponse = accurateResponse;
             StepAccuracy = stepAccuracy;
@@ -16,6 +16,7 @@ namespace SugarDash.Domain.Metrics
             MedianDecisionSec = medianDecisionSec;
             MeasuredFirst = measuredFirst;
             UnnecessaryMeasureCount = unnecessaryMeasureCount;
+            HabitCheck = habitCheck;
         }
 
         /// <summary>정확 대응률: 4단계를 모두 보정 없이 맞힌 이벤트 ÷ 끝난 이벤트(대처를 마쳤거나 탈락). 재발 이벤트 포함.</summary>
@@ -30,5 +31,7 @@ namespace SugarDash.Domain.Metrics
         public Ratio MeasuredFirst { get; }
         /// <summary>실제 혈당이 hypoThreshold 이상일 때 누른 측정 수.</summary>
         public int UnnecessaryMeasureCount { get; }
+        /// <summary>습관 확인률(1형): 측정기를 누른 습관 순간 ÷ 끝난 습관 순간(눌렀거나 놓침). 건너뛴 순간과 주행이 끝날 때 떠 있던 순간은 뺀다.</summary>
+        public Ratio HabitCheck { get; }
     }
 }

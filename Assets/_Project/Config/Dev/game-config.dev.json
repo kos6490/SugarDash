@@ -5,7 +5,7 @@
   "time": { "timeScale": 150, "recheckIntervalRealMin": 15, "recheckIntervalSource": "dev-not-real",
     "fastForwardTickSimSec": 0.5 },
   "glucose": {
-    "initial": 120, "min": 20, "max": 400, "hypoThreshold": 70, "hypoReleaseMargin": 10,
+    "initial": 120, "min": 10, "max": 400, "hypoThreshold": 70, "hypoReleaseMargin": 10,
     "hyperThreshold": 135, "hyperReleaseMargin": 20,
     "baseDecayPerSec": 0.5, "runDecayPerSec": 1, "normalRangeMin": 72
   },
@@ -17,9 +17,10 @@
     "guardianSnackId": "juice", "doses": { "under": 1, "proper": 2, "over": 3 }
   },
   "hyper": { "notifyTimeLimitSec": 8 },
+  "type1": { "habitCheckWindowSec": 5 },
   "suddenDrop": { "chancePerSec": 0.01, "amount": 20, "durationSec": 5 },
   "snacks": [
-    { "id": "juice", "kind": "fast", "totalRise": 32, "onsetSec": 1, "absorbSec": 2, "source": "dev-not-real" },
+    { "id": "juice", "kind": "fast", "totalRise": 34, "onsetSec": 1, "absorbSec": 2, "source": "dev-not-real" },
     { "id": "cracker", "kind": "slow", "totalRise": 30, "onsetSec": 4, "absorbSec": 8, "source": "dev-not-real" }
   ],
   "runner": {
@@ -42,10 +43,11 @@
     {
       "id": "condition",
       "scenes": [
-        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "overrides": {} },
+        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "habitCheck": "preExercise",
+          "overrides": { "runDecayPerSec": 1.3 } },
         { "id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {} },
         { "id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": { "trackSnackIntervalMinSec": 3, "trackSnackIntervalMaxSec": 4 } },
-        { "id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false }
+        { "id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false, "habitCheck": "bedtime" }
       ]
     }
   ]

@@ -9,7 +9,8 @@ namespace SugarDash.Domain.Config
 
         public GameConfig(string configVersion, string unit, GlucoseConfig glucose, HypoConfig hypo,
             HyperConfig hyper, RunnerConfig runner, EliminationConfig elimination, SymptomConfig symptom, ScoreConfig score,
-            IReadOnlyList<SectionConfig> sections, TrackType trackType = TrackType.Type1, Type2Config type2 = null)
+            IReadOnlyList<SectionConfig> sections, TrackType trackType = TrackType.Type1, Type2Config type2 = null,
+            Type1Config type1 = null)
         {
             ConfigVersion = configVersion;
             Unit = unit;
@@ -23,6 +24,7 @@ namespace SugarDash.Domain.Config
             Sections = sections;
             TrackType = trackType;
             Type2 = type2;
+            Type1 = type1;
         }
 
         /// <summary>
@@ -58,5 +60,7 @@ namespace SugarDash.Domain.Config
         public TrackType TrackType { get; }
         /// <summary>2형 설정. 1형이면 null.</summary>
         public Type2Config Type2 { get; }
+        /// <summary>1형 전용 설정. 2형이면 null.</summary>
+        public Type1Config Type1 { get; }
     }
 }

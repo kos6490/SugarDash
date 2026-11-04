@@ -431,6 +431,39 @@ namespace SugarDash.Domain.Tests
                 .SetName("Override_OtherTypeKey_Fails_Type2TrackSnackIds");
             yield return new TestCaseData(TrackType.Type2, new SceneOverrides(trackSnackIntervalMinSec: 8), "trackSnackIntervalMinSec")
                 .SetName("Override_OtherTypeKey_Fails_Type2TrackSnackInterval");
+            yield return new TestCaseData(TrackType.Type1, new SceneOverrides(foodRowIds: new[] { "juice", "cracker" }), "foodRowIds")
+                .SetName("Override_OtherTypeKey_Fails_Type1FoodRowIds");
+        }
+
+        [Test]
+        public void Override_FoodRowIds_NeedTwoDistinctKnownFoods()
+        {
+            Assert.That(ValidateType2Scenes(Scene("a", overrides: new SceneOverrides(foodRowIds: new[] { "juice", "juice" }))),
+                Has.Exactly(1).Contains("sections[1].scenes[0].foodRowIds"));
+            Assert.That(ValidateType2Scenes(Scene("a", overrides: new SceneOverrides(foodRowIds: new[] { "juice", "nope" }))),
+                Has.Exactly(1).Contains("sections[1].scenes[0].foodRowIds"));
+            Assert.That(ValidateType2Scenes(Scene("a",
+                overrides: new SceneOverrides(foodRowIds: new[] { "juice", "juice", "cracker" }))), Is.Empty);
+        }
+
+        [Test]
+        public void HabitCheck_Type1_NeedsPositiveWindow()
+        {
+            var habit = new SceneConfig("a", TimeOfDay.Morning, 100, true, null, HabitMoment.PreExercise);
+            Assert.That(ValidateScenes(habit), Is.Empty);
+
+            var errors = GameConfigValidator.Validate(
+                new ConfigBuilder { HabitCheckWindowSec = 0 }.WithScenes(habit).Build());
+            Assert.That(errors, Has.Exactly(1).Contains("type1.habitCheckWindowSec"));
+        }
+
+        [Test]
+        public void HabitCheck_Type2_Fails()
+        {
+            var errors = ValidateType2Scenes(new SceneConfig("a", TimeOfDay.Night, 100, false, null, HabitMoment.Bedtime));
+
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(errors[0], Does.Contain("sections[1].scenes[0].habitCheck"));
         }
 
         [TestCaseSource(nameof(OtherTypeKeys))]

@@ -50,8 +50,10 @@
       "id": "condition",
       "scenes": [
         { "id": "schoolyard", "timeOfDay": "morning", "lengthM": null, "overrides": {} },
-        { "id": "playground", "timeOfDay": "afternoon", "lengthM": null, "overrides": {} },
-        { "id": "outing", "timeOfDay": "evening", "lengthM": null, "overrides": {} },
+        { "id": "playground", "timeOfDay": "afternoon", "lengthM": null,
+          "overrides": { "restIntervalMinSec": null, "restIntervalMaxSec": null } },
+        { "id": "outing", "timeOfDay": "evening", "lengthM": null,
+          "overrides": { "foodRowIntervalMinSec": null, "foodRowIntervalMaxSec": null, "foodRowIds": null } },
         { "id": "home", "timeOfDay": "night", "lengthM": null, "spawns": false }
       ]
     }

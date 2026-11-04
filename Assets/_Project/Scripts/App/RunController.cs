@@ -57,6 +57,9 @@ namespace SugarDash.App
         /// <summary>지금 떠 있는 2형 신호(갈증·지침 등). 없으면 null.</summary>
         public NoticeKind? ActiveSignal => _session?.Director.ActiveSignal;
 
+        /// <summary>지금 떠 있는 1형 혈당 재기 습관 순간(말풍선). 없으면 null.</summary>
+        public HabitMoment? ActiveHabitMoment => _session?.Director.ActiveHabitMoment;
+
         private IReadOnlyList<SectionConfig> Sections => _session.Config.Sections;
 
         /// <summary>열린 주행의 runId(기록 파일 이름). 열린 주행이 없으면 null.</summary>
@@ -372,7 +375,8 @@ namespace SugarDash.App
         }
 
         /// <summary>
-        /// 지금 구간의 index번째 장면에 들어간다. 장면 덮어쓰기를 적용하고 SceneEntered를 발행한다.
+        /// 지금 구간의 index번째 장면에 들어간다. 장면 덮어쓰기를 적용하고 SceneEntered를 발행한 뒤, 1형이고 장면에
+        /// 습관 순간이 있으면 연다.
         /// 경계는 누적 거리라 한 번에 여러 경계를 넘어도 장면 길이가 어긋나지 않는다.
         /// </summary>
         /// <param name="boundaryM">이 장면이 시작하는 거리(m).</param>
@@ -386,6 +390,8 @@ namespace SugarDash.App
             s.Director.SetSuddenDropChancePerSec(scene.Overrides.SuddenDropChancePerSec);
             _bus.Publish(new SceneEntered(scene.Id, scene.TimeOfDay, day, DistanceM, s.Model.SimTime,
                 s.Model.DecisionTime));
+            if (scene.HabitCheck.HasValue && s.Config.Type1 != null)
+                s.Director.StartHabitPrompt(scene.HabitCheck.Value, s.Config.Type1.HabitCheckWindowSec);
         }
 
         /// <summary>i번째 구간의 길이. 마지막 구간(lengthM 없음)이면 양의 무한대라 그 뒤 경계는 없다.</summary>

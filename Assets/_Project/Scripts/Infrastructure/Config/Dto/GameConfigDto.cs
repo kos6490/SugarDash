@@ -20,6 +20,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public DisplayDto Display { get; set; }
         public HypoDto Hypo { get; set; }
         public HyperDto Hyper { get; set; }
+        public Type1Dto Type1 { get; set; }
         public SuddenDropDto SuddenDrop { get; set; }
         public List<SnackDto> Snacks { get; set; }
         public RunnerDto Runner { get; set; }
@@ -51,6 +52,12 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? BaseDecayPerSec { get; set; }
         public double? RunDecayPerSec { get; set; }
         public double? NormalRangeMin { get; set; }
+    }
+
+    [Preserve]
+    public sealed class Type1Dto
+    {
+        public double? HabitCheckWindowSec { get; set; }
     }
 
     [Preserve]
@@ -189,10 +196,15 @@ namespace SugarDash.Infrastructure.Config.Dto
         public string TimeOfDay { get; set; }
         public double? LengthM { get; set; }
         public bool? Spawns { get; set; }
+        /// <summary>"preExercise" 또는 "bedtime". 1형만. 없으면 습관 순간이 없다.</summary>
+        public string HabitCheck { get; set; }
         public SceneOverridesDto Overrides { get; set; }
     }
 
-    /// <summary>null인 키는 덮어쓰지 않는다. 유형에 맞지 않는 키는 GameConfigValidator가 잡는다.</summary>
+    /// <summary>
+    /// 적지 않은 키는 덮어쓰지 않는다. 적고 값을 null로 둔 키는 빈 값(PLACEHOLDER)으로 보고 ConfigProvider가 로드를 실패시킨다.
+    /// 유형에 맞지 않는 키는 GameConfigValidator가 잡는다.
+    /// </summary>
     [Preserve]
     public sealed class SceneOverridesDto
     {
@@ -205,5 +217,6 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? FoodRowIntervalMaxSec { get; set; }
         public double? RestIntervalMinSec { get; set; }
         public double? RestIntervalMaxSec { get; set; }
+        public List<string> FoodRowIds { get; set; }
     }
 }

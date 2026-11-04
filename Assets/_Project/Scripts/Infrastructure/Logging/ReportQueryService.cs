@@ -120,7 +120,8 @@ namespace SugarDash.Infrastructure.Logging
                     return new GaugeWarningRaised(Req(r.SimT), Req(r.T), Req(r.Displayed));
                 case "MeterPressed":
                     return new MeterPressed(Req(r.EventId), Req(r.Measured), Req(r.Unnecessary), Req(r.InGrace),
-                        Req(r.SimT), Req(r.T));
+                        Req(r.SimT), Req(r.T),
+                        r.Moment == null ? (HabitMoment?)null : LogCodes.ParseHabitMoment(r.Moment));
                 case "StepAnswered":
                     return new StepAnswered(Req(r.EventId), LogCodes.ParseStep(r.Step), r.ChoiceId, Req(r.IsCorrect),
                         LogCodes.ParseError(r.ErrorCode), Req(r.HelpInstead), Req(r.DecisionSec),
@@ -174,6 +175,9 @@ namespace SugarDash.Infrastructure.Logging
                     return new RestStarted(Req(r.Actual), Req(r.SimT), Req(r.T));
                 case "RestEnded":
                     return new RestEnded(Req(r.Actual), Req(r.SimT), Req(r.T));
+                case "HabitCheck":
+                    return new HabitCheckEnded(LogCodes.ParseHabitMoment(r.Moment),
+                        LogCodes.ParseHabitOutcome(r.Outcome), r.ReactionSec, Req(r.SimT), Req(r.T));
                 default:
                     return null;
             }

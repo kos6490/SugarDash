@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
 using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Records;
@@ -67,7 +68,12 @@ namespace SugarDash.Domain.Metrics
 
             int unnecessary = runList.SelectMany(r => r.Events.OfType<MeterPressed>()).Count(m => m.Unnecessary);
 
-            return new RunMetrics(accurate, stepAccuracy, errorCounts, medians, measuredFirst, unnecessary);
+            var habits = runList.SelectMany(r => r.Events.OfType<HabitCheckEnded>())
+                .Where(h => h.Outcome != HabitCheckOutcome.Skipped).ToList();
+            var habitCheck = new Ratio(habits.Count(h => h.Outcome == HabitCheckOutcome.Checked), habits.Count);
+
+            return new RunMetrics(accurate, stepAccuracy, errorCounts, medians, measuredFirst, unnecessary,
+                habitCheck);
         }
 
         /// <summary>주행 안의 저혈당 이벤트를 발동 순서대로 묶는다.</summary>
