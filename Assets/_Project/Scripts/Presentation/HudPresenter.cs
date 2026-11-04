@@ -119,7 +119,7 @@ namespace SugarDash.Presentation
 
         private void OnMeter()
         {
-            if (_run == null || !IsMeterAllowed(_flow.Tutorial.AllowedControls)) return;
+            if (_run == null || _flow == null || !IsMeterAllowed(_flow.Tutorial.AllowedControls)) return;
             _run.PressMeter();
         }
 

@@ -661,7 +661,9 @@ namespace SugarDash.App.Tests
             foreach (var pair in expect)
             {
                 rig.AdvanceUntil(() => rig.Tutorial.Step == pair.Key);
-                Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(pair.Value), pair.Key.ToString());
+                // 이동 네 안내는 대상이 다가오는 동안(Approach) 아무 조작도 받지 않는다.
+                var approach = pair.Key <= TutorialStep.Slide ? TutorialControls.None : pair.Value;
+                Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(approach), pair.Key.ToString());
                 if (pair.Key <= TutorialStep.Slide)
                 {
                     rig.AdvanceUntil(() => rig.Tutorial.Stage == TutorialStage.Trying);
@@ -745,6 +747,193 @@ namespace SugarDash.App.Tests
             Assert.That(rig.Tutorial.HighlightUsesTargetLanes, Is.True);
             rig.Tutorial.ReportAttempt(new TutorialAttempt(false, true, false));
             Assert.That(rig.Tutorial.HighlightUsesTargetLanes, Is.False);
+        }
+
+        [TestCase(TrackType.Type1, TutorialStep.MoveLeft)]
+        [TestCase(TrackType.Type1, TutorialStep.MoveRight)]
+        [TestCase(TrackType.Type1, TutorialStep.Jump)]
+        [TestCase(TrackType.Type1, TutorialStep.Slide)]
+        [TestCase(TrackType.Type2, TutorialStep.MoveLeft)]
+        [TestCase(TrackType.Type2, TutorialStep.MoveRight)]
+        [TestCase(TrackType.Type2, TutorialStep.Jump)]
+        [TestCase(TrackType.Type2, TutorialStep.Slide)]
+        public void AllowedControls_ApproachLocksMovementSteps(TrackType type, TutorialStep step)
+        {
+            var rig = new Rig(type).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == step);
+            Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Approach));
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(TutorialControls.None));
+
+            // 실패 뒤 다시 Approach로 돌아와도 잠긴다.
+            rig.AdvanceToTrying(step);
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(true, false, false));
+            rig.AdvanceUntil(() => rig.Tutorial.Stage == TutorialStage.Approach);
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(TutorialControls.None));
+        }
+
+        /// <summary>왼쪽·오른쪽 레인 이동만으로 start에서 닿을 수 있는 레인.</summary>
+        private static HashSet<int> ReachableLanes(int start, TutorialControls allowed)
+        {
+            var lanes = new HashSet<int> { start };
+            if ((allowed & TutorialControls.Left) != 0)
+                for (int l = start - 1; l >= -1; l--) lanes.Add(l);
+            if ((allowed & TutorialControls.Right) != 0)
+                for (int l = start + 1; l <= 1; l++) lanes.Add(l);
+            return lanes;
+        }
+
+        /// <summary>
+        /// 트랙 안내마다, 그 안내를 시작할 수 있는 모든 레인에서 직접 해 보는 동안 허용된 조작만으로 대상에 닿는다.
+        /// 왼쪽은 늘 0에서(첫 주행은 가운데에서 시작하고 Approach는 잠기며 실패하면 0으로 되돌림),
+        /// 오른쪽은 늘 −1에서(왼쪽 성공 = −1, 실패하면 −1로 되돌림) 시작한다. 나머지는 어느 레인에서든 시작할 수 있다.
+        /// </summary>
+        [TestCase(TrackType.Type1, TutorialStep.MoveLeft, new[] { 0 })]
+        [TestCase(TrackType.Type1, TutorialStep.MoveRight, new[] { -1 })]
+        [TestCase(TrackType.Type1, TutorialStep.Jump, new[] { -1, 0, 1 })]
+        [TestCase(TrackType.Type1, TutorialStep.Slide, new[] { -1, 0, 1 })]
+        [TestCase(TrackType.Type1, TutorialStep.Snack, new[] { -1, 0, 1 })]
+        [TestCase(TrackType.Type2, TutorialStep.MoveLeft, new[] { 0 })]
+        [TestCase(TrackType.Type2, TutorialStep.MoveRight, new[] { -1 })]
+        [TestCase(TrackType.Type2, TutorialStep.Jump, new[] { -1, 0, 1 })]
+        [TestCase(TrackType.Type2, TutorialStep.Slide, new[] { -1, 0, 1 })]
+        [TestCase(TrackType.Type2, TutorialStep.FoodRow, new[] { -1, 0, 1 })]
+        [TestCase(TrackType.Type2, TutorialStep.Rest, new[] { -1, 0, 1 })]
+        public void TrackStep_TargetReachableWithAllowedControls(TrackType type, TutorialStep step, int[] startLanes)
+        {
+            foreach (int start in startLanes)
+            {
+                var rig = new Rig(type).Begin();
+                rig.AdvanceUntil(() => rig.Tutorial.Step == step);
+                var placement = rig.Tutorial.TakePlacement(start);
+                rig.Tutorial.NotifyTargetNear(start);
+                rig.Tutorial.Acknowledge();
+                Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Trying));
+                var allowed = rig.Tutorial.AllowedControls;
+                var reach = ReachableLanes(start, allowed);
+                string at = $"{step} start {start} allowed {allowed}";
+
+                switch (placement.Kind)
+                {
+                    case TutorialObject.LaneBlock:
+                        int open = new[] { -1, 0, 1 }.Single(l => !placement.Lanes.Contains(l));
+                        Assert.That(reach, Has.Member(open), at);
+                        break;
+                    case TutorialObject.LowObstacle:
+                        Assert.That(allowed & TutorialControls.Jump, Is.EqualTo(TutorialControls.Jump), at);
+                        break;
+                    case TutorialObject.HighObstacle:
+                        Assert.That(allowed & TutorialControls.Slide, Is.EqualTo(TutorialControls.Slide), at);
+                        break;
+                    case TutorialObject.Snack:
+                    case TutorialObject.RestSpot:
+                        Assert.That(reach, Has.Member(placement.Lanes.Single()), at);
+                        break;
+                    case TutorialObject.FoodRow:
+                        // 음식 레인은 트랙이 정한다. 세 레인 모두 닿아야 한다.
+                        Assert.That(reach, Is.EquivalentTo(new[] { -1, 0, 1 }), at);
+                        break;
+                    default:
+                        Assert.Fail(at + " 알 수 없는 대상 " + placement.Kind);
+                        break;
+                }
+            }
+        }
+
+        [TestCase(TrackType.Type1)]
+        [TestCase(TrackType.Type2)]
+        public void MoveRight_FailSnapsToStartLane_NextPlacementSolvable(TrackType type)
+        {
+            var rig = new Rig(type).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.MoveRight);
+            Assert.That(rig.Tutorial.PendingPlayerLane, Is.Null);
+            rig.Tutorial.TakePlacement(-1);
+            rig.Tutorial.NotifyTargetNear(-1);
+            rig.Tutorial.Acknowledge();
+
+            // 오른쪽을 두 번 눌러 1로 가서 부딪혔다.
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(true, false, false));
+            Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Retry));
+            Assert.That(rig.Tutorial.PendingPlayerLane, Is.EqualTo(-1));
+            Assert.That(rig.Tutorial.TakePendingPlayerLane(), Is.EqualTo(-1));
+            Assert.That(rig.Tutorial.PendingPlayerLane, Is.Null, "한 번만 가져간다");
+            Assert.That(rig.Tutorial.TakePendingPlayerLane(), Is.Null);
+
+            rig.AdvanceUntil(() => rig.Tutorial.Stage == TutorialStage.Approach);
+            var again = rig.Tutorial.TakePlacement(-1);
+            Assert.That(again.Lanes, Is.EquivalentTo(new[] { -1, 1 }), "열린 레인은 0");
+            rig.Tutorial.NotifyTargetNear(-1);
+            rig.Tutorial.Acknowledge();
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(TutorialControls.Right));
+        }
+
+        [Test]
+        public void MoveLeft_FailSnapsToCenter()
+        {
+            var rig = new Rig(TrackType.Type1).Begin();
+            rig.AdvanceToTrying(TutorialStep.MoveLeft);
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(true, false, false));
+            Assert.That(rig.Tutorial.PendingPlayerLane, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void OtherTrackStepFail_NoSnap_StopClears()
+        {
+            var rig = new Rig(TrackType.Type1).Begin();
+            rig.AdvanceToTrying(TutorialStep.Jump);
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(true, false, false));
+            Assert.That(rig.Tutorial.PendingPlayerLane, Is.Null);
+
+            var rig2 = new Rig(TrackType.Type1).Begin();
+            rig2.AdvanceToTrying(TutorialStep.MoveLeft);
+            rig2.Tutorial.ReportAttempt(new TutorialAttempt(true, false, false));
+            rig2.Tutorial.Stop();
+            Assert.That(rig2.Tutorial.PendingPlayerLane, Is.Null);
+        }
+
+        [Test]
+        public void HighlightLanes_SlideUsesNearLane()
+        {
+            var rig = new Rig(TrackType.Type1).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.Slide);
+            rig.Tutorial.TakePlacement(0);
+            rig.Tutorial.NotifyTargetNear(-1);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { -1 }));
+            rig.Tutorial.Acknowledge();
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { -1 }));
+        }
+
+        [Test]
+        public void HighlightLanes_RestLane()
+        {
+            var rig = new Rig(TrackType.Type2).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.Rest);
+            rig.Tutorial.TakePlacement(1);
+            rig.Tutorial.NotifyTargetNear(1);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { 0 }));
+            Assert.That(rig.Tutorial.HighlightUsesTargetLanes, Is.False);
+        }
+
+        [Test]
+        public void HighlightLanes_SnackTrying_RetryClearsLane()
+        {
+            var rig = new Rig(TrackType.Type1).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.Snack);
+            rig.Tutorial.TakePlacement(0);
+            rig.Tutorial.NotifyTargetNear(0);
+            rig.Tutorial.Acknowledge();
+            Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Trying));
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { 1 }));
+
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(false, false, false));
+            Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Retry));
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+            rig.AdvanceUntil(() => rig.Tutorial.Stage == TutorialStage.Approach);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+
+            // 새 배치의 레인으로 바뀐다. 앞 배치의 레인(1)이 남지 않는다.
+            rig.Tutorial.TakePlacement(1);
+            rig.Tutorial.NotifyTargetNear(1);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { 0 }));
         }
     }
 }

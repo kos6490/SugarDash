@@ -35,6 +35,16 @@ namespace SugarDash.Presentation
         public static bool IsRetryVisible(TutorialStage stage) => stage == TutorialStage.Retry;
         public static bool AcceptsTap(float shownFor, float delay) => shownFor >= delay;
 
+        /// <summary>
+        /// 설명 창이 보이기 시작한 시각을 갱신한다. 보이면 처음 보인 시각을 지키고(없으면 now), 숨으면 −1.
+        /// 설명 창이 숨었다가(직접 해 봄·"다시 해봐요") 다시 뜨면 지연이 처음부터 다시 시작된다.
+        /// </summary>
+        public static float NextShownAt(bool promptVisible, float shownAt, float now)
+        {
+            if (!promptVisible) return -1f;
+            return shownAt < 0f ? now : shownAt;
+        }
+
         /// <summary>GameBootstrapper가 연결한다. 반환값을 Dispose하면 버튼 연결을 해제한다.</summary>
         public IDisposable Bind(GameFlowController flow)
         {
@@ -71,11 +81,19 @@ namespace SugarDash.Presentation
 
         private void OnTap()
         {
-            if (_flow == null || _shownAt < 0f) return;
-            if (!AcceptsTap(Time.unscaledTime - _shownAt, tapDelaySec)) return;
+            if (!TapReady()) return;
             _flow.Tutorial.Acknowledge();
         }
-        private void OnSkip() => _flow?.SkipTutorial();
+
+        // 설명 창을 넘기려던 터치가 막 뜬 건너뛰기에 닿지 않게 같은 지연을 둔다.
+        private void OnSkip()
+        {
+            if (!TapReady()) return;
+            _flow.SkipTutorial();
+        }
+
+        private bool TapReady() =>
+            _flow != null && _shownAt >= 0f && AcceptsTap(Time.unscaledTime - _shownAt, tapDelaySec);
 
         private void Update()
         {
@@ -85,8 +103,7 @@ namespace SugarDash.Presentation
 
             // root는 화면 전체를 덮어 아래 패널·측정기 터치를 막는다.
             bool prompt = IsPromptVisible(stage);
-            if (prompt && _shownAt < 0f) _shownAt = Time.unscaledTime;
-            else if (!prompt) _shownAt = -1f;
+            _shownAt = NextShownAt(prompt, _shownAt, Time.unscaledTime);
             if (root != null && root.activeSelf != prompt) root.SetActive(prompt);
             if (prompt && messageText != null && tutorial.Step != null)
                 messageText.text = TutorialText.For(tutorial.Step.Value, tutorial.Type);

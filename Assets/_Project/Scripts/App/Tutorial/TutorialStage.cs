@@ -7,7 +7,7 @@ namespace SugarDash.App
         Inactive,
         /// <summary>대상이 다가오거나 혈당 이벤트가 발동하기를 기다린다.</summary>
         Approach,
-        /// <summary>설명 창. 세 시계가 멈추고 "알겠어요"를 기다린다.</summary>
+        /// <summary>설명 창. 세 시계가 멈추고 화면 터치를 기다린다.</summary>
         Prompt,
         /// <summary>직접 해 본다(3-2-1 포함).</summary>
         Trying,

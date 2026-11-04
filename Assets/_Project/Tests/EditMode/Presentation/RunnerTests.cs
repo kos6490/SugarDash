@@ -122,6 +122,26 @@ namespace SugarDash.Presentation.Tests
             new TrackItem(kind, lane, 0, snackId);
 
         [Test]
+        public void SnapToLane_SetsLaneAndXImmediately_ClearsLaneChange()
+        {
+            _player.MoveRight();
+            _player.MoveRight();
+            _player.Advance(_player.LaneChangeSec / 2);
+            Assert.That(_player.X, Is.GreaterThan(0f));
+
+            _player.SnapToLane(-1);
+
+            Assert.That(_player.TargetLane, Is.EqualTo(-1));
+            Assert.That(_player.CurrentLane, Is.EqualTo(-1));
+            Assert.That(_player.X, Is.EqualTo(-_player.LaneWidth).Within(Eps));
+            _player.Advance(_player.LaneChangeSec);
+            Assert.That(_player.CurrentLane, Is.EqualTo(-1), "옮기던 이동이 남지 않는다");
+
+            _player.SnapToLane(5);
+            Assert.That(_player.CurrentLane, Is.EqualTo(1), "바깥 레인으로 묶는다");
+        }
+
+        [Test]
         public void MoveLeftRight_ClampsAtOuterLanes_AndSlidesOverLaneChangeTime()
         {
             _player.MoveLeft();
@@ -562,6 +582,22 @@ namespace SugarDash.Presentation.Tests
             _track.SetTutorialGuided(true);
             _track.PlaceTutorial(new TutorialPlacement(TutorialObject.LowObstacle, new[] { 1, -1 }));
             Assert.That(_track.TutorialTargetLanes, Is.EqualTo(new[] { -1, 1 }));
+        }
+
+        [Test]
+        public void TutorialTargetLanes_ExcludesTargetsAtOrBehindPlayer()
+        {
+            Run(10);
+            _track.SetTutorialGuided(true);
+            _track.PlaceTutorial(new TutorialPlacement(TutorialObject.LowObstacle, new[] { 1, -1 }));
+            double z = _track.NearestTutorialTargetZ.Value;
+
+            // 대상이 캐릭터 위치(z = 0)를 막 지나간다. 트랙에는 남아 있지만 강조 레인에서 빠진다.
+            _track.Advance((z + 0.5) / Speed, Speed, true);
+
+            Assert.That(_track.Items.Any(x => x.IsTutorialTarget), Is.True);
+            Assert.That(_track.TutorialTargetLanes, Is.Empty);
+            Assert.That(_track.NearestTutorialTargetZ, Is.Null);
         }
 
         [Test]

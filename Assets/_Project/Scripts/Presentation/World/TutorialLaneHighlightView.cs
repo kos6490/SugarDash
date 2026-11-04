@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace SugarDash.Presentation
 {
@@ -28,7 +29,8 @@ namespace SugarDash.Presentation
         [SerializeField] private Color stripColor = new Color(1f, 0.92f, 0.1f, 0.35f);
 
         private readonly List<Transform> _strips = new List<Transform>();
-        private readonly List<Material> _materialCopies = new List<Material>();
+        // 기본 띠가 함께 쓰는 머티리얼 사본 하나. 저절로 지워지지 않아 OnDestroy에서 지운다.
+        private Material _stripMaterial;
         private bool _visible;
 
         /// <summary>레인 가운데에서 z=0~toZ 구간의 가운데. x = lane × laneWidth.</summary>
@@ -45,6 +47,8 @@ namespace SugarDash.Presentation
         {
             if (lanes == null || lanes.Count == 0) { Hide(); return; }
             _visible = true;
+            // Inspector에서 바꾼 색이 플레이 중에도 보이게 매번 넣는다.
+            if (_stripMaterial != null) _stripMaterial.color = stripColor;
             while (_strips.Count < lanes.Count) _strips.Add(CreateStrip());
             for (int i = 0; i < _strips.Count; i++)
             {
@@ -83,12 +87,15 @@ namespace SugarDash.Presentation
                 // 시각 전용이다. 충돌은 계산으로 판정하므로 콜라이더를 두지 않는다.
                 Destroy(go.GetComponent<Collider>());
                 var rend = go.GetComponent<Renderer>();
-                var shader = Shader.Find("Sprites/Default");
-                // 머티리얼 사본은 저절로 지워지지 않아 OnDestroy에서 지운다.
-                var mat = shader != null ? new Material(shader) : rend.material;
-                mat.color = stripColor;
-                rend.sharedMaterial = mat;
-                _materialCopies.Add(mat);
+                rend.shadowCastingMode = ShadowCastingMode.Off;
+                rend.receiveShadows = false;
+                if (_stripMaterial == null)
+                {
+                    var shader = Shader.Find("Sprites/Default");
+                    _stripMaterial = shader != null ? new Material(shader) : new Material(rend.sharedMaterial);
+                }
+                _stripMaterial.color = stripColor;
+                rend.sharedMaterial = _stripMaterial;
                 go.transform.SetParent(transform, false);
             }
             go.name = "TutorialLaneStrip";
@@ -97,9 +104,8 @@ namespace SugarDash.Presentation
 
         private void OnDestroy()
         {
-            foreach (var m in _materialCopies)
-                if (m != null) Destroy(m);
-            _materialCopies.Clear();
+            if (_stripMaterial != null) Destroy(_stripMaterial);
+            _stripMaterial = null;
         }
     }
 }

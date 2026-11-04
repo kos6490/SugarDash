@@ -104,6 +104,17 @@ namespace SugarDash.Presentation
             UpdateView();
         }
 
+        /// <summary>
+        /// 캐릭터를 그 레인에 바로 놓는다. 옮기던 중이면 그 이동도 지운다.
+        /// 튜토리얼 왼쪽·오른쪽 안내를 실패했을 때 "다시 해봐요" 동안 시작 레인으로 되돌리는 데 쓴다.
+        /// </summary>
+        public void SnapToLane(int lane)
+        {
+            _targetLane = Math.Max(-1, Math.Min(1, lane));
+            _x = _targetLane * laneWidth;
+            UpdateView();
+        }
+
         public void MoveLeft()
         {
             if (Resting) return;

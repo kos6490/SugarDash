@@ -174,7 +174,7 @@ namespace SugarDash.Bootstrap
 
         /// <summary>
         /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 주행 종료 확인(결과 화면) → 튜토리얼 진행 →
-        /// 튜토리얼 대상 놓기 → 캐릭터 → 트랙 → 충돌 판정 → 튜토리얼 결과·멈춤 거리 확인.
+        /// 튜토리얼 캐릭터 되돌리기 → 튜토리얼 대상 놓기 → 캐릭터 → 트랙 → 충돌 판정 → 튜토리얼 결과·멈춤 거리 확인.
         /// 러너 화면은 RunController가 정한 worldDt로만 움직인다.
         /// </summary>
         private void Update()
@@ -198,6 +198,10 @@ namespace SugarDash.Bootstrap
                 track.ResetRun(Environment.TickCount);
                 track.SetScene(_run.CurrentScene?.Id);
             }
+
+            // 왼쪽·오른쪽 안내를 실패하면 "다시 해봐요" 동안 시작 레인으로 되돌린다. 다음 배치가 이 레인을 기준으로 놓인다.
+            int? snapLane = _tutorial.TakePendingPlayerLane();
+            if (snapLane.HasValue) player.SnapToLane(snapLane.Value);
 
             var placement = _tutorial.TakePlacement(player.CurrentLane);
             if (placement != null) track.PlaceTutorial(placement);
@@ -232,7 +236,6 @@ namespace SugarDash.Bootstrap
 
             if (laneHighlight != null)
             {
-                // HighlightLanes는 읽을 때마다 목록을 만들 수 있어 한 번만 읽는다.
                 var lanes = _tutorial.HighlightUsesTargetLanes ? track.TutorialTargetLanes : _tutorial.HighlightLanes;
                 if (lanes.Count == 0 || !nearest.HasValue) laneHighlight.Hide();
                 else laneHighlight.Show(lanes, player.LaneWidth, (float)nearest.Value);

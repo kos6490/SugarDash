@@ -41,6 +41,29 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void TutorialPrompt_ShownAtRestartsWhenPromptReturns()
+        {
+            // Prompt: 처음 보인 시각을 잡고 지킨다.
+            float shown = TutorialPromptView.NextShownAt(true, -1f, 1f);
+            Assert.That(shown, Is.EqualTo(1f));
+            shown = TutorialPromptView.NextShownAt(true, shown, 3f);
+            Assert.That(shown, Is.EqualTo(1f));
+
+            // Prompt → Trying → Prompt: 다시 뜬 시각부터 지연을 센다.
+            shown = TutorialPromptView.NextShownAt(TutorialPromptView.IsPromptVisible(TutorialStage.Trying), shown, 4f);
+            Assert.That(shown, Is.EqualTo(-1f));
+            shown = TutorialPromptView.NextShownAt(TutorialPromptView.IsPromptVisible(TutorialStage.Prompt), shown, 10f);
+            Assert.That(shown, Is.EqualTo(10f));
+            Assert.That(TutorialPromptView.AcceptsTap(10.2f - shown, 0.5f), Is.False);
+
+            // Prompt → Retry → Prompt도 같다.
+            shown = TutorialPromptView.NextShownAt(TutorialPromptView.IsPromptVisible(TutorialStage.Retry), shown, 11f);
+            Assert.That(shown, Is.EqualTo(-1f));
+            shown = TutorialPromptView.NextShownAt(TutorialPromptView.IsPromptVisible(TutorialStage.Prompt), shown, 20f);
+            Assert.That(shown, Is.EqualTo(20f));
+        }
+
+        [Test]
         public void ScreenVisibility_PerFlowScreen()
         {
             foreach (FlowScreen s in System.Enum.GetValues(typeof(FlowScreen)))
