@@ -107,7 +107,8 @@ namespace SugarDash.Bootstrap
                 },
             };
             _flow = new GameFlowController(_run, new ReportQueryService(logDirectory),
-                new SettingsRepository(Path.Combine(Application.persistentDataPath, "settings.json")), profiles);
+                new SettingsRepository(Path.Combine(Application.persistentDataPath, "settings.json")), profiles,
+                new TutorialController(_run, 3, 1.5)); // TODO(작업 9): Inspector 값으로
 
             // HUD 막대 범위는 1형 levels를 쓴다. 2형의 min/max가 다르면 주행마다 다시 묶어야 한다.
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));

@@ -103,6 +103,7 @@ namespace SugarDash.App.Tests
         private FakeQuery _query;
         private RunController _run;
         private GameFlowController _flow;
+        private TutorialController _tutorial;
 
         // 달리기 감소 2/s: 26초에 저혈당 발동, 아무것도 안 하면 36초에 탈락.
         [SetUp]
@@ -139,12 +140,13 @@ namespace SugarDash.App.Tests
                 var fsm = new HypoEventFsm(config, model, director, bus, () => _run.DistanceM);
                 var scoring = new SugarDash.Domain.Scoring.ScoringService(config.Score);
                 return new RunSession(config, model, director, fsm, scoring, bus.Subscribe<HypoEventTriggered>(fsm.Begin),
-                    scoring.Subscribe(bus));
+                    scoring.Subscribe(bus), bus.Subscribe<HyperEventTriggered>(fsm.BeginHyper));
             }, _log, bus);
             _best = new FakeBest();
             _best2 = new FakeBest();
             _settings = new FakeSettings { Stored = TrackType.Type1 };
-            _flow = new GameFlowController(_run, _query, _settings, Profiles(config.Score, config2.Score));
+            _tutorial = new TutorialController(_run, 3, 1.5);
+            _flow = new GameFlowController(_run, _query, _settings, Profiles(config.Score, config2.Score), _tutorial);
         }
 
         private IReadOnlyDictionary<TrackType, TrackTypeProfile> Profiles(
@@ -242,7 +244,10 @@ namespace SugarDash.App.Tests
             Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Settings));
             _flow.SelectType(TrackType.Type2);
             Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+            // 다른 유형은 튜토리얼 판으로 열리므로, 끝낸 적 있는 유형으로 두고 건너뛰어 일반 판을 연다.
+            _settings.TutorialDone.Add(TrackType.Type2);
             _flow.StartRun();
+            _flow.SkipTutorial();
             Assert.That(_run.TrackType, Is.EqualTo(TrackType.Type2));
             HitObstacleOnce();
 
@@ -308,7 +313,7 @@ namespace SugarDash.App.Tests
                 { TrackType.Type1, new TrackTypeProfile(new ConfigBuilder().Build().Score, _best, "v") },
             };
 
-            Assert.Throws<ArgumentException>(() => new GameFlowController(_run, _query, _settings, only1));
+            Assert.Throws<ArgumentException>(() => new GameFlowController(_run, _query, _settings, only1, _tutorial));
         }
 
         [Test]
@@ -490,6 +495,230 @@ namespace SugarDash.App.Tests
 
             Assert.That(_run.State, Is.EqualTo(RunState.Idle));
             Assert.That(_log.Ended, Is.EqualTo(1));
+        }
+
+        /// <summary>RunController.Tick, TutorialController.Tick, GameFlowController.Tick 순서(GameBootstrapper와 같다).</summary>
+        private void TFrames(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                _run.Tick(1);
+                _tutorial.Tick(1);
+                _flow.Tick();
+            }
+        }
+
+        /// <summary>안내 구간을 끝까지 성공시켜 Done으로 만든다(TutorialControllerTests의 Advance와 같은 방식).</summary>
+        private void DriveToDone()
+        {
+            for (int i = 0; i < 500 && _tutorial.Stage != TutorialStage.Done; i++)
+            {
+                var step = _tutorial.Step.Value;
+                bool track = step <= TutorialStep.Rest;
+                switch (_tutorial.Stage)
+                {
+                    case TutorialStage.Approach:
+                        if (track)
+                        {
+                            _tutorial.TakePlacement(0);
+                            _tutorial.NotifyTargetNear();
+                        }
+                        else
+                        {
+                            TFrames(1);
+                        }
+                        break;
+                    case TutorialStage.Prompt:
+                        _tutorial.Acknowledge();
+                        break;
+                    case TutorialStage.Trying:
+                        if (_run.ResumeCountdownRemaining > 0 || _run.IsShowingAnswerFeedback)
+                        {
+                            TFrames(1);
+                        }
+                        else if (track)
+                        {
+                            _tutorial.ReportAttempt(new TutorialAttempt(false,
+                                step == TutorialStep.Snack || step == TutorialStep.FoodRow, step == TutorialStep.Rest));
+                        }
+                        else
+                        {
+                            switch (_run.Phase)
+                            {
+                                case HypoPhase.Recognize: _run.PressMeter(); break;
+                                case HypoPhase.Respond: _run.ChooseSnack("juice"); break;
+                                case HypoPhase.Dose: _run.ChooseDose(DoseLevel.Proper); break;
+                                case HypoPhase.Remeasure: _run.ChooseRecheck(); break;
+                                case HypoPhase.Notify:
+                                case HypoPhase.HyperNotify:
+                                case HypoPhase.LowNotify:
+                                    _run.PressHelp(_run.Phase);
+                                    break;
+                            }
+                            TFrames(1);
+                        }
+                        break;
+                    default:
+                        TFrames(1);
+                        break;
+                }
+            }
+            Assert.That(_tutorial.Stage, Is.EqualTo(TutorialStage.Done), "안내 구간이 끝나야 한다 " + _tutorial.Step + " " + _run.Phase + " " + _run.Actual);
+        }
+
+        [Test]
+        public void FirstTypeSelect_StartsTutorialRun()
+        {
+            _settings.Stored = null;
+            _flow.Begin();
+
+            _flow.SelectType(TrackType.Type1);
+            _flow.StartRun();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Running));
+            Assert.That(_log.Begun, Is.EqualTo(0));
+            Assert.That(_log.BegunUnrecorded, Is.EqualTo(1));
+            Assert.That(_run.IsRecorded, Is.False);
+            Assert.That(_tutorial.IsActive, Is.True);
+            Assert.That(_tutorial.CanSkip, Is.False);
+        }
+
+        [Test]
+        public void SameTypeReselect_DoesNotSetPending()
+        {
+            _flow.Begin();
+            _flow.OpenSettings();
+            _flow.SelectType(TrackType.Type1);
+            _flow.StartRun();
+
+            Assert.That(_settings.TutorialPending, Is.False);
+            Assert.That(_log.Begun, Is.EqualTo(1));
+            Assert.That(_tutorial.IsActive, Is.False);
+        }
+
+        [Test]
+        public void DifferentTypeReselect_StartsTutorialRun()
+        {
+            _flow.Begin();
+            _flow.OpenSettings();
+            _flow.SelectType(TrackType.Type2);
+            _flow.StartRun();
+
+            Assert.That(_settings.TutorialPending, Is.True);
+            Assert.That(_log.Begun, Is.EqualTo(0));
+            Assert.That(_tutorial.IsActive, Is.True);
+            Assert.That(_tutorial.Type, Is.EqualTo(TrackType.Type2));
+        }
+
+        [Test]
+        public void GuidedComplete_SavesDoneAndClearsPending()
+        {
+            _settings.TutorialPending = true;
+            StartType1();
+
+            DriveToDone();
+
+            Assert.That(_settings.TutorialDone, Contains.Item(TrackType.Type1));
+            Assert.That(_settings.TutorialPending, Is.False);
+            Assert.That(_settings.TutorialDone, Has.No.Member(TrackType.Type2));
+        }
+
+        [Test]
+        public void StartTutorial_FromSettings()
+        {
+            _flow.Begin();
+            _flow.StartTutorial();
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title), "타이틀에서는 무시한다");
+            Assert.That(_log.BegunUnrecorded, Is.EqualTo(0));
+
+            _flow.OpenSettings();
+            _flow.StartTutorial();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Running));
+            Assert.That(_log.BegunUnrecorded, Is.EqualTo(1));
+            Assert.That(_log.Begun, Is.EqualTo(0));
+            Assert.That(_tutorial.IsActive, Is.True);
+            Assert.That(_tutorial.Type, Is.EqualTo(TrackType.Type1));
+        }
+
+        [Test]
+        public void SkipTutorial_IgnoredWhenNotDoneOrAfterGuided()
+        {
+            // 끝낸 적 없는 유형: 무시한다.
+            _settings.TutorialPending = true;
+            StartType1();
+            _flow.SkipTutorial();
+            Assert.That(_log.Begun, Is.EqualTo(0));
+            Assert.That(_log.BegunUnrecorded, Is.EqualTo(1));
+            Assert.That(_tutorial.IsGuided, Is.True);
+            Assert.That(_settings.TutorialPending, Is.True);
+
+            // 끝낸 적 있는 유형: 기록하는 일반 판이 새로 열린다.
+            SetUp();
+            _settings.TutorialPending = true;
+            _settings.TutorialDone.Add(TrackType.Type1);
+            StartType1();
+            Assert.That(_tutorial.CanSkip, Is.True);
+            _flow.SkipTutorial();
+            Assert.That(_log.Begun, Is.EqualTo(1));
+            Assert.That(_run.IsRecorded, Is.True);
+            Assert.That(_tutorial.IsActive, Is.False);
+            Assert.That(_settings.TutorialPending, Is.False);
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Running));
+            _flow.SkipTutorial();
+            Assert.That(_log.Begun, Is.EqualTo(1), "일반 판에서는 무시한다");
+
+            // 안내 구간을 마친 뒤(Done)에는 무시한다.
+            SetUp();
+            _settings.TutorialPending = true;
+            _settings.TutorialDone.Add(TrackType.Type1);
+            StartType1();
+            DriveToDone();
+            _flow.SkipTutorial();
+            Assert.That(_log.Begun, Is.EqualTo(0));
+            Assert.That(_log.BegunUnrecorded, Is.EqualTo(1));
+            Assert.That(_tutorial.IsActive, Is.True);
+        }
+
+        [Test]
+        public void TutorialResult_RetryStartsRecordedRun_BestUntouched()
+        {
+            _settings.TutorialPending = true;
+            StartType1();
+            DriveToDone();
+            TFrames(10); // 재개 카운트다운과 유예가 지나야 장애물이 닿는다.
+
+            _run.HitObstacle();
+            TFrames(1);
+
+            Assert.That(_flow.IsShowingResult, Is.True);
+            Assert.That(_flow.IsTutorialResult, Is.True);
+            Assert.That(_flow.LastScore, Is.Null);
+            Assert.That(_flow.BestScore, Is.Null);
+            Assert.That(_flow.LastResult, Is.Null);
+            Assert.That(_flow.IsNewBest, Is.False);
+            Assert.That(_best.Saves, Is.EqualTo(0));
+            Assert.That(_query.RequestedRunId, Is.Null);
+            Assert.That(_tutorial.IsActive, Is.False);
+
+            _flow.Retry();
+
+            Assert.That(_flow.IsTutorialResult, Is.False);
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Running));
+            Assert.That(_log.Begun, Is.EqualTo(1));
+            Assert.That(_run.IsRecorded, Is.True);
+            Assert.That(_best.Saves, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Shutdown_StopsTutorial()
+        {
+            _settings.TutorialPending = true;
+            StartType1();
+
+            _flow.Shutdown();
+
+            Assert.That(_tutorial.IsActive, Is.False);
         }
     }
 }

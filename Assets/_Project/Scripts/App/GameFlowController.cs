@@ -20,14 +20,17 @@ namespace SugarDash.App
         private readonly ILogQuery _query;
         private readonly ISettingsStore _settings;
         private readonly IReadOnlyDictionary<TrackType, TrackTypeProfile> _profiles;
+        private readonly TutorialController _tutorial;
         private bool _begun;
+        private bool _tutorialPending;
 
         public GameFlowController(RunController run, ILogQuery query, ISettingsStore settings,
-            IReadOnlyDictionary<TrackType, TrackTypeProfile> profiles)
+            IReadOnlyDictionary<TrackType, TrackTypeProfile> profiles, TutorialController tutorial)
         {
             _run = run ?? throw new ArgumentNullException(nameof(run));
             _query = query ?? throw new ArgumentNullException(nameof(query));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _tutorial = tutorial ?? throw new ArgumentNullException(nameof(tutorial));
             if (profiles == null) throw new ArgumentNullException(nameof(profiles));
             foreach (TrackType type in Enum.GetValues(typeof(TrackType)))
             {
@@ -61,6 +64,12 @@ namespace SugarDash.App
         /// <summary>결과 화면에서 다시 할 수 있다.</summary>
         public bool CanRetry => IsShowingResult;
 
+        /// <summary>튜토리얼 안내와 상태.</summary>
+        public TutorialController Tutorial => _tutorial;
+
+        /// <summary>결과 화면이 튜토리얼 판의 결과다. 점수·최고 점수·요약은 모두 null이다.</summary>
+        public bool IsTutorialResult { get; private set; }
+
         /// <summary>저장된 유형이 없으면 유형 선택, 있으면 타이틀로 시작한다. 주행은 바로 시작하지 않는다.</summary>
         public void Begin()
         {
@@ -68,6 +77,7 @@ namespace SugarDash.App
 
             _begun = true;
             CurrentType = _settings.LoadTrackType();
+            _tutorialPending = _settings.LoadTutorialPending();
             Screen = CurrentType == null ? FlowScreen.TypeSelect : FlowScreen.Title;
         }
 
@@ -77,6 +87,12 @@ namespace SugarDash.App
             // 나중에 이 앞에 보호자 확인 절차를 끼운다.
             if (Screen != FlowScreen.TypeSelect && Screen != FlowScreen.Settings) return;
 
+            // 처음 고르거나 다른 유형으로 바꾸면 다음 시작하기가 튜토리얼 판이다. 같은 유형을 다시 고르면 바꾼 것이 아니다.
+            if (CurrentType != type)
+            {
+                _tutorialPending = true;
+                _settings.SaveTutorialPending(true);
+            }
             _settings.SaveTrackType(type);
             CurrentType = type;
             Screen = FlowScreen.Title;
@@ -98,7 +114,48 @@ namespace SugarDash.App
             if (Screen != FlowScreen.Title || CurrentType == null) return;
 
             Screen = FlowScreen.Running;
+            if (_tutorialPending) BeginTutorialRun(CurrentType.Value);
+            else _run.StartRun(CurrentType.Value);
+        }
+
+        /// <summary>설정 화면에서 지금 유형의 튜토리얼 판을 바로 시작한다.</summary>
+        public void StartTutorial()
+        {
+            if (Screen != FlowScreen.Settings || CurrentType == null) return;
+
+            Screen = FlowScreen.Running;
+            BeginTutorialRun(CurrentType.Value);
+        }
+
+        /// <summary>
+        /// 건너뛰기: 튜토리얼 판을 닫고(기록 없음) 같은 유형의 기록하는 일반 판을 새로 연다.
+        /// 안내 구간 중이고 이 유형의 튜토리얼을 끝낸 적이 있을 때만 받는다.
+        /// </summary>
+        public void SkipTutorial()
+        {
+            if (Screen != FlowScreen.Running || CurrentType == null) return;
+            if (!_tutorial.IsGuided || !_tutorial.CanSkip) return;
+
+            _tutorial.Stop();
+            _run.EndRun();
+            SetPending(false);
             _run.StartRun(CurrentType.Value);
+        }
+
+        private void BeginTutorialRun(TrackType type)
+        {
+            _run.StartRun(type, false);
+            _tutorial.Begin(type, _settings.LoadTutorialDone(type), () =>
+            {
+                _settings.SaveTutorialDone(type);
+                SetPending(false);
+            });
+        }
+
+        private void SetPending(bool pending)
+        {
+            _tutorialPending = pending;
+            _settings.SaveTutorialPending(pending);
         }
 
         /// <summary>GameBootstrapper가 RunController.Tick 뒤 매 프레임 부른다.</summary>
@@ -106,6 +163,17 @@ namespace SugarDash.App
         {
             if (Screen != FlowScreen.Running) return;
             if (_run.State != RunState.Eliminated) return;
+
+            if (!_run.IsRecorded)
+            {
+                // 튜토리얼 판: 기록·최고 점수를 건드리지 않고 점수 없는 결과 화면으로 간다.
+                _tutorial.Stop();
+                _run.EndRun();
+                ClearResult();
+                IsTutorialResult = true;
+                Screen = FlowScreen.Result;
+                return;
+            }
 
             var profile = _profiles[_run.TrackType];
             string runId = _run.CurrentRunId;
@@ -150,9 +218,14 @@ namespace SugarDash.App
             LastScore = null;
             BestScore = null;
             IsNewBest = false;
+            IsTutorialResult = false;
         }
 
         /// <summary>씬 파괴·앱 종료 시 열린 주행의 기록을 닫는다.</summary>
-        public void Shutdown() => _run.EndRun();
+        public void Shutdown()
+        {
+            _tutorial.Stop();
+            _run.EndRun();
+        }
     }
 }
