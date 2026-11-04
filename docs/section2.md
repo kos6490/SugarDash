@@ -130,4 +130,4 @@
 - 맵이나 시간대 때문에 음식이 "나쁜" 것으로 보이게 하지 않는다.
 
 ### 팀원3(화면)
-- `Screen/SleepTransitionView`: 하루가 넘어갈 때 잠자는 그림이나 해·달 전환. 서서히 어두워지게 하지 말고 바로 검게 한 뒤 밝힌다. 길이는 Inspector 값(`Hold Sec`, `Fade In Sec`)이다.
+- `Screen/SleepTransitionView`: 하루가 넘어갈 때 잠자는 그림이나 해·달 전환. 서서히 어두워지게 하지 말고 바로 검게 한 뒤 밝힌다. 이 순서는 구조라서 바꾸지 않는다(서서히 어두워지면 바뀐 맵이 먼저 보인다). 그림과 밝아지는 모습은 바꿔도 된다([team-rules.md](team-rules.md) 2.3절). 길이는 Inspector 값(`Hold Sec`, `Fade In Sec`)이다.
