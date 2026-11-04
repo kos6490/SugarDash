@@ -48,6 +48,8 @@ namespace SugarDash.App
         // 대처 단계 오답 뒤 결과 문구 창이 닫히기를 기다린다.
         private bool _retryAwaitingFeedback;
         private double _retryRemaining;
+        // 강조할 레인. 배치(열린 레인·간식·쉬는 곳)나 대상이 가까워진 순간의 플레이어 레인에서 정한다.
+        private int? _highlightLane;
 
         /// <param name="glucoseMoveSec">혈당을 목표값까지 옮기는 시간(초, Inspector 값).</param>
         /// <param name="retryTextSec">"다시 해봐요" 문구를 보여 주는 시간(초, Inspector 값).</param>
@@ -77,6 +79,39 @@ namespace SugarDash.App
 
         /// <summary>이 유형의 튜토리얼을 끝낸 적이 있어 "건너뛰기"를 보여 준다.</summary>
         public bool CanSkip { get; private set; }
+
+        /// <summary>지금 쓸 수 있는 조작. 안내 구간이 아니면 모두 허용한다(spec 10.1절).</summary>
+        public TutorialControls AllowedControls
+        {
+            get
+            {
+                if (!IsGuided) return TutorialControls.All;
+                const TutorialControls moves =
+                    TutorialControls.Left | TutorialControls.Right | TutorialControls.Jump | TutorialControls.Slide;
+                switch (CurrentStep)
+                {
+                    case TutorialStep.MoveLeft: return TutorialControls.Left;
+                    case TutorialStep.MoveRight: return TutorialControls.Right;
+                    case TutorialStep.Jump: return TutorialControls.Jump;
+                    case TutorialStep.Slide: return TutorialControls.Slide;
+                }
+                // 측정기는 1형 측정기 안내부터 풀린다. 2형은 측정기가 없다.
+                bool meter = Type == TrackType.Type1 && _index >= Array.IndexOf(Type1Order, TutorialStep.HypoRecognize);
+                return meter ? moves | TutorialControls.Meter : moves;
+            }
+        }
+
+        /// <summary>강조할 레인(−1, 0, 1). 없으면 빈 목록. 설명 창부터 직접 해 보는 동안의 트랙 안내만 값이 있다.</summary>
+        public IReadOnlyList<int> HighlightLanes =>
+            HighlightVisible && CurrentStep != TutorialStep.FoodRow && _highlightLane.HasValue
+                ? new[] { _highlightLane.Value }
+                : Array.Empty<int>();
+
+        /// <summary>음식 줄 안내다. HighlightLanes는 비어 있고, 화면이 트랙의 대상 레인을 강조한다.</summary>
+        public bool HighlightUsesTargetLanes => HighlightVisible && CurrentStep == TutorialStep.FoodRow;
+
+        private bool HighlightVisible =>
+            IsGuided && (Stage == TutorialStage.Prompt || Stage == TutorialStage.Trying) && IsTrack(CurrentStep);
 
         /// <summary>
         /// 안내 구간을 시작한다. <c>run.StartRun(type, false)</c> 뒤에 부른다. guided를 켜고 발동을 모두 막는다.
@@ -110,6 +145,7 @@ namespace SugarDash.App
             _placementTaken = false;
             _retryAwaitingFeedback = false;
             _retryRemaining = 0;
+            _highlightLane = null;
         }
 
         /// <param name="dt">이번 프레임의 실제 경과 시간(초). "다시 해봐요" 시간에만 쓴다.</param>
@@ -168,17 +204,21 @@ namespace SugarDash.App
             switch (CurrentStep)
             {
                 case TutorialStep.MoveLeft:
-                    return Blocks(p == -1 ? 0 : p - 1);
+                    _highlightLane = p == -1 ? 0 : p - 1;
+                    return Blocks(_highlightLane.Value);
                 case TutorialStep.MoveRight:
-                    return Blocks(p == 1 ? 0 : p + 1);
+                    _highlightLane = p == 1 ? 0 : p + 1;
+                    return Blocks(_highlightLane.Value);
                 case TutorialStep.Jump:
                     return new TutorialPlacement(TutorialObject.LowObstacle, AllLanes);
                 case TutorialStep.Slide:
                     return new TutorialPlacement(TutorialObject.HighObstacle, AllLanes);
                 case TutorialStep.Snack:
-                    return new TutorialPlacement(TutorialObject.Snack, new[] { p == 0 ? 1 : 0 });
+                    _highlightLane = p == 0 ? 1 : 0;
+                    return new TutorialPlacement(TutorialObject.Snack, new[] { _highlightLane.Value });
                 case TutorialStep.Rest:
-                    return new TutorialPlacement(TutorialObject.RestSpot, new[] { p == 0 ? 1 : 0 });
+                    _highlightLane = p == 0 ? 1 : 0;
+                    return new TutorialPlacement(TutorialObject.RestSpot, new[] { _highlightLane.Value });
                 case TutorialStep.FoodRow:
                     return new TutorialPlacement(TutorialObject.FoodRow, Array.Empty<int>());
                 default:
@@ -188,9 +228,13 @@ namespace SugarDash.App
         }
 
         /// <summary>놓은 대상이 캐릭터 앞 멈춤 거리에 왔다. 세계를 멈추고 설명 창을 띄운다.</summary>
-        public void NotifyTargetNear()
+        /// <param name="playerLane">이 순간 캐릭터의 레인(−1, 0, 1). 점프·슬라이드 안내가 이 레인을 강조한다.</param>
+        public void NotifyTargetNear(int playerLane)
         {
             if (!IsGuided || Stage != TutorialStage.Approach || !IsTrack(CurrentStep) || !_placementTaken) return;
+
+            if (CurrentStep == TutorialStep.Jump || CurrentStep == TutorialStep.Slide)
+                _highlightLane = Math.Max(-1, Math.Min(1, playerLane));
 
             // 트랙 안내 동안 발동은 막혀 있는데 혈당은 계속 내려간다. 이벤트 없이 흔들림·게이지 경고가 나오지 않게
             // 설명 창 아래에서 시작 값으로 되돌린다. 간식 안내의 간식은 이 뒤(Trying)에 먹으므로 그대로 반영된다.
@@ -231,6 +275,7 @@ namespace SugarDash.App
             Stage = TutorialStage.Approach;
             _placementPending = IsTrack(step);
             _placementTaken = false;
+            _highlightLane = null;
             if (IsGlucoseStep(step))
             {
                 _run.SetTriggerGate(GateFor(step));

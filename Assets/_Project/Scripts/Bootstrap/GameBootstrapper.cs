@@ -226,7 +226,7 @@ namespace SugarDash.Bootstrap
             // 대상(레인 막기·음식 줄은 여러 개)이 지나간 프레임에 한 번만 결과를 넘긴다.
             if (targetPassed) _tutorial.ReportAttempt(new TutorialAttempt(hit, collected, rested));
             double? nearest = track.NearestTutorialTargetZ;
-            if (nearest.HasValue && nearest.Value <= tutorialStopDistance) _tutorial.NotifyTargetNear();
+            if (nearest.HasValue && nearest.Value <= tutorialStopDistance) _tutorial.NotifyTargetNear(player.CurrentLane);
         }
 
         private void OnApplicationPause(bool paused)

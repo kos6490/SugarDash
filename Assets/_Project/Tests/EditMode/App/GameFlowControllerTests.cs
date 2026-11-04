@@ -521,7 +521,7 @@ namespace SugarDash.App.Tests
                         if (track)
                         {
                             _tutorial.TakePlacement(0);
-                            _tutorial.NotifyTargetNear();
+                            _tutorial.NotifyTargetNear(0);
                         }
                         else
                         {

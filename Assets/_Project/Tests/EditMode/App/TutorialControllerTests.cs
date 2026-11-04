@@ -138,7 +138,7 @@ namespace SugarDash.App.Tests
                         if (IsTrack(step))
                         {
                             Assert.That(Tutorial.TakePlacement(0), Is.Not.Null);
-                            Tutorial.NotifyTargetNear();
+                            Tutorial.NotifyTargetNear(0);
                         }
                         else
                         {
@@ -370,7 +370,7 @@ namespace SugarDash.App.Tests
         {
             var rig = new Rig(TrackType.Type1, b => b.ResumeCountdownSec = 2).Begin();
             rig.Tutorial.TakePlacement(0);
-            rig.Tutorial.NotifyTargetNear();
+            rig.Tutorial.NotifyTargetNear(0);
 
             rig.Tutorial.Acknowledge();
 
@@ -384,7 +384,7 @@ namespace SugarDash.App.Tests
         {
             var rig = new Rig(TrackType.Type1).Begin();
             rig.Tutorial.TakePlacement(0);
-            rig.Tutorial.NotifyTargetNear();
+            rig.Tutorial.NotifyTargetNear(0);
             Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Prompt));
 
             for (int i = 0; i < 100; i++) rig.Frame(1);
@@ -443,7 +443,7 @@ namespace SugarDash.App.Tests
                 rig.Frame(1);
                 Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Approach));
                 Assert.That(rig.Tutorial.TakePlacement(0), Is.Not.Null);
-                rig.Tutorial.NotifyTargetNear();
+                rig.Tutorial.NotifyTargetNear(0);
                 Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Prompt));
                 Assert.That(rig.Run.Actual, Is.EqualTo(rig.Config.Glucose.Levels.Initial).Within(Eps));
                 rig.Tutorial.Acknowledge();
@@ -637,6 +637,114 @@ namespace SugarDash.App.Tests
             rig.Frame(1);
             Assert.That(rig.Run.State, Is.EqualTo(RunState.Eliminated));
             Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Done));
+        }
+
+        private const TutorialControls Moves =
+            TutorialControls.Left | TutorialControls.Right | TutorialControls.Jump | TutorialControls.Slide;
+
+        [Test]
+        public void AllowedControls_PerStep_Type1()
+        {
+            var rig = new Rig(TrackType.Type1).Begin();
+            var expect = new Dictionary<TutorialStep, TutorialControls>
+            {
+                { TutorialStep.MoveLeft, TutorialControls.Left },
+                { TutorialStep.MoveRight, TutorialControls.Right },
+                { TutorialStep.Jump, TutorialControls.Jump },
+                { TutorialStep.Slide, TutorialControls.Slide },
+                { TutorialStep.Snack, Moves },
+                { TutorialStep.HypoRecognize, Moves | TutorialControls.Meter },
+                { TutorialStep.HypoRespond, Moves | TutorialControls.Meter },
+                { TutorialStep.HyperNotify, Moves | TutorialControls.Meter },
+                { TutorialStep.Finish, Moves | TutorialControls.Meter },
+            };
+            foreach (var pair in expect)
+            {
+                rig.AdvanceUntil(() => rig.Tutorial.Step == pair.Key);
+                Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(pair.Value), pair.Key.ToString());
+                if (pair.Key <= TutorialStep.Slide)
+                {
+                    rig.AdvanceUntil(() => rig.Tutorial.Stage == TutorialStage.Trying);
+                    Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(pair.Value), pair.Key + " Trying");
+                }
+            }
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.Finish && rig.Tutorial.Stage == TutorialStage.Prompt);
+            rig.Tutorial.Acknowledge();
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(TutorialControls.All));
+        }
+
+        [Test]
+        public void AllowedControls_Type2_NoMeter()
+        {
+            var rig = new Rig(TrackType.Type2).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.FoodRow);
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(Moves));
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.HighTell);
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(Moves));
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.Finish && rig.Tutorial.Stage == TutorialStage.Prompt);
+            rig.Tutorial.Acknowledge();
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(TutorialControls.All));
+        }
+
+        [Test]
+        public void AllowedControls_InactiveIsAll()
+        {
+            var rig = new Rig(TrackType.Type1);
+            Assert.That(rig.Tutorial.AllowedControls, Is.EqualTo(TutorialControls.All));
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+        }
+
+        [Test]
+        public void HighlightLanes_PerStep()
+        {
+            var rig = new Rig(TrackType.Type1).Begin();
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty); // Approach
+
+            rig.Tutorial.TakePlacement(0);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+            rig.Tutorial.NotifyTargetNear(0);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { -1 })); // MoveLeft, p=0
+            rig.Tutorial.Acknowledge();
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { -1 })); // Trying
+
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(false, false, false)); // -> MoveRight
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+            rig.Tutorial.TakePlacement(-1);
+            rig.Tutorial.NotifyTargetNear(-1);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { 0 })); // 열린 레인 = p+1
+            rig.Tutorial.Acknowledge();
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(false, false, false)); // -> Jump
+            rig.Tutorial.TakePlacement(0);
+            rig.Tutorial.NotifyTargetNear(1);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { 1 }));
+            rig.Tutorial.Acknowledge();
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(true, false, false)); // Retry
+            Assert.That(rig.Tutorial.Stage, Is.EqualTo(TutorialStage.Retry));
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.Snack && rig.Tutorial.Stage == TutorialStage.Approach);
+            rig.Tutorial.TakePlacement(0);
+            rig.Tutorial.NotifyTargetNear(0);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.EqualTo(new[] { 1 }));
+
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.HypoRespond);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+        }
+
+        [Test]
+        public void Highlight_FoodRowUsesTargetLanes()
+        {
+            var rig = new Rig(TrackType.Type2).Begin();
+            rig.AdvanceUntil(() => rig.Tutorial.Step == TutorialStep.FoodRow && rig.Tutorial.Stage == TutorialStage.Approach);
+            Assert.That(rig.Tutorial.HighlightUsesTargetLanes, Is.False);
+            rig.Tutorial.TakePlacement(0);
+            rig.Tutorial.NotifyTargetNear(0);
+            Assert.That(rig.Tutorial.HighlightLanes, Is.Empty);
+            Assert.That(rig.Tutorial.HighlightUsesTargetLanes, Is.True);
+            rig.Tutorial.Acknowledge();
+            Assert.That(rig.Tutorial.HighlightUsesTargetLanes, Is.True);
+            rig.Tutorial.ReportAttempt(new TutorialAttempt(false, true, false));
+            Assert.That(rig.Tutorial.HighlightUsesTargetLanes, Is.False);
         }
     }
 }
