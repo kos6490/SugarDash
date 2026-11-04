@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
@@ -58,7 +59,46 @@ namespace SugarDash.Infrastructure.Progress
             }
         }
 
-        public void SaveTrackType(TrackType type)
+        public bool LoadTutorialPending() => TryRead()?.TutorialPending ?? true;
+
+        public bool LoadTutorialDone(TrackType type)
+        {
+            var done = TryRead()?.TutorialDone;
+            return done != null && done.Contains(LogCodes.TrackType(type));
+        }
+
+        public void SaveTrackType(TrackType type) =>
+            Update(dto => dto.TrackType = LogCodes.TrackType(type));
+
+        public void SaveTutorialPending(bool pending) =>
+            Update(dto => dto.TutorialPending = pending);
+
+        public void SaveTutorialDone(TrackType type) =>
+            Update(dto =>
+            {
+                string code = LogCodes.TrackType(type);
+                if (dto.TutorialDone == null) dto.TutorialDone = new List<string>();
+                if (!dto.TutorialDone.Contains(code)) dto.TutorialDone.Add(code);
+            });
+
+        /// <summary>파일을 읽는다. 없거나 깨졌거나 스키마가 다르면 null.</summary>
+        private SettingsDto TryRead()
+        {
+            try
+            {
+                if (!File.Exists(_path)) return null;
+
+                var dto = JsonConvert.DeserializeObject<SettingsDto>(File.ReadAllText(_path, Utf8NoBom), Settings);
+                return dto != null && dto.SchemaVersion == SchemaVersion ? dto : null;
+            }
+            catch (Exception e) when (e is JsonException || e is IOException || e is UnauthorizedAccessException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>지금 파일을 읽어 다른 필드는 두고 한 곳만 바꾼 뒤 원자적으로 쓴다. 읽을 수 없으면 빈 DTO에서 시작한다.</summary>
+        private void Update(Action<SettingsDto> change)
         {
             string tmp = _path + ".tmp";
             try
@@ -66,7 +106,9 @@ namespace SugarDash.Infrastructure.Progress
                 string dir = Path.GetDirectoryName(_path);
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
-                var dto = new SettingsDto { SchemaVersion = SchemaVersion, TrackType = LogCodes.TrackType(type) };
+                var dto = TryRead() ?? new SettingsDto();
+                dto.SchemaVersion = SchemaVersion;
+                change(dto);
                 File.WriteAllText(tmp, JsonConvert.SerializeObject(dto, Settings), Utf8NoBom);
 
                 if (File.Exists(_path)) File.Replace(tmp, _path, null);
@@ -74,7 +116,7 @@ namespace SugarDash.Infrastructure.Progress
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
-                // 유형 선택만 잃고 게임은 계속한다(BestScoreRepository와 같은 방침).
+                // 저장 값만 잃고 게임은 계속한다(BestScoreRepository와 같은 방침).
                 UnityEngine.Debug.LogException(e);
             }
         }

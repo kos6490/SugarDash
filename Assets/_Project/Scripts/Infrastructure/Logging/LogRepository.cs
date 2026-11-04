@@ -29,6 +29,7 @@ namespace SugarDash.Infrastructure.Logging
         private string _runId;
         private string _path;
         private int _seq;
+        private bool _unrecorded;
 
         /// <param name="directory">기록 폴더. Bootstrap이 <c>Application.persistentDataPath</c> 아래 경로를 넘긴다.</param>
         /// <param name="utcNow">주행 시작·종료 시각과 runId에 쓰는 UTC 시계. 생략하면 시스템 시계.</param>
@@ -159,7 +160,8 @@ namespace SugarDash.Infrastructure.Logging
 
         public string BeginRun(string configVersion, TrackType trackType)
         {
-            if (_runId != null) throw new InvalidOperationException($"이미 열린 주행이 있다 ({_runId})");
+            if (_runId != null || _unrecorded)
+                throw new InvalidOperationException($"이미 열린 주행이 있다 ({_runId ?? "기록 안 함"})");
             if (string.IsNullOrEmpty(configVersion))
                 throw new ArgumentException("configVersion이 비었다", nameof(configVersion));
 
@@ -175,8 +177,20 @@ namespace SugarDash.Infrastructure.Logging
             return _runId;
         }
 
+        public void BeginUnrecordedRun()
+        {
+            if (_runId != null || _unrecorded) throw new InvalidOperationException("이미 열린 주행이 있다");
+            _unrecorded = true;
+        }
+
         public void EndRun()
         {
+            if (_unrecorded)
+            {
+                _unrecorded = false;
+                return;
+            }
+
             if (_runId == null) return;
 
             Append(new LogRecordDto { Type = "RunEnded", AtUtc = Iso(_utcNow()) });
@@ -195,6 +209,8 @@ namespace SugarDash.Infrastructure.Logging
 
         private void Append(LogRecordDto record)
         {
+            if (_unrecorded) return; // 튜토리얼 판은 이벤트를 버린다.
+
             // 주행 밖에서 도메인 이벤트가 오면 조립(Bootstrap)이나 주행 흐름의 버그다.
             if (_runId == null) throw new InvalidOperationException($"열린 주행 없이 기록하려 했다 ({record.Type})");
 

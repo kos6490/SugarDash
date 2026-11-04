@@ -14,6 +14,12 @@ namespace SugarDash.Domain.Ports
         /// <returns>주행 식별자(runId).</returns>
         string BeginRun(string configVersion, TrackType trackType);
 
+        /// <summary>
+        /// 기록하지 않는 주행을 연다(튜토리얼 판). 파일을 만들지 않고, 열린 동안 오는 이벤트는 버린다.
+        /// 이미 열린 주행이 있으면 예외를 던진다. <see cref="EndRun"/>이 닫는다.
+        /// </summary>
+        void BeginUnrecordedRun();
+
         /// <summary>열린 주행 기록을 닫는다. 열린 주행이 없으면 아무것도 하지 않는다.</summary>
         void EndRun();
     }

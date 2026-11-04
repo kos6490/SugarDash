@@ -36,6 +36,10 @@ namespace SugarDash.App.Tests
                 return "run-" + Begun;
             }
 
+            public int BegunUnrecorded;
+
+            public void BeginUnrecordedRun() => BegunUnrecorded++;
+
             public void EndRun() => Ended++;
         }
 

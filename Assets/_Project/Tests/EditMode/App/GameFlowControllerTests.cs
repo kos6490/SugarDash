@@ -26,7 +26,11 @@ namespace SugarDash.App.Tests
             public int Begun;
             public int Ended;
 
+            public int BegunUnrecorded;
+
             public string BeginRun(string configVersion, TrackType trackType) => "run-" + ++Begun;
+
+            public void BeginUnrecordedRun() => BegunUnrecorded++;
 
             public void EndRun() => Ended++;
         }
@@ -76,7 +80,14 @@ namespace SugarDash.App.Tests
         {
             public TrackType? Stored;
             public int Saves;
+            public bool TutorialPending; // 가짜는 false로 시작해 기존 테스트가 일반 판을 기대하게 둔다.
+            public readonly System.Collections.Generic.HashSet<TrackType> TutorialDone =
+                new System.Collections.Generic.HashSet<TrackType>();
             public TrackType? LoadTrackType() => Stored;
+            public bool LoadTutorialPending() => TutorialPending;
+            public void SaveTutorialPending(bool pending) => TutorialPending = pending;
+            public bool LoadTutorialDone(TrackType type) => TutorialDone.Contains(type);
+            public void SaveTutorialDone(TrackType type) => TutorialDone.Add(type);
 
             public void SaveTrackType(TrackType type)
             {

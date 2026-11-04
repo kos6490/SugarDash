@@ -10,5 +10,17 @@ namespace SugarDash.Domain.Ports
 
         /// <summary>유형을 저장한다. 디스크 오류는 호출자에게 올리지 않는다.</summary>
         void SaveTrackType(TrackType type);
+
+        /// <summary>튜토리얼을 지금 해야 하는지. 값이 없거나 읽을 수 없으면 true.</summary>
+        bool LoadTutorialPending();
+
+        /// <summary>튜토리얼 대기 값을 저장한다. 디스크 오류는 호출자에게 올리지 않는다.</summary>
+        void SaveTutorialPending(bool pending);
+
+        /// <summary>그 유형의 튜토리얼을 끝낸 적이 있는지. 값이 없거나 읽을 수 없으면 false.</summary>
+        bool LoadTutorialDone(TrackType type);
+
+        /// <summary>그 유형의 튜토리얼을 끝냈다고 저장한다. 디스크 오류는 호출자에게 올리지 않는다.</summary>
+        void SaveTutorialDone(TrackType type);
     }
 }

@@ -36,6 +36,36 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(_repo.LoadTrackType(), Is.EqualTo(type));
         }
 
+        [TestCase(null)]
+        [TestCase("{\"schemaVersion\":1,\"trackType\":\"type1\"}")]
+        [TestCase("{not json")]
+        public void Tutorial_Defaults_WhenMissingOrOldFile(string content)
+        {
+            if (content != null)
+            {
+                Directory.CreateDirectory(_dir);
+                File.WriteAllText(_path, content);
+            }
+
+            Assert.That(_repo.LoadTutorialPending(), Is.True);
+            Assert.That(_repo.LoadTutorialDone(TrackType.Type1), Is.False);
+            Assert.That(_repo.LoadTutorialDone(TrackType.Type2), Is.False);
+        }
+
+        [Test]
+        public void Tutorial_SaveKeepsOtherFields()
+        {
+            _repo.SaveTrackType(TrackType.Type2);
+            _repo.SaveTutorialDone(TrackType.Type1);
+            _repo.SaveTutorialPending(false);
+            _repo.SaveTrackType(TrackType.Type1);
+
+            Assert.That(_repo.LoadTrackType(), Is.EqualTo(TrackType.Type1));
+            Assert.That(_repo.LoadTutorialPending(), Is.False);
+            Assert.That(_repo.LoadTutorialDone(TrackType.Type1), Is.True);
+            Assert.That(_repo.LoadTutorialDone(TrackType.Type2), Is.False);
+        }
+
         [Test]
         public void Load_NoFile_ReturnsNull() => Assert.That(_repo.LoadTrackType(), Is.Null);
 

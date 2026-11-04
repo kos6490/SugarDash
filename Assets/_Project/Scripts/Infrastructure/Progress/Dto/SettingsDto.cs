@@ -8,5 +8,7 @@ namespace SugarDash.Infrastructure.Progress.Dto
     {
         public int SchemaVersion { get; set; }
         public string TrackType { get; set; }
+        public bool? TutorialPending { get; set; }
+        public System.Collections.Generic.List<string> TutorialDone { get; set; }
     }
 }

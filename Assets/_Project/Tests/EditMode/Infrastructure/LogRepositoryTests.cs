@@ -44,6 +44,33 @@ namespace SugarDash.Infrastructure.Tests
             RawLines(path).Select(LogRecordJson.Deserialize).ToArray();
 
         [Test]
+        public void UnrecordedRun_WritesNoFile_IgnoresEvents()
+        {
+            _repo.BeginUnrecordedRun();
+            Assert.That(_repo.CurrentRunId, Is.Null);
+            Assert.DoesNotThrow(() =>
+            {
+                _bus.Publish(new SectionEntered("signal", 12.5, 1, 1));
+                _bus.Publish(new GlucoseRangeEntered(95.5, 3, 3));
+                _repo.EndRun();
+            });
+
+            int files = Directory.Exists(_dir) ? Directory.GetFiles(_dir, "*.jsonl").Length : 0;
+            Assert.That(files, Is.EqualTo(0));
+
+            string runId = _repo.BeginRun("cfg-test", TrackType.Type1);
+            Assert.That(runId, Is.Not.Null);
+            Assert.That(Lines().Select(l => l.Type), Is.EqualTo(new[] { "RunStarted" }));
+        }
+
+        [Test]
+        public void UnrecordedRun_ThrowsWhenRunOpen()
+        {
+            _repo.BeginRun("cfg-test", TrackType.Type1);
+            Assert.Throws<InvalidOperationException>(() => _repo.BeginUnrecordedRun());
+        }
+
+        [Test]
         public void Writes_NewRecordTypes()
         {
             _repo.BeginRun("cfg-test", TrackType.Type1);

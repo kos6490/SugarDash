@@ -22,6 +22,7 @@ namespace SugarDash.Presentation.Tests
         private sealed class NullLog : ILogRepository
         {
             public string BeginRun(string configVersion, SugarDash.Domain.Config.TrackType trackType) => "run";
+            public void BeginUnrecordedRun() { }
             public void EndRun() { }
         }
 
