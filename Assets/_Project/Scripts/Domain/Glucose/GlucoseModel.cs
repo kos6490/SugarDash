@@ -15,10 +15,11 @@ namespace SugarDash.Domain.Glucose
         private readonly GlucoseConfig _config;
         private readonly Dictionary<string, SnackConfig> _snacks;
         private readonly List<RateWindow> _windows = new List<RateWindow>();
-        private readonly DisplayDelayBuffer _display;
+        private DisplayDelayBuffer _display;
         private readonly List<double> _breakpoints = new List<double>();
 
         private double _suddenDropEnd = double.NegativeInfinity;
+        private double _scriptedMoveEnd = double.NegativeInfinity;
         private double? _runDecayOverride;
 
         public GlucoseModel(GlucoseConfig config)
@@ -36,6 +37,7 @@ namespace SugarDash.Domain.Glucose
         /// <summary>decisionDt 누적. 단계 제한 시간과 판단 시간에 쓴다. 로그의 T.</summary>
         public double DecisionTime { get; private set; }
         public bool IsSuddenDropActive => SimTime < _suddenDropEnd;
+        public bool IsScriptedMoveActive => SimTime < _scriptedMoveEnd;
 
         /// <summary>장면 덮어쓰기. null이면 설정 값(glucose.runDecayPerSec)으로 돌아간다. 다음 Tick부터 적용한다.</summary>
         public void SetRunDecayPerSec(double? perSec) => _runDecayOverride = perSec;
@@ -83,6 +85,29 @@ namespace SugarDash.Domain.Glucose
             var drop = _config.SuddenDrop;
             _suddenDropEnd = SimTime + drop.DurationSec;
             _windows.Add(new RateWindow(SimTime, _suddenDropEnd, -drop.Amount / drop.DurationSec));
+        }
+
+        /// <summary>
+        /// 튜토리얼용. 지금 혈당에서 target까지 durationSec 동안 균등하게 옮기는 창을 더한다.
+        /// 이동량은 시작 때 고정되므로 다른 창(기본 하강 등)은 그대로 겹쳐 더해진다.
+        /// </summary>
+        public void StartScriptedMove(double target, double durationSec)
+        {
+            if (!(durationSec > 0))
+                throw new ArgumentOutOfRangeException(nameof(durationSec), durationSec, "0보다 커야 한다");
+
+            _scriptedMoveEnd = SimTime + durationSec;
+            _windows.Add(new RateWindow(SimTime, _scriptedMoveEnd, (target - Actual) / durationSec));
+        }
+
+        /// <summary>튜토리얼용. 진행 중인 창을 모두 지우고 실제·표시 혈당을 value로 즉시 맞춘다.</summary>
+        public void ResetTo(double value)
+        {
+            _windows.Clear();
+            _suddenDropEnd = double.NegativeInfinity;
+            _scriptedMoveEnd = double.NegativeInfinity;
+            Actual = value;
+            _display = new DisplayDelayBuffer(_config.Display.DelaySec, SimTime, value);
         }
 
         private void Advance(double simDt, double activity)

@@ -215,5 +215,58 @@ namespace SugarDash.Domain.Tests
 
             Assert.That(model.Actual, Is.EqualTo(119).Within(Eps));
         }
+
+        [Test]
+        public void ScriptedMove_ReachesTargetIgnoringDecay()
+        {
+            var model = Model(b => { b.BaseDecayPerSec = 0; b.RunDecayPerSec = 0; });
+
+            model.StartScriptedMove(55, 3);
+            model.Tick(1, 0, 1, 0);
+            Assert.That(model.IsScriptedMoveActive, Is.True);
+            model.Tick(1, 0, 1, 0);
+            model.Tick(1, 0, 1, 0);
+
+            Assert.That(model.Actual, Is.EqualTo(55).Within(Eps));
+            Assert.That(model.IsScriptedMoveActive, Is.False);
+        }
+
+        [Test]
+        public void ScriptedMove_AddsToOtherWindows()
+        {
+            var model = Model(b => { b.BaseDecayPerSec = 1; b.RunDecayPerSec = 0; });
+
+            model.StartScriptedMove(60, 2); // 이동량은 시작 때 고정: 60 - 120 = -60
+            model.Tick(1, 0, 1, 0);
+            model.Tick(1, 0, 1, 0);
+
+            Assert.That(model.Actual, Is.EqualTo(120 + (60 - 120) - 2).Within(Eps));
+        }
+
+        [Test]
+        public void ScriptedMove_RejectsNonPositiveDuration()
+        {
+            var model = Model();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => model.StartScriptedMove(55, 0));
+        }
+
+        [Test]
+        public void ResetTo_SetsActualAndDisplayed_ClearsWindows()
+        {
+            var model = Model(b => { b.BaseDecayPerSec = 1; b.RunDecayPerSec = 0; });
+            model.EatSnack("juice", 1);
+            model.StartSuddenDrop();
+            model.StartScriptedMove(60, 5);
+
+            model.ResetTo(120);
+
+            Assert.That(model.Actual, Is.EqualTo(120));
+            Assert.That(model.Displayed, Is.EqualTo(120));
+            Assert.That(model.IsSuddenDropActive, Is.False);
+            Assert.That(model.IsScriptedMoveActive, Is.False);
+            model.Tick(10, 0, 10, 0);
+            Assert.That(model.Actual, Is.EqualTo(110).Within(Eps));
+        }
     }
 }
