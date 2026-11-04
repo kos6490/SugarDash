@@ -16,6 +16,7 @@ namespace SugarDash.Presentation
         [SerializeField] private Text currentTypeText;
         [SerializeField] private Button type1Button;
         [SerializeField] private Button type2Button;
+        [SerializeField] private Button tutorialButton;
         [SerializeField] private Button backButton;
 
         private GameFlowController _flow;
@@ -38,12 +39,20 @@ namespace SugarDash.Presentation
             else Debug.LogWarning("SettingsView: type1Button이 비어 있다. 씬에서 연결해야 한다.");
             if (type2Button != null) type2Button.onClick.AddListener(OnType2);
             else Debug.LogWarning("SettingsView: type2Button이 비어 있다. 씬에서 연결해야 한다.");
+            if (tutorialButton != null)
+            {
+                tutorialButton.onClick.AddListener(OnTutorial);
+                var label = tutorialButton.GetComponentInChildren<Text>();
+                if (label != null) label.text = TutorialText.SettingsButton;
+            }
+            else Debug.LogWarning("SettingsView: tutorialButton이 비어 있다. 씬에서 연결해야 한다.");
             if (backButton != null) backButton.onClick.AddListener(OnBack);
             else Debug.LogWarning("SettingsView: backButton이 비어 있다. 씬에서 연결해야 한다.");
             return new Unbinder(() =>
             {
                 if (type1Button != null) type1Button.onClick.RemoveListener(OnType1);
                 if (type2Button != null) type2Button.onClick.RemoveListener(OnType2);
+                if (tutorialButton != null) tutorialButton.onClick.RemoveListener(OnTutorial);
                 if (backButton != null) backButton.onClick.RemoveListener(OnBack);
                 _flow = null;
             });
@@ -51,6 +60,7 @@ namespace SugarDash.Presentation
 
         private void OnType1() => _flow?.SelectType(TrackType.Type1);
         private void OnType2() => _flow?.SelectType(TrackType.Type2);
+        private void OnTutorial() => _flow?.StartTutorial();
         private void OnBack() => _flow?.CloseSettings();
 
         private void Update()

@@ -37,6 +37,8 @@ namespace SugarDash.Presentation.Runner
         public string SnackId { get; }
         /// <summary>화면 표현. 테스트처럼 화면 없이 돌리면 null.</summary>
         public Transform View { get; set; }
+        /// <summary>튜토리얼 안내가 놓은 대상이면 true.</summary>
+        public bool IsTutorialTarget { get; set; }
 
         public bool IsObstacle =>
             Kind == TrackItemKind.LowObstacle || Kind == TrackItemKind.HighObstacle || Kind == TrackItemKind.LaneBlock;

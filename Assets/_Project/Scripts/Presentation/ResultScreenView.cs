@@ -50,6 +50,13 @@ namespace SugarDash.Presentation
 
         private void Draw()
         {
+            if (_flow.IsTutorialResult)
+            {
+                titleText.text = ResultScreenText.TutorialTitle;
+                summaryText.text = "";
+                root.SetActive(true);
+                return;
+            }
             var result = _flow.LastResult;
             titleText.text = ResultScreenText.Title(result);
             summaryText.text = ResultScreenText.Summary(result, _flow.LastScore, _flow.BestScore, _flow.IsNewBest);

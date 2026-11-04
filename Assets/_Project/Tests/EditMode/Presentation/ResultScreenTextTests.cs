@@ -39,6 +39,12 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void TutorialTitle_Text()
+        {
+            Assert.That(ResultScreenText.TutorialTitle, Is.EqualTo("튜토리얼 끝!"));
+        }
+
+        [Test]
         public void Type2_SummaryLines()
         {
             Assert.That(ResultScreenText.Summary(Type2Summary(new[] { true, false }, new[] { true })),

@@ -416,6 +416,77 @@ namespace SugarDash.Presentation.Tests
             }
         }
 
+        [Test]
+        public void Tutorial_GuidedPlacesOnlyTargets()
+        {
+            var go = new GameObject("T2Guided");
+            try
+            {
+                var track = NewType2(go, 7, 1, 2);
+                track.SetTutorialGuided(true);
+                Assert.That(track.NearestTutorialTargetZ, Is.Null);
+                for (int i = 0; i < 600; i++) track.Advance(0.1, Speed, true);
+                Assert.That(track.Items.Count(x => x.IsObstacle || x.Kind == TrackItemKind.Snack || x.Kind == TrackItemKind.RestSpot),
+                    Is.EqualTo(0));
+                Assert.That(track.Items.Any(x => x.Kind == TrackItemKind.Marker), Is.True, "바닥 표시는 놓는다");
+
+                track.PlaceTutorial(new TutorialPlacement(TutorialObject.LowObstacle, new[] { -1, 0, 1 }));
+                var targets = track.Items.Where(x => x.IsTutorialTarget).ToList();
+                Assert.That(targets.Count, Is.EqualTo(3));
+                Assert.That(targets.All(x => x.Kind == TrackItemKind.LowObstacle), Is.True);
+                Assert.That(targets.Select(x => x.Lane).OrderBy(l => l), Is.EqualTo(new[] { -1, 0, 1 }));
+                Assert.That(targets.Select(x => x.Z).Distinct().Count(), Is.EqualTo(1));
+                Assert.That(track.NearestTutorialTargetZ, Is.EqualTo(targets[0].Z).Within(1e-9));
+                Assert.That(targets[0].Z, Is.EqualTo(track.SpawnAheadDistance).Within(1e-6));
+
+                track.SetTutorialGuided(false);
+                for (int i = 0; i < 600; i++) track.Advance(0.1, Speed, true);
+                Assert.That(track.Items.Any(x => x.IsObstacle || x.Kind == TrackItemKind.Snack || x.Kind == TrackItemKind.RestSpot),
+                    Is.True, "guided를 끄면 다시 무작위로 놓는다");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Tutorial_FoodRowAndSnackIds()
+        {
+            var go = new GameObject("T2Food");
+            try
+            {
+                var track = NewType2(go, 7, 3, 0);
+                track.SetTutorialGuided(true);
+                track.PlaceTutorial(new TutorialPlacement(TutorialObject.FoodRow, new int[0]));
+                var row = track.Items.Where(x => x.IsTutorialTarget).ToList();
+                Assert.That(row.Count, Is.EqualTo(2));
+                Assert.That(row.All(x => x.Kind == TrackItemKind.Snack), Is.True);
+                Assert.That(row[0].SnackId, Is.Not.EqualTo(row[1].SnackId));
+                Assert.That(row[0].Lane, Is.Not.EqualTo(row[1].Lane));
+
+                track.PlaceTutorial(new TutorialPlacement(TutorialObject.RestSpot, new[] { 1 }));
+                var rest = track.Items.Single(x => x.Kind == TrackItemKind.RestSpot);
+                Assert.That(rest.Lane, Is.EqualTo(1));
+                Assert.That(rest.IsTutorialTarget, Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Tutorial_SnackUsesFirstSnackId()
+        {
+            _track.SetTutorialGuided(true);
+            _track.PlaceTutorial(new TutorialPlacement(TutorialObject.Snack, new[] { 0 }));
+            var snack = _track.Items.Single(x => x.IsTutorialTarget);
+            Assert.That(snack.Kind, Is.EqualTo(TrackItemKind.Snack));
+            Assert.That(snack.SnackId, Is.EqualTo(Snacks[0]));
+            Assert.That(snack.Lane, Is.EqualTo(0));
+        }
+
         private GameObject _go;
         private TrackSpawner _track;
 

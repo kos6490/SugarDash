@@ -9,6 +9,9 @@ namespace SugarDash.Presentation
     /// <summary>결과 화면 문구(docs/result-screen.md 1절). 화면과 분리해 EditMode 테스트로 확인한다.</summary>
     public static class ResultScreenText
     {
+        /// <summary>튜토리얼 판 결과 제목. 요약 줄은 없다.</summary>
+        public const string TutorialTitle = "튜토리얼 끝!";
+
         public static string Title(RunSummary result)
         {
             if (result == null || result.Outcome != RunOutcome.Eliminated) return "결과를 불러오지 못했어요";

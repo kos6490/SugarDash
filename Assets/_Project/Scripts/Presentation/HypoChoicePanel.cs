@@ -50,6 +50,7 @@ namespace SugarDash.Presentation
             {
                 bus.Subscribe<HypoEventTriggered>(_ => recheckText.text = ""),
                 bus.Subscribe<StepAnswered>(e => _feedback = AnswerFeedbackText.For(e)),
+                bus.Subscribe<PracticeRetried>(_ => _feedback = TutorialText.TryAgain),
                 bus.Subscribe<GuardianNotified>(_ => _feedback = AnswerFeedbackText.ForGuardianNotified()),
                 bus.Subscribe<RecheckFastForward>(e => recheckText.text = $"다시 잰 혈당: {e.GlucoseAfter:0} mg/dL"),
             };

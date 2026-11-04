@@ -21,6 +21,16 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void TutorialPrompt_Visibility()
+        {
+            foreach (TutorialStage s in System.Enum.GetValues(typeof(TutorialStage)))
+            {
+                Assert.That(TutorialPromptView.IsPromptVisible(s), Is.EqualTo(s == TutorialStage.Prompt));
+                Assert.That(TutorialPromptView.IsRetryVisible(s), Is.EqualTo(s == TutorialStage.Retry));
+            }
+        }
+
+        [Test]
         public void ScreenVisibility_PerFlowScreen()
         {
             foreach (FlowScreen s in System.Enum.GetValues(typeof(FlowScreen)))

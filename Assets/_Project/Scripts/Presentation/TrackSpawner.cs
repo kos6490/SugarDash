@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SugarDash.App;
 using SugarDash.Presentation.Runner;
 using UnityEngine;
 
@@ -48,6 +49,7 @@ namespace SugarDash.Presentation
         private double _snackTimer;
         private int _lastObstacleLane;
         private double _lastObstacleZ = double.NegativeInfinity;
+        private bool _tutorialGuided;
 
         public float SpawnAheadDistance => spawnAheadDistance;
         public float StartClearDistance => startClearDistance;
@@ -55,6 +57,64 @@ namespace SugarDash.Presentation
         public IReadOnlyList<TrackItem> Items => _items;
         /// <summary>주행 시작부터 달린 거리.</summary>
         public double Distance => _distance;
+
+        /// <summary>가장 가까운 튜토리얼 대상의 z(z &gt; 0인 것만). 없으면 null.</summary>
+        public double? NearestTutorialTargetZ
+        {
+            get
+            {
+                double? nearest = null;
+                foreach (var item in _items)
+                {
+                    if (!item.IsTutorialTarget || !(item.Z > 0)) continue;
+                    if (nearest == null || item.Z < nearest.Value) nearest = item.Z;
+                }
+                return nearest;
+            }
+        }
+
+        /// <summary>
+        /// true인 동안 무작위 장애물·간식·음식 줄·쉬는 곳을 놓지 않고 간식·쉬는 곳 타이머를 멈춘다.
+        /// 바닥 표시는 놓는다. 튜토리얼 안내 구간 동안 켠다.
+        /// </summary>
+        public void SetTutorialGuided(bool guided) => _tutorialGuided = guided;
+
+        /// <summary>튜토리얼 안내 대상을 spawnAheadDistance 앞에 놓고 <see cref="TrackItem.IsTutorialTarget"/>을 켠다.</summary>
+        public void PlaceTutorial(TutorialPlacement p)
+        {
+            if (p == null) throw new ArgumentNullException(nameof(p));
+            double z = spawnAheadDistance;
+            switch (p.Kind)
+            {
+                case TutorialObject.LaneBlock:
+                    PlaceTutorialItems(TrackItemKind.LaneBlock, p.Lanes, z);
+                    break;
+                case TutorialObject.LowObstacle:
+                    PlaceTutorialItems(TrackItemKind.LowObstacle, p.Lanes, z);
+                    break;
+                case TutorialObject.HighObstacle:
+                    PlaceTutorialItems(TrackItemKind.HighObstacle, p.Lanes, z);
+                    break;
+                case TutorialObject.Snack:
+                    Add(new TrackItem(TrackItemKind.Snack, p.Lanes.Count > 0 ? p.Lanes[0] : 0, z, _layout.SnackIds[0])
+                        { IsTutorialTarget = true });
+                    break;
+                case TutorialObject.FoodRow:
+                    int before = _items.Count;
+                    PlaceFoodRow(z);
+                    for (int i = before; i < _items.Count; i++) _items[i].IsTutorialTarget = true;
+                    break;
+                case TutorialObject.RestSpot:
+                    Add(new TrackItem(TrackItemKind.RestSpot, p.Lanes.Count > 0 ? p.Lanes[0] : 0, z)
+                        { IsTutorialTarget = true });
+                    break;
+            }
+        }
+
+        private void PlaceTutorialItems(TrackItemKind kind, IReadOnlyList<int> lanes, double z)
+        {
+            foreach (int lane in lanes) Add(new TrackItem(kind, lane, z) { IsTutorialTarget = true });
+        }
 
         /// <param name="layout">간식·음식·쉬는 곳 배치 값. 1형은 음식 줄·쉬는 곳이 없다.</param>
         /// <param name="seed">배치 난수 시드. 같으면 같은 트랙이 나온다.</param>
@@ -160,7 +220,7 @@ namespace SugarDash.Presentation
             _crossed.Sort((a, b) => a.Z.CompareTo(b.Z));
 
             // 멈춘 동안(쉬는 중)과 물체를 놓지 않는 장면에서는 간식·쉬는 곳 타이머도 멈춘다.
-            if (speed > 0 && _layout.SpawnsItems)
+            if (speed > 0 && _layout.SpawnsItems && !_tutorialGuided)
             {
                 _snackTimer += worldDt;
                 _restTimer += worldDt;
@@ -189,7 +249,7 @@ namespace SugarDash.Presentation
             while (_nextObstacleAt <= horizon)
             {
                 // 장애물을 못 놓는 동안(유예, 쉬는 곳 근처, 물체를 놓지 않는 장면) 지나간 줄은 건너뛴다.
-                if (obstaclesAllowed && _layout.SpawnsItems && !InRestClearZone(_nextObstacleAt))
+                if (obstaclesAllowed && _layout.SpawnsItems && !_tutorialGuided && !InRestClearZone(_nextObstacleAt))
                 {
                     var kind = (TrackItemKind)_random.Next(0, 3);
                     int lane = _random.Next(-1, 2);
@@ -201,14 +261,14 @@ namespace SugarDash.Presentation
                 _nextObstacleAt += obstacleSpacing;
             }
 
-            while (_layout.HasRestSpots && _restTimer >= _nextRestIntervalSec)
+            while (!_tutorialGuided && _layout.HasRestSpots && _restTimer >= _nextRestIntervalSec)
             {
                 _restTimer -= _nextRestIntervalSec;
                 _nextRestIntervalSec = NextRestInterval();
                 PlaceRestSpot();
             }
 
-            while (_snackTimer >= _nextSnackIntervalSec)
+            while (!_tutorialGuided && _snackTimer >= _nextSnackIntervalSec)
             {
                 _snackTimer -= _nextSnackIntervalSec;
                 _nextSnackIntervalSec = NextSnackInterval();
