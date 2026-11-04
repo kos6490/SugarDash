@@ -7,10 +7,11 @@ using SugarDash.Domain.Metrics;
 namespace SugarDash.Presentation
 {
     /// <summary>결과 화면 문구(docs/result-screen.md 1절). 화면과 분리해 EditMode 테스트로 확인한다.</summary>
+    // [문구 파일] 따옴표 안의 글자만 바꿀 수 있다. 상수 이름, 메서드, 코드 구조는 바꾸지 않고 `// 확정` 줄은 그대로 둔다(docs/team-rules.md 2.3절).
     public static class ResultScreenText
     {
         /// <summary>튜토리얼 판 결과 제목. 요약 줄은 없다.</summary>
-        public const string TutorialTitle = "튜토리얼 끝!";
+        public const string TutorialTitle = "튜토리얼 끝!"; // 확정
 
         public static string Title(RunSummary result)
         {

@@ -6,6 +6,7 @@ namespace SugarDash.Presentation
     /// <summary>
     /// 선택 뒤 결과 문구와 재개 카운트다운 숫자. 문구는 무엇을 골랐는지만 말하고 정답·오답은 말하지 않는다.
     /// </summary>
+    // [문구 파일] 따옴표 안의 글자만 바꿀 수 있다. 상수 이름, 메서드, 코드 구조는 바꾸지 않고 `// 확정` 줄은 그대로 둔다(docs/team-rules.md 2.3절).
     public static class AnswerFeedbackText
     {
         private const string Notified = "어른에게 알렸어요";

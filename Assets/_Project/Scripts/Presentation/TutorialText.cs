@@ -8,12 +8,13 @@ namespace SugarDash.Presentation
     /// 튜토리얼 안내 문구(docs/superpowers/specs/2026-11-04-tutorial-design.md 5절 초안).
     /// 화면과 분리해 EditMode 테스트로 확인한다. 의학 설명이나 치료 효과를 말하는 표현은 쓰지 않는다.
     /// </summary>
+    // [문구 파일] 따옴표 안의 글자만 바꿀 수 있다. 상수 이름, 메서드, 코드 구조는 바꾸지 않고 `// 확정` 줄은 그대로 둔다(docs/team-rules.md 2.3절).
     public static class TutorialText
     {
-        public const string TryAgain = "다시 해봐요";
+        public const string TryAgain = "다시 해봐요"; // 확정
         public const string TapHint = "화면을 눌러요";
-        public const string Skip = "건너뛰기";
-        public const string SettingsButton = "튜토리얼 다시 하기";
+        public const string Skip = "건너뛰기"; // 확정
+        public const string SettingsButton = "튜토리얼 다시 하기"; // 확정
 
         private const string Notify = "어른에게 알리기를 골라요";
 
