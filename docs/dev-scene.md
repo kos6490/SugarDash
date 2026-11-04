@@ -308,7 +308,7 @@ Unity 에디터 기본 배치:
 
 튜토리얼 판에서 설명 창(문구, `화면을 눌러요`, `건너뛰기`)과 실패 문구 `다시 해봐요`를 보여 주는 빈 틀이다. 규칙은 [tutorial.md](tutorial.md)에 있다. 다른 화면과 같이, 스크립트가 붙은 `TutorialPrompt`는 항상 켜 두고 그 아래 `Root`만 껐다 켠다.
 
-설명 창은 버튼 대신 **화면 아무 곳이나 눌러** 넘긴다. 화면 전체를 덮는 `Root`에 `Button`을 붙여 그 버튼이 터치를 받는다. 바탕과 박스는 거의 투명하게 하고 글자는 흰색에 그림자를 넣는다.
+설명 창은 버튼 대신 **화면 아무 곳이나 눌러** 넘긴다. 화면 전체를 덮는 `Root`에 `Button`을 붙여 그 버튼이 터치를 받는다. 바탕은 살짝 어둡게 하고, 박스는 불투명한 흰색, 글자는 검정으로 한다(그래픽은 나중에 입힌다).
 
 > **이미 예전 안내대로 `TutorialPrompt`를 만든 경우**(`AcknowledgeButton`이 있는 경우): 처음부터 다시 만들지 말고 6.11.4절만 따라 고친다.
 
@@ -324,16 +324,16 @@ Unity 에디터 기본 배치:
    - Inspector 맨 아래 `Add Component` → 검색 칸에 `Button` → `Button`을 고른다. `Button`의 `Transition`을 `None`으로 바꾼다(누를 때 화면 색이 바뀌지 않게). 나머지는 그대로 둔다.
 5. `Root` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Box`.
    - Anchor Presets에서 한가운데(`middle` / `center`) 칸을 누른다(Alt·Shift 없이). 칸 이름이 `Pos X`, `Pos Y`, `Width`, `Height`로 바뀌었는지 확인한다(6.5.1절 3번과 같다).
-   - Pos X `0`, Pos Y `0`, Width `900`, Height `700`. `Image`의 `Color`: R `255`, G `255`, B `255`, A `25`. 바탕과 거의 구분되지 않는 옅은 박스가 된다.
+   - Pos X `0`, Pos Y `0`, Width `900`, Height `700`. `Image`의 `Color`: R `255`, G `255`, B `255`, A `255`(불투명). 게임 화면이 비쳐 글자가 안 읽히는 일이 없다.
 6. `Box` 위에서 오른쪽 클릭하고 아래 표의 오브젝트를 만든다. 위치는 박스 가운데 기준이다.
 
 | 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
 | --- | --- | --- | --- | --- |
-| `MessageText` | `UI > Legacy > Text` | 0, 150 | 800 × 300 | Text 비움(코드가 안내 문구를 넣는다), Font Size 44, 가운데 정렬, Color 흰색(R·G·B·A `255`), 그림자(아래 7번) |
-| `HintText` | `UI > Legacy > Text` | 0, -180 | 800 × 60 | Text 비움(코드가 `화면을 눌러요`를 넣는다), Font Size 32, 가운데 정렬, Color 흰색, 그림자(아래 7번), `Raycast Target` 체크 끔 |
+| `MessageText` | `UI > Legacy > Text` | 0, 150 | 800 × 300 | Text 비움(코드가 안내 문구를 넣는다), Font Size 44, 가운데 정렬, Color 검정(R·G·B `0`, A `255`), 그림자 없음 |
+| `HintText` | `UI > Legacy > Text` | 0, -180 | 800 × 60 | Text 비움(코드가 `화면을 눌러요`를 넣는다), Font Size 32, 가운데 정렬, Color 검정(R·G·B `0`, A `255`), 그림자 없음, `Raycast Target` 체크 끔 |
 | `SkipButton` | `UI > Legacy > Button` | 0, -290 | 300 × 80 | 자식 글자: Font Size 32. Text는 비워 둬도 된다(코드가 `건너뛰기`를 넣는다) |
 
-7. 글자 그림자: `MessageText`를 선택하고 `Add Component` → 검색 칸에 `Shadow` → `Shadow`를 고른다. `Effect Color`를 눌러 R `0`, G `0`, B `0`, A `200`, `Effect Distance`를 X `2`, Y `-2`로 한다. `HintText`도 똑같이 한다. 옅은 바탕 위에서도 흰 글자가 또렷이 보인다.
+7. `MessageText`, `HintText`에는 `Shadow`·`Outline`을 붙이지 않는다(흰 박스 위 검정 글자라 필요 없다). 예전에 붙였다면 컴포넌트 오른쪽 위 점 세 개 → `Remove Component`로 지운다.
 8. 이번에는 `Root`가 아니라 **`TutorialPrompt`** 위에서 오른쪽 클릭 → `UI > Legacy > Text`. 이름 `RetryText`.
    - Hierarchy에서 `RetryText`가 `Root`와 같은 들여쓰기(둘 다 `TutorialPrompt` 바로 아래)인지 확인한다. `Root` 아래로 들어갔으면 끌어서 `TutorialPrompt` 위에 놓는다.
    - Pos X `0`, Pos Y `300`, Width `900`, Height `160`. Text 비움(코드가 `다시 해봐요`를 넣는다), Font Size 72, 가운데 정렬, Color 흰색(R·G·B·A `255`).
@@ -372,10 +372,10 @@ Unity 에디터 기본 배치:
 1. Hierarchy에서 `TutorialPrompt > Root`를 선택한다.
    - `Image`의 `Color` A를 `170` → `60`으로 바꾼다.
    - `Add Component` → 검색 칸에 `Button` → `Button`. `Transition`을 `None`으로 바꾼다.
-2. `TutorialPrompt > Root > Box`를 선택하고 `Image`의 `Color` A를 `255` → `25`로 바꾼다.
-3. `TutorialPrompt > Root > Box > MessageText`를 선택한다. `Color`를 흰색(R·G·B·A `255`)으로 바꾸고, `Add Component` → `Shadow`(6.11.1절 7번 값: Effect Color 검정 A `200`, Effect Distance X `2`, Y `-2`)를 붙인다.
+2. `TutorialPrompt > Root > Box`를 선택하고 `Image`의 `Color`를 흰색 A `255`(불투명)로 둔다(R·G·B `255`). 예전에 `25`로 낮췄다면 `255`로 올린다.
+3. `TutorialPrompt > Root > Box > MessageText`를 선택한다. `Color`를 검정(R·G·B `0`, A `255`)으로 바꾸고, 붙어 있는 `Shadow`·`Outline`은 지운다(6.11.1절 7번).
 4. Hierarchy에서 `TutorialPrompt > Root > Box > AcknowledgeButton`을 오른쪽 클릭 → `Delete`로 지운다.
-5. `Box` 위에서 오른쪽 클릭 → `UI > Legacy > Text`로 `HintText`를 만든다(6.11.1절 6번 표의 `HintText` 줄, 7번 그림자 그대로).
+5. `Box` 위에서 오른쪽 클릭 → `UI > Legacy > Text`로 `HintText`를 만든다(6.11.1절 6번 표의 `HintText` 줄, 글자 검정, 그림자 없음).
 6. `TutorialPrompt`를 선택하고 `Tutorial Prompt View`를 본다. 예전의 `Acknowledge Button` 칸은 없어졌고 `Tap Area`, `Hint Text`, `Tap Delay Sec` 칸이 새로 생겼다. 예전 연결은 옮겨 오지 않으므로 다시 연결한다.
    - `Tap Area` ← `TutorialPrompt` 아래의 `Root`
    - `Hint Text` ← `HintText`
@@ -668,7 +668,7 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 ### 9.13 시나리오 K: 튜토리얼
 1형·2형 각각 한 번씩 한다. 개발 설정(실제 수치 아님) 기준이다. 처음 실행으로 만들려면 Play를 멈춘 상태에서 Finder로 `~/Library/Application Support/ZeroSugar/SugarDash/`의 `settings.json`을 지운다(9.10절). 시작하기 전에 같은 폴더의 `logs/` 안 파일 수를 세어 둔다.
 
-설명 창이 떠 있는 동안에는 캐릭터·트랙·혈당 숫자가 모두 멈춘다. 설명 창은 살짝 어두운 화면 위 거의 투명한 박스에 흰 글자 문구와 그 아래 작은 글자 `화면을 눌러요`로 보인다. 버튼은 없고, **화면 아무 곳이나 누르면**(Game 창을 클릭) 화면 가운데에 `3`, `2`, `1`이 나온 뒤 다시 달린다(패널에서 고르는 안내는 `3`, `2`, `1` 없이 바로 패널이 나온다). 설명 창이 뜨자마자(0.5초 안에) 누른 것은 무시되니, 안 넘어가면 잠깐 기다렸다 다시 누른다. 아래 표의 "화면을 누른다"가 이것이다. 안내 구간에는 제한 시간이 없으니 천천히 해도 된다. 설명 창, `다시 해봐요`, `3`, `2`, `1`이 보이는 동안에는 밀거나 방향키를 눌러도 캐릭터가 움직이지 않는다. 장애물·아이템 설명 창이 뜰 때마다 혈당 숫자는 `120 mg/dL`로 돌아온다. 안내 구간 동안 달리기 속도는 빨라지지 않고, 16번 일반 주행부터 빨라진다.
+설명 창이 떠 있는 동안에는 캐릭터·트랙·혈당 숫자가 모두 멈춘다. 설명 창은 살짝 어두운 화면 위 불투명한 흰 박스에 검정 글자 문구와 그 아래 작은 글자 `화면을 눌러요`로 보인다. 버튼은 없고, **화면 아무 곳이나 누르면**(Game 창을 클릭) 화면 가운데에 `3`, `2`, `1`이 나온 뒤 다시 달린다(패널에서 고르는 안내는 `3`, `2`, `1` 없이 바로 패널이 나온다). 설명 창이 뜨자마자(0.5초 안에) 누른 것은 무시되니, 안 넘어가면 잠깐 기다렸다 다시 누른다. 아래 표의 "화면을 누른다"가 이것이다. 안내 구간에는 제한 시간이 없으니 천천히 해도 된다. 설명 창, `다시 해봐요`, `3`, `2`, `1`이 보이는 동안에는 밀거나 방향키를 눌러도 캐릭터가 움직이지 않는다. 장애물·아이템 설명 창이 뜰 때마다 혈당 숫자는 `120 mg/dL`로 돌아온다. 안내 구간 동안 달리기 속도는 빨라지지 않고, 16번 일반 주행부터 빨라진다.
 
 안내 구간에서는 아직 배우지 않은 조작이 잠긴다.
 - 왼쪽 안내에서는 ← 만, 오른쪽 안내에서는 → 만, 점프 안내에서는 ↑ 만, 슬라이드 안내에서는 ↓ 만 된다. 다른 방향을 밀거나 다른 방향키를 눌러도 캐릭터가 움직이지 않는다. 슬라이드 다음 안내부터는 네 방향 모두 된다.
@@ -770,7 +770,7 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | 설명 창이 다른 화면(선택 패널 등) 뒤에 가려진다 | Hierarchy에서 `TutorialPrompt`가 `SleepTransition` 바로 위, 다른 화면보다 아래에 있는지(6.11.1절 3번) |
 | 설명 창이 떠 있는데 뒤의 패널 버튼이 눌린다 | `TutorialPrompt > Root`의 `Image`에서 `Raycast Target`이 켜져 있는지 |
 | 설명 창에서 화면을 눌러도 안 넘어간다 | `TutorialPrompt > Root`에 `Button`이 붙었는지(6.11.1절 4번), `Tutorial Prompt View`의 `Tap Area` 칸에 `Root`가 들어 있는지(6.11.2절). 설명 창이 뜬 뒤 0.5초 안의 터치는 무시하므로 잠깐 기다렸다 누른다 |
-| 설명 창 글자가 안 보이거나 흐리다 | `MessageText`, `HintText`의 Color가 흰색이고 `Shadow`가 붙었는지(6.11.1절 7번) |
+| 설명 창 글자가 안 보이거나 흐리다 | `Box` Image가 흰색 A `255`(불투명)인지, `MessageText`, `HintText`의 Color가 검정 A `255`인지(6.11.1절) |
 | 튜토리얼에서 노란 띠가 안 보인다 | `Bootstrapper`의 `Lane Highlight` 칸이 연결됐는지(6.12절). Console에 `laneHighlight가 비어 있다` 경고가 뜬다 |
 | 노란 띠가 레인에서 벗어나 엉뚱한 곳에 보인다 | `TutorialLaneHighlight`의 Position이 0, 0, 0이고 Rotation이 0, 0, 0인지, 다른 오브젝트의 자식이 아닌지(6.12절 2번) |
 | 튜토리얼 안내 중 방향키·쓸기가 안 먹는다 | 정상일 수 있다. 안내 중에는 지금 배우는 방향만 된다(9.13절 첫머리). 일반 판에서도 안 되면 위의 `방향키를 눌러도 안 움직인다` 줄을 본다 |
