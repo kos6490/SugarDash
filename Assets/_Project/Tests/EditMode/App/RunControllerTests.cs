@@ -234,6 +234,22 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
+        public void Guided_HitQueuedWhileGuided_IgnoredAfterGuidedOff()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1, recorded: false);
+            rig.Run.SetTutorialGuided(true);
+            rig.Run.HoldForTutorial();
+
+            rig.Run.HitObstacle(); // 안내 중에 쌓인 충돌
+            rig.Run.SetTutorialGuided(false);
+            rig.Run.ReleaseTutorialHold(0);
+            rig.Run.Tick(1);
+
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running));
+        }
+
+        [Test]
         public void StartRun_ClearsTutorialFlags()
         {
             var rig = new Rig();

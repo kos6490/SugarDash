@@ -229,6 +229,7 @@ namespace SugarDash.App
             _tutorialCountdown = 0;
         }
 
+        /// <summary>설명 창을 닫는다. 멈춰 있지 않으면 아무것도 하지 않는다.</summary>
         /// <param name="countdownSec">풀린 뒤 시계가 다시 흐르기 전 3-2-1 길이(초).</param>
         public void ReleaseTutorialHold(double countdownSec)
         {
@@ -352,15 +353,20 @@ namespace SugarDash.App
         }
 
         /// <summary>
-        /// 장애물에 부딪혔다(PlayerController 충돌 판정). 바로 탈락한다.
+        /// 장애물에 부딪혔다(PlayerController 충돌 판정). 바로 탈락한다. 튜토리얼 안내 주행이면 탈락하지 않는다.
         /// 명령은 처리되는 시점에 판정한다. 세계가 멈춘 뒤 처리되면 무시하므로, 멈추기 직전 프레임에 쌓인 충돌은 버려진다(관대하게 처리).
+        /// 안내 주행은 부딪힌 때와 처리할 때 둘 다 본다. 안내 중에 쌓인 충돌이 안내를 마친 뒤 처리되어 탈락시키지 않게 한다.
         /// </summary>
-        public void HitObstacle() => Enqueue(s =>
+        public void HitObstacle()
         {
-            if (s.Fsm.IsWorldFrozen || IsTutorialGuided) return;
+            bool guidedAtHit = IsTutorialGuided;
+            Enqueue(s =>
+            {
+                if (s.Fsm.IsWorldFrozen || guidedAtHit || IsTutorialGuided) return;
 
-            s.Fsm.EliminateObstacleHit();
-        });
+                s.Fsm.EliminateObstacleHit();
+            });
+        }
 
         /// <summary>
         /// 지금 구간의 index번째 장면에 들어간다. 장면 덮어쓰기를 적용하고 SceneEntered를 발행한다.
