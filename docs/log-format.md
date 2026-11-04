@@ -34,7 +34,7 @@
 | `HyperEventTriggered` | `actual` |
 | `SuddenDropStarted` | - |
 | `GaugeWarningRaised` | `displayed` |
-| `MeterPressed` | `measured`, `unnecessary`, `inGrace` |
+| `MeterPressed` | `measured`, `unnecessary`, `inGrace`, `moment`(1형 혈당 재기 습관 순간의 말풍선이 떠 있을 때 누른 측정만. `preExercise`, `bedtime`. 이때 `unnecessary`는 false) |
 | `StepAnswered` | `step`, `choiceId`, `isCorrect`, `errorCode`, `helpInstead`, `decisionSec`, `measuredBeforeWarning` |
 | `GuardianPromptStarted` | `step`, `errorCode` |
 | `GuardianNotified` | `step` |
@@ -50,6 +50,7 @@
 | `LowResolved` | `allCorrect` |
 | `FoodEaten` | `foodId`, `actual`. 2형 트랙 음식. `eventId` 없음 |
 | `RestStarted`, `RestEnded` | `actual`. 2형 쉬는 구간. `eventId` 없음 |
+| `HabitCheck` | `moment`(`preExercise`, `bedtime`), `outcome`(`checked` 말풍선이 떠 있을 때 측정, `missed` 누르지 않고 시간이 지남, `skipped` 대처 중·유예 중이라 띄우지 않았거나 떠 있는 동안 대처가 시작됨), `reactionSec`(`checked`만). 1형 습관 순간이 끝날 때 하나 남는다([section2.md](section2.md) 7.1절). 주행이 끝날 때 떠 있던 순간은 남지 않는다. `eventId` 없음 |
 | `SectionEntered` | `section`(`signal`, `condition`, `complex`), `distanceM`. 주행 시작 시 첫 구간도 기록 |
 | `SceneEntered` | `scene`(장면 id, 예: `schoolyard`, `playground`, `outing`, `home`), `timeOfDay`(`morning`, `afternoon`, `evening`, `night`), `dayIndex`(장면 구간 첫날 0, 마지막 장면에서 첫 장면으로 돌아갈 때 하나 오름), `distanceM`. 장면이 있는 구간에 들어가면 `SectionEntered` 바로 뒤에 첫 장면을 기록. 한 번에 여러 장면 경계를 넘으면 넘은 순서대로 모두 기록하고 `distanceM`은 처리 시점 거리. `eventId` 없음 |
 | `GlucoseRangeEntered`, `GlucoseRangeExited` | `actual`. 적정 범위(`normalRangeMin` 이상 `hyperThreshold` 미만) 들어감·나감. 점수 재계산용. 주행 시작 때 기록 순서는 `RunStarted` → `SectionEntered` → `GlucoseRangeEntered`(시작 시 범위 안일 때만) |

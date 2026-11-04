@@ -13,7 +13,8 @@
 > 8. 유형 선택·2형을 더한 뒤라면 6.6~6.8절을 따라 화면 오브젝트를 만들고, 6.5.4절대로 `ResultScreen`에 `타이틀로` 버튼을 더한다. 8절 3번 표에서 새로 생긴 칸(`Build Config Type2`, `Title Screen`, `Type Select`, `Settings`, `Character State`, `Notice Signal`)을 연결한다.
 > 9. 튜토리얼을 더한 뒤라면 6.6.3절 표대로 `Settings > Root` 아래에 `TutorialButton`을 만들어 연결하고 `BackButton`을 아래로 옮긴다. 6.11절을 따라 `TutorialPrompt`를 만들고, 8절 3번 표의 `Tutorial Prompt` 칸을 연결한다.
 > 10. 튜토리얼 화면 터치·레인 강조를 더한 뒤라면 6.11.4절(이미 예전 안내대로 만든 경우)대로 `TutorialPrompt`를 고치고, 6.12절대로 `TutorialLaneHighlight`를 만들어 8절 3번 표의 `Lane Highlight` 칸을 연결한다.
-> 11. Cmd+S로 저장하고 9절 순서로 확인한다.
+> 11. 2구간 2-B(혈당 재기 습관 순간)를 더한 뒤라면 6.13절대로 `HabitPrompt` 프리팹을 만들고 8절 3번 표의 `Habit Prompt` 칸을 연결한다.
+> 12. Cmd+S로 저장하고 9절 순서로 확인한다.
 
 ## 0. 화면 구성과 기본 조작
 
@@ -78,6 +79,7 @@ Unity 에디터 기본 배치:
 | `NoticeSignal` | `Assets/_Project/Art/UI/Screens/NoticeSignal.prefab` | 6.7절 |
 | `TutorialPrompt` | `Assets/_Project/Art/UI/Screens/TutorialPrompt.prefab` | 6.11절 |
 | `SleepTransition` | `Assets/_Project/Art/UI/Screens/SleepTransition.prefab` | 6.10절 |
+| `HabitPrompt` | `Assets/_Project/Art/UI/Screens/HabitPrompt.prefab` | 6.13절 |
 
 - **모양 고치기**: Project 창에서 프리팹을 더블클릭하면 Prefab Mode로 열린다. 거기서 고치고 저장한다(Prefab Mode는 자동 저장이 켜져 있으면 바로 저장된다). 씬은 고치지 않는다.
 - **구조 담당 팀원**: 화면에 오브젝트나 스크립트 칸을 더할 때는 Prefab Mode에서 프리팹 안에 더하고, 프리팹 안의 칸도 프리팹 안에서 연결한다. 씬에 있는 칸(`Bootstrapper`의 칸)만 씬에서 연결한다. 씬의 인스턴스에서 직접 바꾸는 것(인스턴스 오버라이드, Inspector에서 굵은 글자로 보인다)은 만들지 않는다.
@@ -423,6 +425,20 @@ Unity 에디터 기본 배치:
 
 샌드박스(월드 담당 팀원이 혼자 모양을 시험할 때): `Sandbox Show`를 켜면 시작할 때 `Sandbox Lanes`(−1 왼쪽, 0 가운데, 1 오른쪽), `Sandbox Lane Width`(기본 `1.5`. 실제 레인 폭은 `Player`의 `Lane Width`, 기본 `2.5`), `Sandbox To Z`(띠 길이, 기본 `12`) 값으로 띠를 보여 준다. 단 `Bootstrapper`의 `Lane Highlight`에 연결돼 있으면 첫 프레임에 `Bootstrapper`가 띠를 숨긴다. 샌드박스로 볼 때는 `Lane Highlight` 칸을 잠시 비우고(경고가 한 번 뜨는 것은 정상), 다 보면 다시 연결하고 `Sandbox Show`를 끈다.
 
+## 6.13 혈당 재기 습관 말풍선 (HabitPrompt)
+
+1형 2구간에서 운동장·집에 들어갈 때 측정기 버튼 위에 `운동 전에 혈당 재 볼까?`, `자기 전에 혈당 재 볼까?` 말풍선을 보여 주는 빈 틀이다([section2.md](section2.md) 7.1절). 세계는 멈추지 않는다. 스크립트가 붙은 `HabitPrompt`는 항상 켜 두고 그 아래 `Root`만 껐다 켠다. 다른 화면처럼 프리팹으로 만든다.
+
+1. Hierarchy의 `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `HabitPrompt`. Rect Transform은 Pos X `0`, Pos Y `0`, Width `100`, Height `100` 그대로 둔다.
+2. `HabitPrompt` 위에서 오른쪽 클릭 → `UI > Image`. 이름 `Root`. Pos X `0`, Pos Y `-640`, Width `800`, Height `130`. Image의 Color를 흰색으로 둔다(말풍선 자리). `Raycast Target` 체크를 끈다(꺼야 아래 측정기 버튼이 눌린다).
+3. `Root` 위에서 오른쪽 클릭 → `UI > Legacy > Text`. 이름 `PromptText`. Rect Transform 왼쪽 위 네모(Anchor Presets)를 누르고 Alt(Mac은 Option)를 누른 채 오른쪽 아래 `stretch`·`stretch`를 고른다(말풍선을 꽉 채운다). Text 비움, Font Size 44, 가운데 정렬, Color 검정. `Raycast Target` 체크를 끈다.
+4. `HabitPrompt`를 선택하고 `Add Component` → `HabitPromptView`. `Root` 칸에 `Root`, `Prompt Text` 칸에 `PromptText`를 끌어다 놓는다.
+5. `Root`를 선택하고 Inspector 맨 위 이름 왼쪽 체크를 끈다(처음에는 숨겨 둔다. 실행하면 코드가 켜고 끈다).
+6. 프리팹으로 만든다: Project 창에서 `Assets > _Project > Art > UI > Screens` 폴더를 연다. Hierarchy의 `HabitPrompt`를 그 폴더로 끌어다 놓는다. `HabitPrompt.prefab`이 생기고 Hierarchy의 `HabitPrompt` 글자가 파란색이 된다.
+7. Hierarchy에서 `Bootstrapper`를 선택하고 `Game Bootstrapper`의 `Habit Prompt` 칸(빈 틀 화면 묶음, `Notice Signal` 아래)에 Hierarchy의 `HabitPrompt`를 끌어다 놓는다.
+8. Cmd+S로 저장한다.
+9. 기대 결과: 1구간과 2형 주행에서는 말풍선이 보이지 않는다. 1형 운동장·집에 들어가면 약 5초 동안 보인다(9.14절). 말풍선이 떠 있어도 측정기 버튼이 눌린다.
+
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
 캐릭터와 트랙의 모양(캡슐, 상자, 구)은 실행하면 코드가 만든다. 여기서는 빈 오브젝트 3개에 컴포넌트를 붙이고 카메라만 연결한다.
@@ -458,6 +474,7 @@ Unity 에디터 기본 배치:
 | Settings | Hierarchy의 `Settings` (6.6.3절) |
 | Character State | Hierarchy의 `Player` (`CharacterStateView`가 붙은 오브젝트, 6.8절) |
 | Notice Signal | Hierarchy의 `NoticeSignal` (6.7절) |
+| Habit Prompt | Hierarchy의 `HabitPrompt` (6.13절) |
 | Scene Look | Hierarchy의 `SceneLook` (6.9절) |
 | Sleep Transition | Hierarchy의 `SleepTransition` (6.10절) |
 | Tutorial Prompt | Hierarchy의 `TutorialPrompt` (6.11절) |
@@ -765,6 +782,30 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | --- | --- |
 | 음식 줄 안내(3번)에서 빈 레인으로 지나간다 | `다시 해봐요` 뒤 같은 음식 줄 안내를 다시 한다 |
 | tell(6번)에서 `계속 달리기` 또는 `주스 마시기` | 패널 위쪽 큰 글자 `다시 해봐요` 뒤 같은 설명 창이 다시 뜬다. 주스를 골라도 혈당 숫자가 오르지 않는다 |
+
+### 9.14 시나리오 L: 2구간 장면 조건 (2-B)
+개발 설정(실제 수치 아님) 기준이다. 9.12절처럼 1구간 300m를 지난 뒤 본다. 1형 한 판, 2형 한 판.
+
+1형:
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | 운동장에 들어간다(바닥 모래색) | 측정기 버튼 위에 `운동 전에 혈당 재 볼까?` 말풍선이 뜬다. 캐릭터는 계속 달린다 |
+| 2 | 말풍선이 떠 있는 동안 측정기를 누른다 | 말풍선이 사라지고 `측정: … mg/dL`이 보인다 |
+| 3 | 운동장을 달린다 | 혈당바가 1구간보다 조금 빨리 내려간다(개발 설정 달리기 감소 1 → 1.3) |
+| 4 | 집에 들어간다(바닥 보라) | `자기 전에 혈당 재 볼까?` 말풍선이 뜬다. 이번에는 누르지 않는다 |
+| 5 | 약 5초 기다린다 | 말풍선이 사라진다. 아무 일도 일어나지 않는다(불이익 없음) |
+| 6 | 놀이터·나들이 | 말풍선이 뜨지 않는다 |
+
+2형:
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | 운동장·집 | 말풍선이 뜨지 않는다 |
+| 2 | 놀이터 | 쉬는 곳이 1구간보다 자주 나온다(8~12초 간격) |
+| 3 | 나들이 | 음식 줄이 더 자주 나오고(2.5~4초 간격), 음식은 물·주스·탄산음료·치킨·피자·햄버거만 나온다(사과 없음) |
+
+기록 파일(9.9절, 1형 판)에 `HabitCheck` 줄이 두 개 있다. 운동장 것은 `"outcome":"checked"`와 `reactionSec`, 집 것은 `"outcome":"missed"`다. 2번의 `MeterPressed` 줄에는 `"moment":"preExercise"`와 `"unnecessary":false`가 있다.
 
 ## 10. 자주 생기는 문제
 

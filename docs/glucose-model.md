@@ -131,7 +131,8 @@ RunController가 프레임마다 경과 시간을 셋으로 나눠 Domain에 넘
 | 오류 유형 분포 | 오류 코드별 횟수 |
 | 판단 시간 중앙값 | 단계(재측정·알리기는 따로)별 `decisionSec` 중앙값. 시간 초과(`choiceId` 없음)는 판단이 아니므로 뺀다. 시간 초과 횟수는 오류 유형 분포에 잡힌다 |
 | 측정 선행률 | 1단계 답에서 `measuredBeforeWarning`인 것 ÷ 1단계 답이 기록된 이벤트. 불필요 측정 횟수와 함께 보여 준다 |
-| 불필요 측정 횟수 | `MeterPressed.unnecessary` 수 |
+| 불필요 측정 횟수 | `MeterPressed.unnecessary` 수. 습관 순간의 측정은 세지 않는다 |
+| 습관 확인률(1형) | `HabitCheck`에서 `checked` 수 ÷ (`checked` + `missed`) 수. `skipped`는 뺀다. 점수와 무관하다([section2.md](section2.md) 7.1절) |
 
 결과 화면(아동용)은 저혈당·고혈당 요약과 점수·최고 점수만 보여 준다(`docs/result-screen.md`). 나머지 지표는 보호자 리포트(2순위)에서 보여 준다.
 
@@ -180,6 +181,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     "doses": { "under": null, "proper": null, "over": null }
   },
   "hyper": { "notifyTimeLimitSec": null },
+  "type1": { "habitCheckWindowSec": null },
   "suddenDrop": { "chancePerSec": null, "amount": null, "durationSec": null },
   "snacks": [
     { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
@@ -206,6 +208,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 - `hypo.answerFeedbackSec`는 선택(또는 시간 초과) 뒤 결과 문구를 보여 주는 시간이다(2.2절). 다음 단계의 제한 시간에서 빼지 않는다. 0이면 문구 창 없이 바로 다음 단계로 간다.
 - `hypo.doses`는 간식 1회분에 곱하는 배수(과소·적정·과잉)다.
 - `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
+- `type1.habitCheckWindowSec`는 혈당 재기 습관 순간의 말풍선이 떠 있는 시간(decisionDt 기준 초)이다([section2.md](section2.md) 7.1절).
 - `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
 - `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.trackSnackIntervalMinSec`·`MaxSec`는 트랙 간식 간격의 범위(worldDt 기준 초)다.
 - `elimination.glucoseLow`·`glucoseHigh`는 탈락하는 실제 혈당 범위, `symptom.shakeStartGlucose`는 실제 혈당이 이 값 아래로 내려가면 카메라가 흔들리기 시작하는 혈당(탈락 하한 `glucoseLow`에 가까워질수록 흔들림이 커져 하한에서 최대가 된다. 저혈당 쪽만이고 UI는 흔들지 않는다. 최대 흔들림 폭과 떨림 속도는 JSON이 아니라 `SymptomEffectPresenter`의 Inspector 값이다), `score.*`는 점수 값, `sections`는 구간 목록(마지막 구간만 `lengthM` 없이 끝없이 이어짐)이다. `score.correct`는 단계별 정답 가중치(`recognize`~`hyperNotify`), `score.errors`는 오류 코드별 가중치(키는 로그의 오류 코드와 같다)이고 `RS_KEEP_RUNNING`·`HY_KEEP_RUNNING`은 위험한 선택이라 0으로 고정한다. 달리기 속도, 레인 폭, 점프·슬라이드 시간, 장애물 간격, 충돌 감속 같은 러너 감각 수치는 혈당과 무관하므로 JSON이 아니라 각 컴포넌트의 Inspector 값으로 둔다.
@@ -250,6 +253,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 22. `score.*` 값은 모두 `≥ 0`, `correct`는 모든 단계, `errors`는 `None`을 뺀 모든 오류 코드가 있어야 한다. `RS_KEEP_RUNNING`, `HY_KEEP_RUNNING`은 0
 23. `sections`는 1개 이상, id는 `signal`·`condition`·`complex` 중 하나이고 중복 없음, 마지막을 뺀 항목은 `lengthM > 0`, 마지막 항목은 `lengthM` 없음
 24. `elimination.glucoseLow < symptom.shakeStartGlucose ≤ glucose.max`
+25. `type1.habitCheckWindowSec > 0`. 2형 설정의 장면에는 `habitCheck`를 쓸 수 없다
 
 ### 8.4 고혈당 설정
 20. `hyper.notifyTimeLimitSec > 0` (`docs/hyper-event.md`)

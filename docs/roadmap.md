@@ -63,7 +63,7 @@
 | 구조 | 기존 화면의 2형 대응, 빈 틀 6개 만들기, 조립·개발 씬·문서, 작업 브랜치 push(계획 작업 10~12). 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.6~6.8, 9.10~9.11절 | | 완료 |
 | 구조 | 팀원이 push한 스크립트 확인, 작업 브랜치를 `dev`에 머지 | | 대기(빈 틀 채우기) |
 | 구조 | 2구간 2-A 공통 틀: 장면 설정·검증, 장면 진행과 기록, 주행 중 배치 바꾸기, 빈 틀 2개(`SceneLook`, `SleepTransitionView`), 조립·개발 씬 문서 | [section2.md](section2.md) | 완료 |
-| 구조 | 2구간 2-B 유형별 조건 이벤트 설계 | [section2.md](section2.md) 7절 | 대기(출처 확인) |
+| 구조 | 2구간 2-B 유형별 조건: 장면 조건 설정 자리(1형 운동장 달리기 감소, 2형 놀이터 쉬는 곳 간격, 나들이 음식 줄 간격·구성), 1형 혈당 재기 습관 순간(판정·기록·습관 확인률), 빈 틀 `HabitPromptView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.13, 9.14절 | [section2.md](section2.md) 7절 | 진행 중(구조) |
 | 구조 | 튜토리얼 규칙 코드와 빈 틀: 튜토리얼 판 결정·건너뛰기·다시 하기, 안내 순서(`TutorialController`), 연습 모드, 기록하지 않는 판, 안내 중 조작 잠금, 통과할 레인 강조, 화면 터치로 설명 창 넘기기, 빈 틀 `TutorialPromptView`·`TutorialLaneHighlightView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.11, 9.13절 | [tutorial.md](tutorial.md) | 완료 |
 | 팀원1(캐릭터) | 주인공 모델, 기본 애니메이션(달리기, 점프, 슬라이드, 옆 이동) | | 시작 가능 |
 | 팀원1(캐릭터) | 2형 상태 애니메이션: 지친 표정·느린 걸음·처진 자세(고혈당·저혈당), 앉아 쉬기. 체형은 바꾸지 않음. 연출 방향은 출처 확인 뒤 고칠 수 있음 | [type-tracks.md](type-tracks.md) 5절 | 시작 가능 |
@@ -85,6 +85,8 @@
 | 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
 | 팀원3(화면) | `TutorialPromptView` 채우기: 화면 전체를 덮어 아래 터치를 막고 화면 터치로 넘기는 설명 창(옅은 어두운 바탕 위 불투명 흰 박스, 검정 글자), 문구, `화면을 눌러요` 안내 글자, 그림 자리, `건너뛰기`, `다시 해봐요`. `SettingsView`의 `튜토리얼 다시 하기` 버튼 그림 | `Assets/_Project/Scripts/Presentation/Screen/TutorialPromptView.cs`, [tutorial.md](tutorial.md) 8절 | 시작 가능 |
+| 팀원3(화면) | `HabitPromptView` 채우기: 1형 혈당 재기 습관 순간의 말풍선(측정기 버튼 옆), 나타나고 사라지는 연출 | `Assets/_Project/Scripts/Presentation/Screen/HabitPromptView.cs`, [section2.md](section2.md) 7.1절 | 대기(빈 틀 push) |
+| 기획 | 습관 순간 말풍선 문구 확정(`HabitPromptText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/HabitPromptText.cs`, [section2.md](section2.md) 7.1절 | 대기(빈 틀 push) |
 | 기획 | 튜토리얼 안내 문구 확정(`TutorialText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/TutorialText.cs`, [tutorial.md](tutorial.md) 6절 | 시작 가능 |
 
 ## 3. 완료한 작업
@@ -139,10 +141,12 @@
 
 | 정할 것 | 분야 | 지금 상태 | 막고 있는 작업 |
 | --- | --- | --- | --- |
-| 맵별 특성(2-B): 운동장 운동 구간, 놀이터 급하강·쉬는 곳, 나들이 간식·음식 줄, 집 수면 | 기획, 의학 | 맵 3종 + 집 장면과 순서(운동장 아침 → 놀이터 오후 → 나들이 저녁 → 집 밤)는 정해지고 구현함. 조건은 후보만([section2.md](section2.md) 7절) | 2구간 2-B |
-| 장면 길이(하루 길이)와 맵별 덮어쓰기 값 | 결정 | 빌드 설정 `null`·빈 값 | 2구간 실제 수치 |
-| 혈당 재 보는 습관 순간(1형), 2형 측정 습관 출처 | 기획, 의학 | 미정. 2형은 측정기가 없어 넣지 않음 | 2구간 2-B |
-| 운동·수면의 유형별 혈당 영향과 출처 | 의학 | 볼 곳은 정함([medical-sources.md](medical-sources.md) 4절). 수면 근거는 ADA 5.56·5.57(소아 전용 아님)만. 영향 내용은 미정 | 2구간 2-B |
+| 맵별 특성(2-B) | 기획, 의학 | 정해지고 구현함([section2.md](section2.md) 7절, 근거 [section2b-evidence.md](section2b-evidence.md)). 1형 운동장 운동 구간·습관 순간, 집 습관 순간. 2형 놀이터 쉬는 곳 간격, 나들이 음식 줄 간격·구성. 1형 놀이터 급하강, 잠자리 레인, 2형 집 수면 장면은 뺌 | 없음 |
+| 장면 길이(하루 길이)와 맵별 덮어쓰기 값(운동장 `runDecayPerSec`, 놀이터 `restInterval*`, 나들이 `foodRowInterval*`·`foodRowIds`), 습관 순간 시간(`type1.habitCheckWindowSec`) | 결정 | 빌드 설정 `null`([section2.md](section2.md) 7.2절). 운동장 달리기 감소를 키우면 저혈당 최악의 경우 불변식에 맞춰 다른 값도 정해야 함 | 2구간 실제 수치 |
+| 2형도 달리면 혈당이 내려가는 규칙(`glucose.runDecayPerSec`)을 둘지 | 의학, 결정 | 지금 그대로 둠. 아동 2형 운동 직후 혈당 변화 근거가 적음([section2b-evidence.md](section2b-evidence.md) A-5) | 2형 실제 수치 |
+| 2-B 근거 발췌 대조(쪽 번호, ADA 2026 5장 원문) | 의학 | 초안([section2b-evidence.md](section2b-evidence.md) "확인할 것") | 2-B 문구·퀴즈 근거 인용 |
+| 혈당 재 보는 습관 순간(1형), 2형 측정 습관 출처 | 기획, 의학 | 1형은 운동 전·자기 전으로 정하고 구현함. 2형은 측정기가 없어 넣지 않음 | 없음 |
+| 운동·수면의 유형별 혈당 영향과 출처 | 의학 | 방향은 정함([section2b-evidence.md](section2b-evidence.md)): 1형 운동 중 하강, 1형 잠은 저혈당 계기(ISPAD 2022 저혈당 장). 2형 수면 습관 장면은 3구간 후보(ADA 5.57, 소아 전용 아님). 수치는 미정 | 2구간 실제 수치 |
 | 3구간 복합 상황의 유형별 이벤트. 1형 "빈 간식 가방" 후보 | 기획, 의학 | 미정 | 3구간 구현 |
 
 ## 5. 1순위 남은 작업
@@ -154,7 +158,7 @@
 | 순서 | 작업 | 분야 | 선행 |
 | --- | --- | --- | --- |
 | 1 | 유형 선택 + 2형 1구간: 시작 화면 유형 선택, 2형 choose·move·notice·tell, 지친 캐릭터 연출, 음식 아이템 최소 확장 | 결정, 기획, 코드 | 2형 혈당 모델, 2형 오류 코드·탈락 규칙 결정 |
-| 2 | 2구간 + 생활 환경 맵 + 하루 흐름. 2-A 공통 틀(장면 순환, 장면별 덮어쓰기 자리, 기록, 맵·암전 빈 틀)은 구현함. 2-B 유형별 조건 이벤트는 출처 확인 뒤. 구간별 1단계 제한 시간 배율이 생기면 설정 불변식도 추가(`docs/glucose-model.md` 8.3절) | 결정, 기획, 코드 | 1, 2-B는 운동·수면 등 출처 확인 |
+| 2 | 2구간 + 생활 환경 맵 + 하루 흐름. 2-A 공통 틀(장면 순환, 장면별 덮어쓰기 자리, 기록, 맵·암전 빈 틀)과 2-B 유형별 조건(값은 PLACEHOLDER)은 구현함. 구간별 1단계 제한 시간 배율이 생기면 설정 불변식도 추가(`docs/glucose-model.md` 8.3절) | 결정, 기획, 코드 | 1 |
 | 3 | 3구간 복합 상황(두 유형) | 결정, 기획, 코드 | 2 |
 
 ### 5.2 코드
