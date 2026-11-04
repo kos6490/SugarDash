@@ -63,6 +63,27 @@ Unity 에디터 기본 배치:
    - `Reference Resolution`: X `1080`, Y `1920`
 4. Scene 창에서 UI가 잘 안 보이면 Hierarchy에서 `Canvas`를 더블클릭하면 화면이 Canvas에 맞춰진다.
 
+### 3.1 화면 프리팹
+
+`Canvas` 아래 화면은 화면마다 프리팹으로 나뉘어 있다. `DevRun` 씬에는 프리팹 인스턴스가 놓여 있다(Hierarchy에서 파란 글자로 보인다).
+
+| 화면 | 프리팹 | 만든 절 |
+| --- | --- | --- |
+| `Hud` | `Assets/_Project/Art/UI/Screens/Hud.prefab` | 5절 |
+| `HypoChoice` | `Assets/_Project/Art/UI/Screens/HypoChoice.prefab` | 6절 |
+| `ResultScreen` | `Assets/_Project/Art/UI/Screens/ResultScreen.prefab` | 6.5절 |
+| `TitleScreen` | `Assets/_Project/Art/UI/Screens/TitleScreen.prefab` | 6.6.1절 |
+| `TypeSelect` | `Assets/_Project/Art/UI/Screens/TypeSelect.prefab` | 6.6.2절 |
+| `Settings` | `Assets/_Project/Art/UI/Screens/Settings.prefab` | 6.6.3절 |
+| `NoticeSignal` | `Assets/_Project/Art/UI/Screens/NoticeSignal.prefab` | 6.7절 |
+| `TutorialPrompt` | `Assets/_Project/Art/UI/Screens/TutorialPrompt.prefab` | 6.11절 |
+| `SleepTransition` | `Assets/_Project/Art/UI/Screens/SleepTransition.prefab` | 6.10절 |
+
+- **모양 고치기**: Project 창에서 프리팹을 더블클릭하면 Prefab Mode로 열린다. 거기서 고치고 저장한다(Prefab Mode는 자동 저장이 켜져 있으면 바로 저장된다). 씬은 고치지 않는다.
+- **구조 담당 팀원**: 화면에 오브젝트나 스크립트 칸을 더할 때는 Prefab Mode에서 프리팹 안에 더하고, 프리팹 안의 칸도 프리팹 안에서 연결한다. 씬에 있는 칸(`Bootstrapper`의 칸)만 씬에서 연결한다. 씬의 인스턴스에서 직접 바꾸는 것(인스턴스 오버라이드, Inspector에서 굵은 글자로 보인다)은 만들지 않는다.
+- 5~6.11절의 처음부터 만드는 순서로 이 오브젝트들을 만들었다. 참고용으로 남겨 둔다. 새로 만든다면 같은 순서를 Prefab Mode 안에서 하면 된다.
+- 프리팹 안에서 프리팹 밖(다른 화면이나 씬 오브젝트)을 가리키는 칸은 지금 없다. 나중에 생기면 씬 오버라이드로만 남으므로 지우지 않는다.
+
 ## 4. UI 요소 공통 설정 방법
 
 아래 단계에서 글자(Text)와 버튼(Button)은 **Legacy** 메뉴로 만든다. TextMeshPro 기본 글꼴에는 한글이 없다.
