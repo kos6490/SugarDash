@@ -11,7 +11,8 @@
 > 6. 결과 화면을 이미 만들었으면 6.5.3절만 따라 한다.
 > 7. 점수 표시가 없는 씬이면 5.2절 표대로 `Hud` 아래에 `ScoreText`를 만들고 5.3절대로 `Hud Presenter`의 `Score Text` 칸에 연결한다. 예전에 만든 `HeartsText`가 있으면 선택해 Delete 키로 지운다(하트는 없어졌다). 결과 화면은 씬 변경이 없다.
 > 8. 유형 선택·2형을 더한 뒤라면 6.6~6.8절을 따라 화면 오브젝트를 만들고, 6.5.4절대로 `ResultScreen`에 `타이틀로` 버튼을 더한다. 8절 3번 표에서 새로 생긴 칸(`Build Config Type2`, `Title Screen`, `Type Select`, `Settings`, `Character State`, `Notice Signal`)을 연결한다.
-> 9. Cmd+S로 저장하고 9절 순서로 확인한다.
+> 9. 튜토리얼을 더한 뒤라면 6.6.3절 표대로 `Settings > Root` 아래에 `TutorialButton`을 만들어 연결하고 `BackButton`을 아래로 옮긴다. 6.11절을 따라 `TutorialPrompt`를 만들고, 8절 3번 표의 `Tutorial Prompt` 칸을 연결한다.
+> 10. Cmd+S로 저장하고 9절 순서로 확인한다.
 
 ## 0. 화면 구성과 기본 조작
 
@@ -262,9 +263,11 @@ Unity 에디터 기본 배치:
 | `CurrentTypeText` | `UI > Legacy > Text` | 0, 190 | 900 × 80 | Text 비움(코드가 지금 유형 `1형`/`2형`을 넣는다), Font Size 40, 가운데 정렬 |
 | `Type1Button` | `UI > Legacy > Button` | 0, 20 | 440 × 120 | 자식 글자: Text `1형`, Font Size 44 |
 | `Type2Button` | `UI > Legacy > Button` | 0, -130 | 440 × 120 | 자식 글자: Text `2형`, Font Size 44 |
-| `BackButton` | `UI > Legacy > Button` | 0, -300 | 440 × 120 | 자식 글자: Text `돌아가기`, Font Size 44 |
+| `TutorialButton` | `UI > Legacy > Button` | 0, -290 | 520 × 120 | 자식 글자: Font Size 40. Text는 비워 둬도 된다(코드가 `튜토리얼 다시 하기`를 넣는다) |
+| `BackButton` | `UI > Legacy > Button` | 0, -450 | 440 × 120 | 자식 글자: Text `돌아가기`, Font Size 44 |
 
-3. `Settings`를 선택하고 `Settings View`의 칸을 연결한다: `Root`(`Settings` 아래의 `Root`), `Title Text`, `Current Type Text`, `Type 1 Button`, `Type 2 Button`, `Back Button`.
+3. `Settings`를 선택하고 `Settings View`의 칸을 연결한다: `Root`(`Settings` 아래의 `Root`), `Title Text`, `Current Type Text`, `Type 1 Button`, `Type 2 Button`, `Tutorial Button`, `Back Button`.
+   - 이미 만든 설정 화면이면 `BackButton`을 선택해 `Pos Y`만 `-450`으로 바꾸고 `TutorialButton`을 더한다. `Tutorial Button` 칸이 비어 있으면 Console에 노란 경고 `SettingsView: tutorialButton이 비어 있다`가 뜬다.
 4. 같은 이름(`Root`, `TitleText`, `Type1Button`)이 여러 화면에 있으므로 끌어다 놓을 때 맞는 화면 아래의 것인지 확인한다.
 
 ## 6.7 2형 신호 글자 (NoticeSignal)
@@ -299,6 +302,58 @@ Unity 에디터 기본 배치:
 3. `Image`의 Color를 검은색, 알파(A) `0`으로 한다. `Raycast Target` 체크를 끈다(꺼야 아래 버튼이 눌린다).
 4. Hierarchy에서 `SleepTransition`을 `Canvas` 자식 중 **맨 아래**로 끌어 둔다(다른 UI 위에 그려진다).
 5. `Add Component` → `SleepTransitionView`. `Fade` 칸에 `SleepTransition` 자신(같은 오브젝트의 Image)을 끌어다 놓는다. `Hold Sec` `0.2`, `Fade In Sec` `0.6`은 기본값 그대로 둔다.
+
+## 6.11 튜토리얼 (TutorialPrompt)
+
+튜토리얼 판에서 설명 창(문구, `알겠어요`, `건너뛰기`)과 실패 문구 `다시 해봐요`를 보여 주는 빈 틀이다. 규칙은 [tutorial.md](tutorial.md)에 있다. 다른 화면과 같이, 스크립트가 붙은 `TutorialPrompt`는 항상 켜 두고 그 아래 `Root`만 껐다 켠다.
+
+**꼭 지킬 것: `RetryText`는 `Root`의 자식으로 만들지 않는다.** `Root`는 설명 창이 없을 때 꺼져 있는데, `다시 해봐요`는 설명 창이 없을 때 나온다. `RetryText`를 `Root` 안에 두면 부모가 꺼져 있어 `다시 해봐요`가 영영 보이지 않는다. `RetryText`는 `TutorialPrompt`의 자식(`Root`와 나란히)으로 만든다.
+
+### 6.11.1 오브젝트 만들기
+1. Hierarchy에서 `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TutorialPrompt`. `Add Component` → `TutorialPromptView`.
+2. `TutorialPrompt`의 `Rect Transform` 왼쪽 위 네모(Anchor Presets)를 누르고 Alt(Mac은 Option)를 누른 채 오른쪽 아래 `stretch`·`stretch`를 고른다. Left, Top, Right, Bottom이 모두 `0`이 되어 화면 전체 크기가 된다.
+3. Hierarchy에서 `TutorialPrompt`를 끌어 `SleepTransition` **바로 위**에 둔다. `Hud`, `HypoChoice`, `ResultScreen`, `TitleScreen`, `TypeSelect`, `Settings`, `NoticeSignal`보다 아래여야 그것들 앞에 그려진다. `SleepTransition`은 계속 맨 아래다.
+4. `TutorialPrompt` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Root`. 화면 전체를 덮는 크기 그대로 둔다.
+   - `Image`의 `Color`: R `0`, G `0`, B `0`, A `170`. 뒤의 게임 화면이 어둡게 보인다.
+   - `Image`의 `Raycast Target`은 **켜 둔다**(기본값). 이것이 아래 선택 패널·`측정기` 버튼 터치를 막는다.
+5. `Root` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Box`.
+   - Anchor Presets에서 한가운데(`middle` / `center`) 칸을 누른다(Alt·Shift 없이). 칸 이름이 `Pos X`, `Pos Y`, `Width`, `Height`로 바뀌었는지 확인한다(6.5.1절 3번과 같다).
+   - Pos X `0`, Pos Y `0`, Width `900`, Height `700`. `Image`의 `Color`: R `255`, G `255`, B `255`, A `255`.
+6. `Box` 위에서 오른쪽 클릭하고 아래 표의 오브젝트를 만든다. 위치는 박스 가운데 기준이다.
+
+| 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
+| --- | --- | --- | --- | --- |
+| `MessageText` | `UI > Legacy > Text` | 0, 150 | 800 × 300 | Text 비움(코드가 안내 문구를 넣는다), Font Size 44, 가운데 정렬, Color 검정 |
+| `AcknowledgeButton` | `UI > Legacy > Button` | 0, -170 | 440 × 110 | 자식 글자: Font Size 40. Text는 비워 둬도 된다(코드가 `알겠어요`를 넣는다) |
+| `SkipButton` | `UI > Legacy > Button` | 0, -290 | 300 × 80 | 자식 글자: Font Size 32. Text는 비워 둬도 된다(코드가 `건너뛰기`를 넣는다) |
+
+7. 이번에는 `Root`가 아니라 **`TutorialPrompt`** 위에서 오른쪽 클릭 → `UI > Legacy > Text`. 이름 `RetryText`.
+   - Hierarchy에서 `RetryText`가 `Root`와 같은 들여쓰기(둘 다 `TutorialPrompt` 바로 아래)인지 확인한다. `Root` 아래로 들어갔으면 끌어서 `TutorialPrompt` 위에 놓는다.
+   - Pos X `0`, Pos Y `300`, Width `900`, Height `160`. Text 비움(코드가 `다시 해봐요`를 넣는다), Font Size 72, 가운데 정렬, Color 흰색(R·G·B·A `255`).
+   - `Raycast Target` 체크를 끈다.
+8. 그림 자리(`Image` 칸)는 화면 담당 팀원이 채울 때 쓴다. 지금은 만들지 않고 비워 둔다.
+
+### 6.11.2 TutorialPromptView 필드 연결
+`TutorialPrompt`를 선택하고 `Tutorial Prompt View`의 칸을 연결한다.
+
+| 필드 | 끌어다 놓을 것 |
+| --- | --- |
+| Root | `TutorialPrompt` 아래의 `Root` (`TutorialPrompt` 자신이 아니다) |
+| Message Text | `TutorialPrompt > Root > Box` 아래의 `MessageText` |
+| Retry Text | `TutorialPrompt` 아래의 `RetryText` |
+| Image | 비워 둔다 |
+| Acknowledge Button | `AcknowledgeButton` |
+| Skip Button | `SkipButton` |
+
+다른 화면에도 `Root`, `Box`가 있으므로 `TutorialPrompt` 아래의 것인지 확인한다.
+
+### 6.11.3 Bootstrapper 연결
+1. Hierarchy에서 `Bootstrapper`를 선택한다.
+2. `Game Bootstrapper`의 `Tutorial Prompt` 칸(빈 틀 화면 묶음, `Sleep Transition` 아래)에 Hierarchy의 `TutorialPrompt`를 끌어다 놓는다.
+3. 그 아래 `튜토리얼` 묶음의 값이 `Tutorial Stop Distance` `12`, `Tutorial Glucose Move Sec` `3`, `Tutorial Retry Text Sec` `1.5`인지 본다. 다르면 이 값으로 고친다.
+   - `Tutorial Stop Distance`는 `Track`의 `Spawn Ahead Distance`(기본 `60`)보다 작아야 한다. 같거나 크면 Play 때 Console에 빨간 오류 `tutorialStopDistance(...)는 트랙의 spawnAheadDistance(...)보다 작아야 한다.`가 뜨고 게임이 시작하지 않는다.
+4. Cmd+S로 저장한다.
+5. 기대 결과: Play하면 설명 창과 `다시 해봐요`는 보이지 않는다(튜토리얼 판의 멈춘 때에만 보인다). Console에 `tutorialPrompt가 비어 있다` 경고가 없다.
 
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
@@ -337,8 +392,10 @@ Unity 에디터 기본 배치:
 | Notice Signal | Hierarchy의 `NoticeSignal` (6.7절) |
 | Scene Look | Hierarchy의 `SceneLook` (6.9절) |
 | Sleep Transition | Hierarchy의 `SleepTransition` (6.10절) |
+| Tutorial Prompt | Hierarchy의 `TutorialPrompt` (6.11절) |
+| Tutorial Stop Distance, Tutorial Glucose Move Sec, Tutorial Retry Text Sec | 기본값 `12`, `3`, `1.5` 그대로 둔다(6.11.3절) |
 
-화면 칸(`Title Screen`~`Sleep Transition`)은 비워 두면 그 화면은 연결되지 않고 건너뛴다. 단 `Title Screen`, `Type Select`가 비면 화면 흐름이 진행되지 않으므로 둘은 꼭 연결한다.
+화면 칸(`Title Screen`~`Tutorial Prompt`)은 비워 두면 그 화면은 연결되지 않고 건너뛴다. 단 `Title Screen`, `Type Select`가 비면 화면 흐름이 진행되지 않으므로 둘은 꼭 연결한다.
 
 4. Cmd+S로 저장한다.
 
@@ -376,8 +433,12 @@ DevRun
 │   ├── TypeSelect
 │   │   └── Root           (TitleText, GuideText, Type1Button, Type2Button)
 │   ├── Settings
-│   │   └── Root           (TitleText, CurrentTypeText, Type1Button, Type2Button, BackButton)
+│   │   └── Root           (TitleText, CurrentTypeText, Type1Button, Type2Button, TutorialButton, BackButton)
 │   ├── NoticeSignal
+│   ├── TutorialPrompt
+│   │   ├── Root
+│   │   │   └── Box        (MessageText, AcknowledgeButton, SkipButton)
+│   │   └── RetryText      (Root 밖, Root와 나란히)
 │   └── SleepTransition  (맨 아래)
 ├── EventSystem
 ├── Player               (PlayerController, CharacterStateView)
@@ -393,6 +454,8 @@ DevRun
 ▶(Play)를 누르면 실행되고, 다시 누르면 멈춘다. Console에 노란 경고 `개발용 임시 설정(실제 수치 아님)으로 실행한다`가 한 번 뜨는 것은 정상이다. 빨간 에러가 뜨면 그 문구를 그대로 전달한다.
 
 유형 선택·타이틀 화면이 있는 씬이면 Play 뒤 먼저 유형 선택(또는 타이틀) 화면이 뜬다. 시나리오 A~G는 1형이므로 `1형`을 고르고 타이틀에서 `시작`을 눌러 시작한다(9.10절). 아래 표의 "Play"는 이 시작까지를 뜻한다.
+
+유형을 처음 고르거나 바꾼 뒤 첫 `시작`은 **튜토리얼 판**이다(9.13절). 시나리오 A~J는 일반 판 기준이므로, 튜토리얼 판이 시작되면 안내를 끝까지 마치고 탈락한 뒤 결과 화면의 `다시 하기`로 일반 판을 연다. 그 유형의 튜토리얼을 한 번 마친 뒤에는 설명 창의 `건너뛰기`로 바로 일반 판을 열 수 있다. 튜토리얼 판에는 기록 파일(9.9절)과 최고 점수가 남지 않는다.
 
 시나리오마다 Play를 새로 누르거나, 끝난 뒤 `다시 하기`를 눌러 처음부터 시작한다. 숫자는 누르는 속도에 따라 조금씩 다르므로 "약"으로 적었다.
 
@@ -553,6 +616,76 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 
 기록 파일(9.9절)에 `SceneEntered` 줄이 장면마다 하나씩 생기고, `dayIndex`가 둘째 날부터 `1`, `2`로 오른다.
 
+### 9.13 시나리오 K: 튜토리얼
+1형·2형 각각 한 번씩 한다. 개발 설정(실제 수치 아님) 기준이다. 처음 실행으로 만들려면 Play를 멈춘 상태에서 Finder로 `~/Library/Application Support/ZeroSugar/SugarDash/`의 `settings.json`을 지운다(9.10절). 시작하기 전에 같은 폴더의 `logs/` 안 파일 수를 세어 둔다.
+
+설명 창이 떠 있는 동안에는 캐릭터·트랙·혈당 숫자가 모두 멈춘다. 설명 창에서 `알겠어요`를 누르면 화면 가운데에 `3`, `2`, `1`이 나온 뒤 다시 달린다(패널에서 고르는 안내는 `3`, `2`, `1` 없이 바로 패널이 나온다). 안내 구간에는 제한 시간이 없으니 천천히 해도 된다.
+
+#### 9.13.1 1형: 처음 선택부터 안내 전체
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | Play → 유형 선택에서 `1형` → 타이틀에서 `시작` | 캐릭터가 가운데 레인에서 달린다. 바닥 표시(흰 줄무늬)만 오고 무작위 장애물·간식은 나오지 않는다 |
+| 2 | 기다린다 | 보라색 벽이 가운데·오른쪽 레인에 다가오다 멈추고, 어두운 화면 위 흰 박스에 `왼쪽으로 밀어서 피해요`, `알겠어요`가 보인다. `건너뛰기`는 없다(처음이라서) |
+| 3 | `알겠어요` → `3`, `2`, `1` 뒤 ← | 왼쪽 레인으로 벽을 피한다. 다음 안내로 넘어간다 |
+| 4 | 기다린다 | 벽이 왼쪽·오른쪽 레인에 다가오다 멈추고 `오른쪽으로 밀어서 피해요`. `알겠어요` → `3`, `2`, `1` 뒤 → 로 가운데로 피한다 |
+| 5 | 기다린다 | 세 레인 모두 빨간 낮은 상자. `위로 밀면 뛰어넘어요`. `알겠어요` → `3`, `2`, `1` 뒤 ↑ 로 넘는다 |
+| 6 | 기다린다 | 세 레인 모두 주황 막대. `아래로 밀면 미끄러져요`. `알겠어요` → `3`, `2`, `1` 뒤 ↓ 로 지나간다 |
+| 7 | 기다린다 | 캐릭터와 다른 레인에 노란 공(간식). `간식이 있는 줄로 가면 먹어요. 먹으면 혈당이 올라요`. `알겠어요` → `3`, `2`, `1` 뒤 그 레인으로 가서 먹는다 |
+| 8 | 기다린다(약 3초) | 혈당이 빠르게 내려가고 화면(카메라)이 흔들리기 시작한다. 실제 혈당이 70 아래가 되면 멈추고 `화면이 흔들리면 몸이 보내는 신호예요. 측정기를 눌러요` |
+| 9 | `알겠어요` → `3`, `2`, `1` 뒤 `측정기` | 측정 글자가 나오고 선택 패널이 열리자마자 설명 창 `빠른 당을 골라요`가 그 위를 덮는다 |
+| 10 | `알겠어요` → `juice` | 패널에 `juice을(를) 골랐어요`가 1초 보인 뒤 설명 창 `알맞은 양을 골라요` |
+| 11 | `알겠어요` → `알맞게` | 설명 창 `먹은 뒤에는 다시 재 봐요` |
+| 12 | `알겠어요` → `다시 재기` | 설명 창 `어른에게 알려요` |
+| 13 | `알겠어요` → `어른에게 알리기` | 패널이 닫히고 `3`, `2`, `1` 뒤 다시 달린다. 약 3초 동안 장애물이 없다 |
+| 14 | 기다린다 | 혈당이 빠르게 오르고 실제 혈당이 135 이상이 되면 멈추고 `혈당이 높을 때도 어른에게 알려요` |
+| 15 | `알겠어요` → `어른에게 알리기` | `3`, `2`, `1` 뒤 다시 달리고, 유예가 끝나면 멈추고 마무리 설명 `이제 혼자 달려 봐요!`. 혈당 숫자는 `120 mg/dL`로 돌아와 있다 |
+| 16 | `알겠어요` | `3`, `2`, `1` 뒤 일반 주행. 이제 무작위 장애물·간식이 나오고 제한 시간·탈락이 있다 |
+| 17 | 장애물에 한 번 부딪힌다 | 결과 화면 제목 `튜토리얼 끝!`만 보인다. 점수·최고 점수·저혈당 요약은 없다. 버튼 `다시 하기`, `타이틀로` |
+| 18 | `다시 하기` | 일반 판이 시작한다. 설명 창 없이 처음부터 무작위 장애물이 나온다(약 3초 뒤부터) |
+| 19 | 장애물에 부딪혀 결과 화면을 본다 | 제목 `어른이 도와주러 왔어요`와 점수 줄이 보인다. `logs/` 안 파일이 시작 전보다 **하나만** 늘었다(튜토리얼 판은 파일이 없고 18번 일반 판만 생긴다) |
+
+#### 9.13.2 설정에서 다시 하기와 건너뛰기
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | 결과 화면 `타이틀로` → `설정` | 설정 화면에 `튜토리얼 다시 하기` 버튼이 보인다 |
+| 2 | `튜토리얼 다시 하기` | 타이틀을 거치지 않고 바로 1형 튜토리얼 판이 시작한다. 첫 설명 창 `왼쪽으로 밀어서 피해요` 아래에 이번에는 `건너뛰기`가 보인다(한 번 마쳤으므로) |
+| 3 | `건너뛰기` | 설명 창이 닫히고 일반 판이 처음부터 새로 시작한다. 무작위 장애물이 나오고 설명 창은 더 나오지 않는다 |
+| 4 | Play를 멈추고 다시 Play → `시작` | 튜토리얼 없이 일반 판이 시작한다(마친 유형이고 유형을 바꾸지 않았으므로) |
+
+#### 9.13.3 안내 중 실패
+
+| 할 일 | 결과 |
+| --- | --- |
+| 점프 안내(9.13.1절 5번)에서 ↑를 누르지 않고 부딪힌다 | 탈락하지 않는다. 세계가 멈추고 화면 위쪽에 큰 글자 `다시 해봐요`가 약 1.5초 보인 뒤 사라진다. 다시 달리며 같은 빨간 상자 줄이 다가오고 같은 설명 창 `위로 밀면 뛰어넘어요`가 다시 뜬다 |
+| 간식 안내(7번)에서 간식을 먹지 않고 지나간다 | 위와 같이 `다시 해봐요` 뒤 같은 간식 안내를 다시 한다 |
+| 2단계(10번)에서 `cracker`, `계속 달리기`, `먹을 게 없어요`, `어른에게 알리기` 중 하나 | 패널 제목에 `다시 해봐요`가 1초 보인 뒤 같은 설명 창 `빠른 당을 골라요`가 다시 뜬다. 혈당 숫자는 바뀌지 않고 `도움이 필요해요!`는 나오지 않는다 |
+| 3단계(11번)에서 `조금` 또는 `많이` | 위와 같이 `다시 해봐요` 뒤 `알맞은 양을 골라요`가 다시 뜬다 |
+| 고혈당 알리기(15번)에서 `계속 달리기` | 패널 위쪽 큰 글자 `다시 해봐요`가 약 1.5초 보인 뒤 같은 설명 창이 다시 뜬다. `도움이 필요해요!`는 없다 |
+
+#### 9.13.4 2형
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | 결과 화면 `타이틀로` → `설정` → `2형` → 타이틀 `시작` | 유형을 바꿨으므로 2형 튜토리얼 판이 시작한다. 2형은 처음이라 `건너뛰기`가 없다 |
+| 2 | 9.13.1절 2~6번과 같이 한다 | 왼쪽, 오른쪽, 점프, 슬라이드 안내가 같은 순서로 나온다 |
+| 3 | 기다린다 | 음식 두 개와 빈 레인 하나인 음식 줄이 멈추고 `달리면서 먹을 음식을 골라요. 먹으면 혈당이 올라요`. `알겠어요` → `3`, `2`, `1` 뒤 음식 하나를 먹는다(무엇이든 된다) |
+| 4 | 기다린다 | 캐릭터와 다른 레인에 쉬는 곳. `여기로 가면 쉴 수 있어요. 쉬는 동안은 혈당이 덜 내려가요`. `알겠어요` → `3`, `2`, `1` 뒤 그 레인으로 들어가 3초 앉아 쉰다 |
+| 5 | 기다린다 | 혈당 숫자가 빠르게 올라 `180` 이상인 채 약 4초가 지나면 `목말라요`가 보이고 멈춘 뒤 `목이 마르고 화장실에 가고 싶은 신호가 보이면 어른에게 알려요` |
+| 6 | `알겠어요` | `3`, `2`, `1` 뒤 달리다가 약 2초 뒤 멈추고 패널 위에 설명 창 `어른에게 알리기를 골라요` |
+| 7 | `알겠어요` → `어른에게 알리기` | `3`, `2`, `1` 뒤 다시 달린다 |
+| 8 | 기다린다 | 혈당 숫자가 빠르게 내려가 `70` 아래인 채 약 4초가 지나면 `(개발용) 낮음 신호`가 보이고 멈춘 뒤 `힘이 없는 신호가 보이면 어른에게 알려요`. 6~7번과 같이 `어른에게 알리기`까지 한다. 어른이 `juice`를 건넨다 |
+| 9 | 기다린다 | 마무리 설명 `이제 혼자 달려 봐요!`, 혈당 숫자 `120 mg/dL`. `알겠어요` 뒤 일반 주행(무작위 음식 줄·쉬는 곳·장애물) |
+| 10 | 장애물에 부딪힌다 → `다시 하기` | 결과 화면 `튜토리얼 끝!`. `다시 하기`는 2형 일반 판이고 결과 화면에 점수가 나온다 |
+
+2형 실패도 확인한다.
+
+| 할 일 | 결과 |
+| --- | --- |
+| 음식 줄 안내(3번)에서 빈 레인으로 지나간다 | `다시 해봐요` 뒤 같은 음식 줄 안내를 다시 한다 |
+| tell(6번)에서 `계속 달리기` 또는 `주스 마시기` | 패널 위쪽 큰 글자 `다시 해봐요` 뒤 같은 설명 창이 다시 뜬다. 주스를 골라도 혈당 숫자가 오르지 않는다 |
+
 ## 10. 자주 생기는 문제
 
 | 증상 | 확인할 것 |
@@ -573,3 +706,9 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | 타이틀·유형 선택·설정 화면이 한 번 사라진 뒤 다시 안 나온다 | 화면 스크립트의 `Root` 칸에 스크립트가 붙은 오브젝트 자신을 넣었다. 자식 `Root`를 넣는다(6.6절) |
 | 결과 화면에 `타이틀로` 버튼이 없거나 눌러도 반응이 없다 | `ResultScreen`의 `Title Button` 칸이 비어 있다(6.5.4절). 비어 있어도 오류는 없지만 타이틀로 갈 길이 없다 |
 | 2형을 골랐는데 `설정을 불러오지 못했다`가 뜬다 | `Bootstrapper`의 `Build Config Type2`와 `Use Dev Config In Editor` 칸. 오류 문구에 어느 유형인지 적혀 있다 |
+| 튜토리얼 판에서 세계가 멈췄는데 설명 창이 안 보인다 | `Bootstrapper`의 `Tutorial Prompt` 칸, `TutorialPrompt` 오브젝트가 켜져 있는지, `Tutorial Prompt View`의 `Root` 칸에 `TutorialPrompt` 자신이 아니라 자식 `Root`가 들어 있는지(6.11절) |
+| 실패했는데 `다시 해봐요`가 안 보이고 잠깐 멈췄다가 같은 안내가 다시 나온다 | `RetryText`가 `Root` 안에 들어가 있다. `TutorialPrompt` 바로 아래로 옮긴다(6.11.1절 7번) |
+| 설명 창이 다른 화면(선택 패널 등) 뒤에 가려진다 | Hierarchy에서 `TutorialPrompt`가 `SleepTransition` 바로 위, 다른 화면보다 아래에 있는지(6.11.1절 3번) |
+| 설명 창이 떠 있는데 뒤의 패널 버튼이 눌린다 | `TutorialPrompt > Root`의 `Image`에서 `Raycast Target`이 켜져 있는지 |
+| Play하면 `tutorialStopDistance(...)는 트랙의 spawnAheadDistance(...)보다 작아야 한다.`가 뜨고 아무것도 안 된다 | `Bootstrapper`의 `Tutorial Stop Distance`를 `12`로 둔다(6.11.3절) |
+| 일반 판을 해 보려는데 자꾸 튜토리얼이 나온다 | 유형을 고르거나 바꾼 뒤 첫 판은 튜토리얼이다. 안내를 끝까지 마치면 다음부터 나오지 않는다(9절 첫머리) |

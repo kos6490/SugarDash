@@ -24,7 +24,7 @@
 - 러너 코어, 무한 주행, 구간 틀, 맵, 음식 아이템, 결과 화면은 두 유형이 같이 씀
 - 2형 대처는 choose(음료·음식 고르기) → move(달리기·쉬기) → notice(신호 알아채기) → tell(어른에게 알리기) 4단계
 - 식사, 운동, 수면, 도움 요청, 혈당 관리 습관은 유형 상관없는 공통 학습으로 주행 안에 녹임
-- 지금까지 만든 1구간은 기본 익히기(튜토리얼 성격). 2·3구간은 학교 운동장, 놀이터, 가족 나들이 같은 생활 환경 맵에서 진행
+- 1구간은 신호 인식과 기본 익히기. 튜토리얼은 유형을 고른 뒤 첫 판에 따로 함([tutorial.md](tutorial.md)). 2·3구간은 학교 운동장, 놀이터, 가족 나들이 같은 생활 환경 맵에서 진행
 - 퀴즈 관문보다 구간별 주행을 먼저 함
 - 성공 기준: 판이 끝난 뒤 아이가 "재밌다", "혈당 관리가 중요하다"를 함께 느낌
 - 자세한 내용과 남은 결정은 [type-tracks.md](type-tracks.md)에 있음
@@ -51,7 +51,8 @@
 
 - 이 목록은 일정표가 아니라 지금 단계에서 할 일의 목록임. 2.1절은 영역별로 앞으로 맡을 전체 범위임
 - 지금 작업: 유형 선택 + 2형 1구간, 2구간 공통 틀. 작업 브랜치 `feat/section2-frame`(`feat/type-select`의 내용을 모두 포함함. `feat/type-select`에는 더 push하지 않음). 설계 [type-select.md](type-select.md), [section2.md](section2.md)
-- 담당 칸: `구조`, `팀원1(캐릭터)`, `팀원2(월드)`, `팀원3(화면)`
+- 튜토리얼: 작업 브랜치 `feat/tutorial`(`feat/section2-frame` 위에 만듦). 설계 [tutorial.md](tutorial.md)
+- 담당 칸: `구조`, `팀원1(캐릭터)`, `팀원2(월드)`, `팀원3(화면)`, `기획`(기획 담당)
 - 상태: "대기(이유)" → "시작 가능" → "진행 중(이름)" → "완료". 상태를 바꾼 이 문서도 작업 브랜치에 함께 push함. 영역 담당 팀원은 자기 담당 줄 중 "시작 가능"인 일을 골라 시작하고 상태를 고침
 - 빈 틀 채우기는 구조 담당 팀원이 빈 틀을 작업 브랜치에 push한 뒤 "시작 가능"으로 바뀜. 작업은 작업 브랜치에서 하고 그 브랜치에 push함([team-rules.md](team-rules.md) 8절)
 - 빈 틀·자료 칸: 채울 빈 틀 파일이나 참고할 문서. 비어 있으면 에셋만 만드는 일
@@ -63,6 +64,7 @@
 | 구조 | 팀원이 push한 스크립트 확인, 작업 브랜치를 `dev`에 머지 | | 대기(빈 틀 채우기) |
 | 구조 | 2구간 2-A 공통 틀: 장면 설정·검증, 장면 진행과 기록, 주행 중 배치 바꾸기, 빈 틀 2개(`SceneLook`, `SleepTransitionView`), 조립·개발 씬 문서 | [section2.md](section2.md) | 완료 |
 | 구조 | 2구간 2-B 유형별 조건 이벤트 설계 | [section2.md](section2.md) 7절 | 대기(출처 확인) |
+| 구조 | 튜토리얼 규칙 코드와 빈 틀: 튜토리얼 판 결정·건너뛰기·다시 하기, 안내 순서(`TutorialController`), 연습 모드, 기록하지 않는 판, 빈 틀 `TutorialPromptView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.11, 9.13절 | [tutorial.md](tutorial.md) | 진행 중(구조 담당 팀원) |
 | 팀원1(캐릭터) | 주인공 모델, 기본 애니메이션(달리기, 점프, 슬라이드, 옆 이동) | | 시작 가능 |
 | 팀원1(캐릭터) | 2형 상태 애니메이션: 지친 표정·느린 걸음·처진 자세(고혈당·저혈당), 앉아 쉬기. 체형은 바꾸지 않음. 연출 방향은 출처 확인 뒤 고칠 수 있음 | [type-tracks.md](type-tracks.md) 5절 | 시작 가능 |
 | 팀원1(캐릭터) | `CharacterStateView` 채우기: 보통·쉬는 중·지침(높음)·지침(낮음) 상태를 애니메이터에 연결 | `Assets/_Project/Scripts/Presentation/Character/CharacterStateView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
@@ -81,6 +83,8 @@
 | 팀원3(화면) | notice 그림: 갈증 말풍선, 화장실 아이콘(고혈당). 지금 글자(`목말라요`)는 개발용이며 출처 확인 결과에 따라 바뀔 수 있음. 저혈당 신호 그림은 출처 확인 뒤 | [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
+| 팀원3(화면) | `TutorialPromptView` 채우기: 화면 전체를 덮어 아래 터치를 막는 설명 창, 문구, 그림 자리, `알겠어요`·`건너뛰기`, `다시 해봐요`. `SettingsView`의 `튜토리얼 다시 하기` 버튼 그림 | `Assets/_Project/Scripts/Presentation/Screen/TutorialPromptView.cs`, [tutorial.md](tutorial.md) 8절 | 대기(빈 틀 push) |
+| 기획 | 튜토리얼 안내 문구 확정(`TutorialText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/TutorialText.cs`, [tutorial.md](tutorial.md) 6절 | 시작 가능 |
 
 ## 3. 완료한 작업
 
@@ -119,7 +123,6 @@
 | 고혈당 알리기 화면 문구와 선택지 추가 여부 | 기획 | 개발용 문구("혈당이 높아요. 어떻게 할까요?") | 화면 문구 검토 |
 | 탈락 장면(어른이 도와주러 오는 장면)의 내용 | 기획 | 미정 | 탈락 연출(코드·그래픽) |
 | 저학년용 그림 선택지·음성 안내를 언제 넣을지 | 결정 | 게임 규칙에는 있으나 우선순위 목록에 없음 | 선택지 그림, 음성 안내 |
-| 1구간을 튜토리얼로 볼지, 튜토리얼을 따로 설계할지 | 결정, 기획 | 1구간이 튜토리얼 성격이라는 데까지 정해짐 | 튜토리얼 설계 |
 | 간식 흡수 곡선 모양 | 결정, 의학 | 균등 흡수로 구현함 | 없음(바꿀 때만 코드 수정) |
 
 ### 4.2 2형
@@ -240,5 +243,6 @@
 | [hyper-event.md](hyper-event.md) | 1형 고혈당 "어른에게 알리기" |
 | [log-format.md](log-format.md) | 기록 파일 형식 |
 | [result-screen.md](result-screen.md) | 결과 화면 |
+| [tutorial.md](tutorial.md) | 튜토리얼 판, 안내 순서, 기획 담당이 고칠 문구 |
 | [dev-scene.md](dev-scene.md) | 개발용 씬 만들기와 확인 시나리오 |
 | [build.md](build.md) | 빌드 설정과 미정 항목 |

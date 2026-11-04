@@ -49,6 +49,14 @@ namespace SugarDash.Bootstrap
         [SerializeField] private NoticeSignalView noticeSignal;
         [SerializeField] private SceneLook sceneLook;
         [SerializeField] private SleepTransitionView sleepTransition;
+        [SerializeField] private TutorialPromptView tutorialPrompt;
+        [Header("튜토리얼")]
+        [Tooltip("튜토리얼 대상이 캐릭터 앞 이 거리(m) 안에 오면 세계를 멈추고 설명 창을 띄운다. 트랙의 spawnAheadDistance보다 작아야 한다.")]
+        [SerializeField] private float tutorialStopDistance = 12f;
+        [Tooltip("혈당 안내에서 혈당을 목표값까지 옮기는 시간(초).")]
+        [SerializeField] private float tutorialGlucoseMoveSec = 3f;
+        [Tooltip("\"다시 해봐요\" 문구를 보여 주는 시간(초).")]
+        [SerializeField] private float tutorialRetryTextSec = 1.5f;
 
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
         private GameConfig _config;
@@ -57,10 +65,20 @@ namespace SugarDash.Bootstrap
         private DomainEventBus _bus;
         private RunController _run;
         private GameFlowController _flow;
+        private TutorialController _tutorial;
         private int _shownRunCount;
 
         private void Awake()
         {
+            // 대상은 spawnAheadDistance 앞에 놓이므로 멈춤 거리가 그보다 크면 놓자마자 멈춘다.
+            if (tutorialStopDistance >= track.SpawnAheadDistance)
+            {
+                Debug.LogError("tutorialStopDistance(" + tutorialStopDistance + ")는 트랙의 spawnAheadDistance(" +
+                               track.SpawnAheadDistance + ")보다 작아야 한다.");
+                enabled = false;
+                return;
+            }
+
             if (!TryLoadConfig("1형", buildConfig, DevConfigPath, out _config) ||
                 !TryLoadConfig("2형", buildConfigType2, DevConfigType2Path, out _config2))
             {
@@ -106,9 +124,10 @@ namespace SugarDash.Bootstrap
                         _config2.ConfigVersion)
                 },
             };
+            _tutorial = new TutorialController(_run, tutorialGlucoseMoveSec, tutorialRetryTextSec);
             _flow = new GameFlowController(_run, new ReportQueryService(logDirectory),
                 new SettingsRepository(Path.Combine(Application.persistentDataPath, "settings.json")), profiles,
-                new TutorialController(_run, 3, 1.5)); // TODO(작업 9): Inspector 값으로
+                _tutorial);
 
             // HUD 막대 범위는 1형 levels를 쓴다. 2형의 min/max가 다르면 주행마다 다시 묶어야 한다.
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
@@ -127,6 +146,8 @@ namespace SugarDash.Bootstrap
             if (noticeSignal != null) _subscriptions.Add(noticeSignal.Bind(_run));
             if (sceneLook != null) _subscriptions.Add(sceneLook.Bind(_bus));
             if (sleepTransition != null) _subscriptions.Add(sleepTransition.Bind(_bus));
+            if (tutorialPrompt == null) Debug.LogWarning("tutorialPrompt가 비어 있다. 튜토리얼 설명 창이 보이지 않는다. docs/dev-scene.md 튜토리얼 절을 본다.");
+            else _subscriptions.Add(tutorialPrompt.Bind(_flow));
 
             // 장면이 바뀌면 트랙 배치를 그 장면 값으로 바로 바꾼다. 발행 시점에 CurrentScene은 이미 새 장면이다.
             _subscriptions.Add(_bus.Subscribe<SceneEntered>(e =>
@@ -143,13 +164,19 @@ namespace SugarDash.Bootstrap
         private void Start() => _flow.Begin();
 
         /// <summary>
-        /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 주행 종료 확인(결과 화면) → 캐릭터 → 트랙 → 충돌 판정.
+        /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 주행 종료 확인(결과 화면) → 튜토리얼 진행 →
+        /// 튜토리얼 대상 놓기 → 캐릭터 → 트랙 → 충돌 판정 → 튜토리얼 결과·멈춤 거리 확인.
         /// 러너 화면은 RunController가 정한 worldDt로만 움직인다.
         /// </summary>
         private void Update()
         {
             _run.Tick(Time.deltaTime);
             _flow.Tick();
+            _tutorial.Tick(Time.deltaTime);
+
+            // 새 주행 초기화(ResetRun)가 앞쪽 장애물을 바로 놓으므로 그 전에 안내 구간 여부를 트랙에 알린다.
+            bool guided = _tutorial.IsGuided;
+            track.SetTutorialGuided(guided);
 
             if (_run.RunCount != _shownRunCount)
             {
@@ -161,18 +188,36 @@ namespace SugarDash.Bootstrap
                 track.SetScene(_run.CurrentScene?.Id);
             }
 
+            var placement = _tutorial.TakePlacement(player.CurrentLane);
+            if (placement != null) track.PlaceTutorial(placement);
+
             double worldDt = _run.LastWorldDt;
             player.Advance(worldDt);
             _run.AdvanceDistance(player.CurrentSpeed * worldDt);
             var phase = _run.Phase;
-            bool obstaclesAllowed = phase != HypoPhase.ResumeCountdown && phase != HypoPhase.Grace;
+            // 안내 구간에서는 재개 카운트다운·유예에도 장애물을 지우지 않는다. 지우면 안내 대상 장애물이 사라진다.
+            // 안내 구간에는 무작위 장애물을 놓지 않으므로 남는 장애물은 안내 대상뿐이다.
+            bool obstaclesAllowed = guided || (phase != HypoPhase.ResumeCountdown && phase != HypoPhase.Grace);
+            bool targetPassed = false, hit = false, collected = false, rested = false;
             foreach (var item in track.Advance(worldDt, player.CurrentSpeed, obstaclesAllowed))
             {
                 var outcome = player.Resolve(item);
+                if (item.IsTutorialTarget)
+                {
+                    targetPassed = true;
+                    hit |= outcome == PlayerController.Outcome.Hit;
+                    collected |= outcome == PlayerController.Outcome.Collected;
+                    rested |= outcome == PlayerController.Outcome.Rested;
+                }
                 // 쉬는 곳(Rested)은 지나갈 때까지 트랙에 남긴다.
                 if (outcome == PlayerController.Outcome.Collected || outcome == PlayerController.Outcome.Hit)
                     track.Remove(item);
             }
+
+            // 대상(레인 막기·음식 줄은 여러 개)이 지나간 프레임에 한 번만 결과를 넘긴다.
+            if (targetPassed) _tutorial.ReportAttempt(new TutorialAttempt(hit, collected, rested));
+            double? nearest = track.NearestTutorialTargetZ;
+            if (nearest.HasValue && nearest.Value <= tutorialStopDistance) _tutorial.NotifyTargetNear();
         }
 
         private void OnApplicationPause(bool paused)
