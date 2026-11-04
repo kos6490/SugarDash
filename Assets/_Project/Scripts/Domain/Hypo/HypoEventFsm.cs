@@ -63,6 +63,16 @@ namespace SugarDash.Domain.Hypo
         /// <summary>3단계에서 양을 고를 간식. 2단계에서 아동이 고른 간식, 고르지 못했으면 어른이 건넨 빠른 당.</summary>
         public string DoseSnackId { get; private set; }
 
+        /// <summary>
+        /// 연습 모드(튜토리얼). 오답은 부작용 없이 같은 단계를 다시 열고, 1~4단계·고혈당/저혈당 알리기에 시간 초과가 없다.
+        /// 재개 카운트다운과 유예 마감은 그대로 본다.
+        /// </summary>
+        public bool IsPractice { get; private set; }
+        /// <summary>연습 모드에서 오답으로 같은 단계를 다시 연 횟수.</summary>
+        public int PracticeRetryCount { get; private set; }
+
+        public void SetPractice(bool on) => IsPractice = on;
+
         /// <summary>true면 RunController가 worldDt를 0으로 둔다.</summary>
         public bool IsWorldFrozen
         {
@@ -162,6 +172,7 @@ namespace SugarDash.Domain.Hypo
         {
             if (Phase == HypoPhase.Eliminated) return;
             if (Phase == HypoPhase.Idle) return;
+            if (IsPractice && IsPracticeTimedPhase(Phase)) return;
             double now = Phase == HypoPhase.Grace ? _model.SimTime : _model.DecisionTime;
             if (now < _deadline) return;
 
@@ -245,6 +256,8 @@ namespace SugarDash.Domain.Hypo
             if (snackId == null || !_snacks.TryGetValue(snackId, out var snack))
                 throw new ArgumentException($"설정에 없는 간식이다: {snackId}", nameof(snackId));
 
+            if (IsPractice && snack.Kind != SnackKind.Fast) return PracticeRetry(HypoStep.Respond, snackId);
+
             DoseSnackId = snackId;
             if (snack.Kind == SnackKind.Fast)
             {
@@ -264,10 +277,12 @@ namespace SugarDash.Domain.Hypo
             if (IsShowingAnswerFeedback) return false;
             if (Phase == HypoPhase.LowNotify)
             {
+                if (IsPractice) return PracticeRetry(HypoStep.LowNotify, ChoiceKeepRunning);
                 Error(HypoStep.LowNotify, ChoiceKeepRunning, HypoErrorCode.LoKeepRunning, GuardianSnackAndResolve);
                 return true;
             }
             if (Phase != HypoPhase.HyperNotify) return ChooseNoSnack(ChoiceKeepRunning, HypoErrorCode.RsKeepRunning);
+            if (IsPractice) return PracticeRetry(HypoStep.HyperNotify, ChoiceKeepRunning);
 
             Error(HypoStep.HyperNotify, ChoiceKeepRunning, HypoErrorCode.HyKeepRunning, Resolve);
             return true;
@@ -280,6 +295,7 @@ namespace SugarDash.Domain.Hypo
         {
             if (_config.TrackType != TrackType.Type2 || Phase != HypoPhase.HyperNotify || IsShowingAnswerFeedback)
                 return false;
+            if (IsPractice) return PracticeRetry(HypoStep.HyperNotify, ChoiceJuice);
 
             DoseSnackId = _config.Type2.JuiceChoiceFoodId;
             ApplyDose(1, true);
@@ -300,6 +316,10 @@ namespace SugarDash.Domain.Hypo
                 Correct(HypoStep.Dose, choiceId);
                 ApplyDose(servings, true);
                 EnterRemeasure();
+            }
+            else if (IsPractice)
+            {
+                return PracticeRetry(HypoStep.Dose, choiceId);
             }
             else
             {
@@ -337,9 +357,11 @@ namespace SugarDash.Domain.Hypo
             switch (Phase)
             {
                 case HypoPhase.Remeasure:
+                    if (IsPractice) return PracticeRetry(HypoStep.Remeasure, ChoiceRunAgain);
                     Error(HypoStep.Remeasure, ChoiceRunAgain, HypoErrorCode.RcNoRecheck, RemeasureAndNotify);
                     return true;
                 case HypoPhase.Notify:
+                    if (IsPractice) return PracticeRetry(HypoStep.Notify, ChoiceRunAgain);
                     Error(HypoStep.Notify, ChoiceRunAgain, HypoErrorCode.RcNoNotify, Resolve);
                     return true;
                 case HypoPhase.GuardianPrompt:
@@ -369,10 +391,12 @@ namespace SugarDash.Domain.Hypo
                     afterNotify();
                     return true;
                 case HypoPhase.Respond:
+                    if (IsPractice) return PracticeRetry(HypoStep.Respond, ChoiceHelp);
                     DoseSnackId = _hypo.GuardianSnackId;
                     HelpInstead(HypoStep.Respond, HypoErrorCode.HelpInstead, EnterDose);
                     return true;
                 case HypoPhase.Dose:
+                    if (IsPractice) return PracticeRetry(HypoStep.Dose, ChoiceHelp);
                     HelpInstead(HypoStep.Dose, HypoErrorCode.HelpInstead, () =>
                     {
                         ApplyDose(_hypo.Doses.Proper, false);
@@ -380,6 +404,7 @@ namespace SugarDash.Domain.Hypo
                     });
                     return true;
                 case HypoPhase.Remeasure:
+                    if (IsPractice) return PracticeRetry(HypoStep.Remeasure, ChoiceHelp);
                     HelpInstead(HypoStep.Remeasure, HypoErrorCode.RcNoRecheck, RemeasureAndNotify);
                     return true;
                 case HypoPhase.Notify:
@@ -402,10 +427,55 @@ namespace SugarDash.Domain.Hypo
         private bool ChooseNoSnack(string choiceId, HypoErrorCode code)
         {
             if (Phase != HypoPhase.Respond || IsShowingAnswerFeedback) return false;
+            if (IsPractice) return PracticeRetry(HypoStep.Respond, choiceId);
 
             DoseSnackId = _hypo.GuardianSnackId;
             Error(HypoStep.Respond, choiceId, code, EnterDose);
             return true;
+        }
+
+        /// <summary>연습 모드 시간 초과 없음 대상: 1~4단계, 고혈당 알리기, 2형 저혈당 알리기.</summary>
+        private static bool IsPracticeTimedPhase(HypoPhase phase)
+        {
+            switch (phase)
+            {
+                case HypoPhase.Recognize:
+                case HypoPhase.Respond:
+                case HypoPhase.Dose:
+                case HypoPhase.Remeasure:
+                case HypoPhase.Notify:
+                case HypoPhase.HyperNotify:
+                case HypoPhase.LowNotify:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// 연습 모드 오답: 기록·혈당·알리기 대기 없이 같은 단계를 다시 연다(결과 문구 창이 먼저 열린다).
+        /// 오답 처리의 부작용(DoseSnackId, ApplyDose, StepAnswered, _anyError 등)보다 먼저 호출해야 한다.
+        /// </summary>
+        private bool PracticeRetry(HypoStep step, string choiceId)
+        {
+            PracticeRetryCount++;
+            Publish(new PracticeRetried(EventId, step, choiceId, _model.SimTime, _model.DecisionTime));
+            Enter(Phase, PhaseLimit(Phase));
+            return true;
+        }
+
+        private double PhaseLimit(HypoPhase phase)
+        {
+            switch (phase)
+            {
+                case HypoPhase.Respond: return _hypo.Step2TimeLimitSec;
+                case HypoPhase.Dose: return _hypo.Step3TimeLimitSec;
+                case HypoPhase.Remeasure:
+                case HypoPhase.Notify: return _hypo.Step4TimeLimitSec;
+                case HypoPhase.HyperNotify:
+                case HypoPhase.LowNotify: return _config.Hyper.NotifyTimeLimitSec;
+                default: return _hypo.Step1TimeLimitSec;
+            }
         }
 
         private void EnterRespond() => Enter(HypoPhase.Respond, _hypo.Step2TimeLimitSec);
