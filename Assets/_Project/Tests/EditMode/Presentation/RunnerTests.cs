@@ -555,6 +555,16 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void TutorialTargetLanes_AscendingDistinctAheadOnly()
+        {
+            Assert.That(_track.TutorialTargetLanes, Is.Empty);
+            Run(10);
+            _track.SetTutorialGuided(true);
+            _track.PlaceTutorial(new TutorialPlacement(TutorialObject.LowObstacle, new[] { 1, -1 }));
+            Assert.That(_track.TutorialTargetLanes, Is.EqualTo(new[] { -1, 1 }));
+        }
+
+        [Test]
         public void ChangeLayout_NoSpawns_KeepsTutorialTargets()
         {
             Run(10);

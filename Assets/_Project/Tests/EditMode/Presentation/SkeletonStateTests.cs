@@ -113,5 +113,14 @@ namespace SugarDash.Presentation.Tests
             Assert.That(SleepTransitionView.AlphaAt(0f, 0f, 0f), Is.EqualTo(0f));
             Assert.That(SleepTransitionView.AlphaAt(0f, 0f, 0.6f), Is.EqualTo(1f));
         }
+
+        [Test]
+        public void TutorialLaneHighlight_StripGeometry()
+        {
+            Assert.That(TutorialLaneHighlightView.StripCenter(-1, 2f, 10f), Is.EqualTo(new Vector3(-2f, 0.02f, 5f)));
+            Assert.That(TutorialLaneHighlightView.StripCenter(1, 1.5f, 8f), Is.EqualTo(new Vector3(1.5f, 0.02f, 4f)));
+            Assert.That(TutorialLaneHighlightView.StripLength(10f), Is.EqualTo(10f));
+            Assert.That(TutorialLaneHighlightView.StripLength(-3f), Is.EqualTo(0f));
+        }
     }
 }

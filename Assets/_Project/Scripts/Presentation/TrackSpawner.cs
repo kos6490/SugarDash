@@ -58,6 +58,24 @@ namespace SugarDash.Presentation
         /// <summary>주행 시작부터 달린 거리.</summary>
         public double Distance => _distance;
 
+        private readonly List<int> _tutorialTargetLanes = new List<int>();
+
+        /// <summary>z &gt; 0인 튜토리얼 대상 물체의 레인(중복 없이 오름차순). 호출마다 같은 목록을 다시 채워 돌려준다.</summary>
+        public IReadOnlyList<int> TutorialTargetLanes
+        {
+            get
+            {
+                _tutorialTargetLanes.Clear();
+                foreach (var item in _items)
+                {
+                    if (!item.IsTutorialTarget || !(item.Z > 0)) continue;
+                    if (!_tutorialTargetLanes.Contains(item.Lane)) _tutorialTargetLanes.Add(item.Lane);
+                }
+                _tutorialTargetLanes.Sort();
+                return _tutorialTargetLanes;
+            }
+        }
+
         /// <summary>가장 가까운 튜토리얼 대상의 z(z &gt; 0인 것만). 없으면 null.</summary>
         public double? NearestTutorialTargetZ
         {

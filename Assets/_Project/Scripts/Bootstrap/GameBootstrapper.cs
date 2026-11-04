@@ -50,6 +50,7 @@ namespace SugarDash.Bootstrap
         [SerializeField] private SceneLook sceneLook;
         [SerializeField] private SleepTransitionView sleepTransition;
         [SerializeField] private TutorialPromptView tutorialPrompt;
+        [SerializeField] private TutorialLaneHighlightView laneHighlight;
         [Header("튜토리얼")]
         [Tooltip("튜토리얼 대상이 캐릭터 앞 이 거리(m) 안에 오면 세계를 멈추고 설명 창을 띄운다. 트랙의 spawnAheadDistance보다 작아야 한다.")]
         [SerializeField] private float tutorialStopDistance = 12f;
@@ -155,6 +156,7 @@ namespace SugarDash.Bootstrap
             if (sleepTransition != null) _subscriptions.Add(sleepTransition.Bind(_bus));
             if (tutorialPrompt == null) Debug.LogWarning("tutorialPrompt가 비어 있다. 튜토리얼 설명 창이 보이지 않는다. docs/dev-scene.md 튜토리얼 절을 본다.");
             else _subscriptions.Add(tutorialPrompt.Bind(_flow));
+            if (laneHighlight == null) Debug.LogWarning("laneHighlight가 비어 있다. 튜토리얼 통과 레인 띠가 보이지 않는다.");
 
             // 장면이 바뀌면 트랙 배치를 그 장면 값으로 바로 바꾼다. 발행 시점에 CurrentScene은 이미 새 장면이다.
             _subscriptions.Add(_bus.Subscribe<SceneEntered>(e =>
@@ -227,6 +229,14 @@ namespace SugarDash.Bootstrap
             if (targetPassed) _tutorial.ReportAttempt(new TutorialAttempt(hit, collected, rested));
             double? nearest = track.NearestTutorialTargetZ;
             if (nearest.HasValue && nearest.Value <= tutorialStopDistance) _tutorial.NotifyTargetNear(player.CurrentLane);
+
+            if (laneHighlight != null)
+            {
+                // HighlightLanes는 읽을 때마다 목록을 만들 수 있어 한 번만 읽는다.
+                var lanes = _tutorial.HighlightUsesTargetLanes ? track.TutorialTargetLanes : _tutorial.HighlightLanes;
+                if (lanes.Count == 0 || !nearest.HasValue) laneHighlight.Hide();
+                else laneHighlight.Show(lanes, player.LaneWidth, (float)nearest.Value);
+            }
         }
 
         private void OnApplicationPause(bool paused)
