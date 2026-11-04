@@ -11,7 +11,7 @@ namespace SugarDash.Presentation
     public static class TutorialText
     {
         public const string TryAgain = "다시 해봐요";
-        public const string Acknowledge = "알겠어요";
+        public const string TapHint = "화면을 눌러요";
         public const string Skip = "건너뛰기";
         public const string SettingsButton = "튜토리얼 다시 하기";
 

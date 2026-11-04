@@ -100,7 +100,8 @@ namespace SugarDash.Presentation
             var phase = _run.Phase;
             meterButton.interactable = _run.State == RunState.Running &&
                                        (phase == HypoPhase.Idle || phase == HypoPhase.Recognize ||
-                                        phase == HypoPhase.Grace);
+                                        phase == HypoPhase.Grace) &&
+                                       IsMeterAllowed(_flow.Tutorial.AllowedControls);
 
             if (scoreText != null) scoreText.text = $"점수 {(int)Math.Floor(_run.Score)}";
 
@@ -113,7 +114,14 @@ namespace SugarDash.Presentation
             statusText.text = _run.State == RunState.Paused ? "잠시 멈춤" : "";
         }
 
-        private void OnMeter() => _run?.PressMeter();
+        /// <summary>튜토리얼 조작 잠금에서 측정기가 허용되는지. 일반 판은 All이라 항상 허용된다.</summary>
+        public static bool IsMeterAllowed(TutorialControls allowed) => (allowed & TutorialControls.Meter) != 0;
+
+        private void OnMeter()
+        {
+            if (_run == null || !IsMeterAllowed(_flow.Tutorial.AllowedControls)) return;
+            _run.PressMeter();
+        }
 
         private void ClearMeterText()
         {

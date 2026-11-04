@@ -34,7 +34,7 @@ namespace SugarDash.Presentation.Tests
         public void FixedTexts_AndShared()
         {
             Assert.That(TutorialText.TryAgain, Is.EqualTo("다시 해봐요"));
-            Assert.That(TutorialText.Acknowledge, Is.EqualTo("알겠어요"));
+            Assert.That(TutorialText.TapHint, Is.EqualTo("화면을 눌러요"));
             Assert.That(TutorialText.Skip, Is.EqualTo("건너뛰기"));
             Assert.That(TutorialText.SettingsButton, Is.EqualTo("튜토리얼 다시 하기"));
             Assert.That(TutorialText.For(TutorialStep.Jump, TrackType.Type2), Is.EqualTo(TutorialText.For(TutorialStep.Jump, TrackType.Type1)));
@@ -48,7 +48,7 @@ namespace SugarDash.Presentation.Tests
         {
             var all = new System.Collections.Generic.List<string>
             {
-                TutorialText.TryAgain, TutorialText.Acknowledge, TutorialText.Skip, TutorialText.SettingsButton,
+                TutorialText.TryAgain, TutorialText.TapHint, TutorialText.Skip, TutorialText.SettingsButton,
                 ResultScreenText.TutorialTitle,
             };
             foreach (var step in Type1Order) all.Add(TutorialText.For(step, TrackType.Type1));

@@ -165,7 +165,7 @@ namespace SugarDash.Bootstrap
 
             player.Init(_run, true);
             track.Init(BuildLayout(_config), Environment.TickCount, true);
-            input.Init(_run, player);
+            input.Init(_run, player, _tutorial);
         }
 
         private void Start() => _flow.Begin();

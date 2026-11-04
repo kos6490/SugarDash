@@ -808,5 +808,36 @@ namespace SugarDash.Presentation.Tests
             Assert.That(InputAdapter.Classify(new Vector2(5, 40), 10), Is.EqualTo(InputAdapter.Swipe.Up));
             Assert.That(InputAdapter.Classify(new Vector2(-5, -40), 10), Is.EqualTo(InputAdapter.Swipe.Down));
         }
+
+        [Test]
+        public void IsAllowed_MapsSwipeToControl()
+        {
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Left, TutorialControls.Left), Is.True);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Left, TutorialControls.Right), Is.False);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Right, TutorialControls.Right), Is.True);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Right, TutorialControls.Left | TutorialControls.Jump), Is.False);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Up, TutorialControls.Jump), Is.True);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Up, TutorialControls.Slide), Is.False);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Down, TutorialControls.Slide), Is.True);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.Down, TutorialControls.Meter), Is.False);
+            Assert.That(InputAdapter.IsAllowed(InputAdapter.Swipe.None, TutorialControls.All), Is.False);
+            foreach (InputAdapter.Swipe sw in new[] { InputAdapter.Swipe.Left, InputAdapter.Swipe.Right, InputAdapter.Swipe.Up, InputAdapter.Swipe.Down })
+            {
+                Assert.That(InputAdapter.IsAllowed(sw, TutorialControls.All), Is.True);
+                Assert.That(InputAdapter.IsAllowed(sw, TutorialControls.None), Is.False);
+            }
+        }
+    }
+
+    public class HudMeterAllowedTests
+    {
+        [Test]
+        public void IsMeterAllowed_OnlyWithMeterFlag()
+        {
+            Assert.That(HudPresenter.IsMeterAllowed(TutorialControls.All), Is.True);
+            Assert.That(HudPresenter.IsMeterAllowed(TutorialControls.Meter), Is.True);
+            Assert.That(HudPresenter.IsMeterAllowed(TutorialControls.None), Is.False);
+            Assert.That(HudPresenter.IsMeterAllowed(TutorialControls.Left | TutorialControls.Right | TutorialControls.Jump | TutorialControls.Slide), Is.False);
+        }
     }
 }

@@ -26,12 +26,27 @@ namespace SugarDash.Presentation
 
         private RunController _run;
         private PlayerController _player;
+        private TutorialController _tutorial;
         private Vector2? _pressStart;
 
-        public void Init(RunController run, PlayerController player)
+        public void Init(RunController run, PlayerController player, TutorialController tutorial)
         {
             _run = run ?? throw new ArgumentNullException(nameof(run));
             _player = player ?? throw new ArgumentNullException(nameof(player));
+            _tutorial = tutorial ?? throw new ArgumentNullException(nameof(tutorial));
+        }
+
+        /// <summary>튜토리얼 조작 잠금에서 이 쓸기 방향이 허용되는지. 일반 판은 All이라 항상 허용된다.</summary>
+        public static bool IsAllowed(Swipe swipe, TutorialControls allowed)
+        {
+            switch (swipe)
+            {
+                case Swipe.Left: return (allowed & TutorialControls.Left) != 0;
+                case Swipe.Right: return (allowed & TutorialControls.Right) != 0;
+                case Swipe.Up: return (allowed & TutorialControls.Jump) != 0;
+                case Swipe.Down: return (allowed & TutorialControls.Slide) != 0;
+                default: return false;
+            }
         }
 
         /// <summary>누른 곳에서 뗀 곳까지의 이동으로 쓸기 방향을 정한다. 더 많이 움직인 축을 따른다.</summary>
@@ -50,6 +65,7 @@ namespace SugarDash.Presentation
             if (swipe == Swipe.None) swipe = ReadKeyboard();
             if (swipe == Swipe.None) return;
             if (_run.State != RunState.Running || _run.IsWorldFrozen || _run.IsTutorialStopped) return;
+            if (!IsAllowed(swipe, _tutorial.AllowedControls)) return;
 
             switch (swipe)
             {

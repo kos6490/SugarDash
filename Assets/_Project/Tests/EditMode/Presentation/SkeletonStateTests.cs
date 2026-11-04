@@ -31,6 +31,16 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void TutorialPrompt_AcceptsTapAfterDelay()
+        {
+            Assert.That(TutorialPromptView.AcceptsTap(0f, 0.5f), Is.False);
+            Assert.That(TutorialPromptView.AcceptsTap(0.49f, 0.5f), Is.False);
+            Assert.That(TutorialPromptView.AcceptsTap(0.5f, 0.5f), Is.True);
+            Assert.That(TutorialPromptView.AcceptsTap(2f, 0.5f), Is.True);
+            Assert.That(TutorialPromptView.AcceptsTap(0f, 0f), Is.True);
+        }
+
+        [Test]
         public void ScreenVisibility_PerFlowScreen()
         {
             foreach (FlowScreen s in System.Enum.GetValues(typeof(FlowScreen)))
