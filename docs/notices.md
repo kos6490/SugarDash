@@ -31,3 +31,14 @@
   - 2구간 2-B(맵별 조건)가 들어왔다: [section2.md](section2.md) 7절. 1형은 운동장·집에 들어갈 때 측정기 위에 "혈당 재 볼까?" 말풍선이 잠깐 뜬다(혈당 재기 습관 순간). 2형은 놀이터에 쉬는 곳이 더 자주, 나들이에 음식 줄이 더 자주 나온다. 수치는 아직 개발용이다.
   - 팀원3(화면): 빈 틀 `Screen/HabitPromptView`를 채울 수 있다(roadmap 2.2절 "시작 가능"). 말풍선 프리팹은 `Assets/_Project/Art/UI/Screens/HabitPrompt.prefab`이다. 모양만 바꾸고, 문구는 `HabitPromptText`의 따옴표 안만 바꾼다(team-rules 2.3절).
   - 확인 방법은 [dev-scene.md](dev-scene.md) 9.14절이다.
+
+## 공지 4
+
+- 날짜: 2026-11-05
+- 대상: 전원, 팀원1(캐릭터), 팀원3(화면)
+- 내용:
+  - 일시정지 메뉴와 탈락 장면이 들어왔다: [pause-elimination.md](pause-elimination.md). 주행 중 오른쪽 위 `II` 버튼으로 멈추고 `계속하기`·`타이틀로`를 고른다. 탈락하면 바로 결과 화면으로 가지 않고, 어른이 달려와 옆에 서서 말풍선 한 줄을 한 뒤 약 2.5초 뒤 결과 화면이 뜬다.
+  - 팀원1(캐릭터): 빈 틀 `Character/GuardianArrivalView`를 채울 수 있다(roadmap 2.2절 "시작 가능"). 지금 나오는 주황색 캡슐을 어른 캐릭터 프리팹(발밑이 기준점)과 달려오기·서서 말하기 애니메이션으로 바꾼다. 위치·시간 계산은 그대로 둔다.
+  - 팀원3(화면): 빈 틀 `Screen/PauseMenuView`, `Screen/EliminationSpeechView`를 채울 수 있다. 프리팹은 `Assets/_Project/Art/UI/Screens/PauseMenu.prefab`, `EliminationSpeech.prefab`이다. 말풍선 문구는 `EliminationText`의 따옴표 안만 바꾼다(team-rules 2.3절).
+  - 작업 브랜치는 그대로 `feat/section2-frame`이다(roadmap 2.2절).
+  - 확인 방법은 [dev-scene.md](dev-scene.md) 9.15절이다.
