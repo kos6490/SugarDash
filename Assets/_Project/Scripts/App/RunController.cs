@@ -376,7 +376,7 @@ namespace SugarDash.App
 
         /// <summary>
         /// 지금 구간의 index번째 장면에 들어간다. 장면 덮어쓰기를 적용하고 SceneEntered를 발행한 뒤, 1형이고 장면에
-        /// 습관 순간이 있으면 연다.
+        /// 습관 순간이 있으면 연다. 튜토리얼 판(기록하지 않는 판)에서는 습관 순간을 열지 않는다.
         /// 경계는 누적 거리라 한 번에 여러 경계를 넘어도 장면 길이가 어긋나지 않는다.
         /// </summary>
         /// <param name="boundaryM">이 장면이 시작하는 거리(m).</param>
@@ -390,7 +390,7 @@ namespace SugarDash.App
             s.Director.SetSuddenDropChancePerSec(scene.Overrides.SuddenDropChancePerSec);
             _bus.Publish(new SceneEntered(scene.Id, scene.TimeOfDay, day, DistanceM, s.Model.SimTime,
                 s.Model.DecisionTime));
-            if (scene.HabitCheck.HasValue && s.Config.Type1 != null)
+            if (scene.HabitCheck.HasValue && s.Config.Type1 != null && IsRecorded)
                 s.Director.StartHabitPrompt(scene.HabitCheck.Value, s.Config.Type1.HabitCheckWindowSec);
         }
 

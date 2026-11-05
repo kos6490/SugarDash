@@ -1084,6 +1084,22 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
+        public void UnrecordedRun_OpensNoHabitPrompt()
+        {
+            var habit = new SceneConfig("A", TimeOfDay.Morning, 5, true, null, HabitMoment.PreExercise);
+            var rig = new Rig(b => b.WithScenes(habit, SceneB()));
+            rig.Run.StartRun(TrackType.Type1, false);
+
+            rig.Run.AdvanceDistance(10);
+            rig.Run.Tick(1);
+
+            Assert.That(rig.Run.CurrentScene.Id, Is.EqualTo("A"));
+            Assert.That(rig.Run.ActiveHabitMoment, Is.Null);
+            Assert.That(rig.All<HabitPromptStarted>(), Is.Empty);
+            Assert.That(rig.All<HabitCheckEnded>(), Is.Empty);
+        }
+
+        [Test]
         public void SceneWithoutHabit_OpensNoPrompt()
         {
             var rig = new Rig(b => b.WithScenes(SceneA(), SceneB()));

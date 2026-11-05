@@ -119,6 +119,7 @@
 - 장면에 들어가면 측정기 옆에 말풍선("운동 전에 혈당 재 볼까?", "자기 전에 혈당 재 볼까?")이 `type1.habitCheckWindowSec`(`null`, decisionDt 기준 초) 동안 뜬다. 세계는 멈추지 않는다.
 - 그 안에 측정기를 누르면 지금처럼 실제 혈당을 보여 준다. 이 측정은 "불필요 측정"으로 세지 않는다.
 - 기록: `HabitCheck`(`moment`, `outcome` = `checked`·`missed`·`skipped`, `reactionSec`). 안 눌러도 불이익·탈락 없음. 점수 없음, 지표 "습관 확인률"(`checked` ÷ (`checked` + `missed`))만.
+- 튜토리얼 판(기록하지 않는 판)에서는 열지 않는다. 튜토리얼은 습관 순간을 가르치지 않는다.
 - 저혈당·고혈당 대처 중이나 유예 중에 장면에 들어가면 띄우지 않고 `skipped`로 기록한다. 말풍선이 떠 있는 동안 저혈당·고혈당 대처가 시작되면 말풍선을 거두고 `skipped`로 기록한다(측정기는 1단계용이 된다).
 - 판정은 EventDirector에 둔다(새 모듈 없음). 이벤트: `HabitPromptStarted`, `HabitCheckEnded`. `MeterPressed`에 습관 순간 표시(`moment`).
 - 화면: 팀원3(화면) `Screen/HabitPromptView` 빈 틀. 문구는 `HabitPromptText`(문구 파일)에 있다.
