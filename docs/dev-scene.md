@@ -448,7 +448,11 @@ Unity 에디터 기본 배치:
 
 1. Hierarchy의 `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `PauseMenu`. Hierarchy에서 끌어서 `Canvas` 자식 중 맨 아래(`SleepTransition` 아래)로 옮긴다.
 2. `PauseMenu`의 Rect Transform 왼쪽 위 네모(Anchor Presets)를 누르고 Alt(Mac은 Option)를 누른 채 오른쪽 아래 `stretch`·`stretch`를 고른다(화면 전체 크기).
-3. `PauseMenu` 위에서 오른쪽 클릭 → `UI > Legacy > Button`. 이름 `PauseButton`. Pos X `440`, Pos Y `860`, Width `150`, Height `150`. 자식 글자: Text `II`, Font Size 60.
+3. `PauseMenu` 위에서 오른쪽 클릭 → `UI > Legacy > Button`. 이름 `PauseButton`. 배경 없이 글자 `II`만 화면 오른쪽 위 구석에 보이게 한다(혈당바 오른쪽 위, 겹치지 않음).
+   - Rect Transform 왼쪽 위 네모(Anchor Presets)를 누르고 Shift를 누른 채 오른쪽 위(`top`·`right`)를 고른다(기준점도 오른쪽 위가 된다). Pos X `-8`, Pos Y `-8`, Width `80`, Height `80`.
+   - `Image` 컴포넌트 오른쪽 `⋮` → `Remove Component`(배경을 없앤다).
+   - 자식 글자: Text `II`, Font Size 60, Font Style `Bold`, `Raycast Target` 체크 켬(배경이 없으니 글자가 눌림을 받는다).
+   - `PauseButton`의 `Button` 컴포넌트 `Target Graphic` 칸에 자식 글자(`Text (Legacy)`)를 끌어다 놓는다.
 4. `PauseMenu` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `MenuRoot`. 화면 전체를 덮는 그대로 둔다. `Image`의 `Color`를 R `0`, G `0`, B `0`, A `150`으로 바꾼다. `Raycast Target`은 켜 둔다(켜져 있어야 메뉴 뒤의 측정기·선택 버튼이 눌리지 않는다).
 5. `MenuRoot` 위에서 오른쪽 클릭 → `UI > Legacy > Button`을 두 번 해서 아래 두 버튼을 만든다.
 
@@ -871,7 +875,7 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 
 | 순서 | 할 일 | 결과 |
 | --- | --- | --- |
-| 1 | Play, 타이틀에서 `시작하기` | 오른쪽 위에 `II` 버튼이 보인다 |
+| 1 | Play, 타이틀에서 `시작하기` | 화면 오른쪽 위 구석에 배경 없는 `II`가 보인다. 혈당바·점수와 겹치지 않는다 |
 | 2 | `II`를 누른다 | 화면이 어두워지고 `계속하기`, `타이틀로`가 뜬다. 캐릭터·혈당바·점수가 멈춘다. `II` 버튼이 사라진다 |
 | 3 | `계속하기` | 3-2-1이 지난 뒤 다시 달린다. 3-2-1 동안 스와이프해도 캐릭터가 움직이지 않는다 |
 | 4 | 저혈당 신호가 와서 측정기를 눌러 2단계 패널이 뜬다 | `II` 버튼이 사라진다. 패널을 마치고 3-2-1이 끝나면 다시 보인다 |
