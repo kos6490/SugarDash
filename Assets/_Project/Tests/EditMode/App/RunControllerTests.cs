@@ -412,6 +412,52 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
+        public void ResumeWithCountdown_HoldsClocksAndInputUntilCountdownEnds()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            rig.Ticks(2);
+            rig.Run.Pause();
+
+            rig.Run.Resume(3);
+
+            Assert.That(rig.Run.State, Is.EqualTo(RunState.Running));
+            Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(3).Within(Eps));
+            Assert.That(rig.Run.IsTutorialStopped, Is.True, "3-2-1 동안에는 캐릭터 입력을 받지 않는다");
+            rig.Ticks(3);
+            Assert.That(rig.Run.WorldTime, Is.EqualTo(2).Within(Eps), "3-2-1 동안 세계가 멈춘다");
+            Assert.That(rig.Run.IsTutorialStopped, Is.False);
+            rig.Ticks(1);
+            Assert.That(rig.Run.WorldTime, Is.EqualTo(3).Within(Eps));
+        }
+
+        [Test]
+        public void Resume_NotPaused_IgnoresCountdown()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+
+            rig.Run.Resume(3);
+
+            Assert.That(rig.Run.ResumeCountdownRemaining, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void EliminatedBy_ExposesCauseUntilRunEnds()
+        {
+            var rig = new Rig();
+            rig.Run.StartRun(SugarDash.Domain.Config.TrackType.Type1);
+            Assert.That(rig.Run.EliminatedBy, Is.Null);
+
+            rig.Run.HitObstacle();
+            rig.Run.Tick(1);
+
+            Assert.That(rig.Run.EliminatedBy, Is.EqualTo(EliminationCause.ObstacleHit));
+            rig.Run.EndRun();
+            Assert.That(rig.Run.EliminatedBy, Is.Null);
+        }
+
+        [Test]
         public void Command_IsAppliedAtStartOfNextTick_BeforeTimeAdvances()
         {
             var rig = new Rig().Triggered();

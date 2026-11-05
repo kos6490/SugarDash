@@ -6,7 +6,7 @@ using UnityEngine;
 namespace SugarDash.Presentation
 {
     /// <summary>
-    /// 실제 혈당이 낮을수록 카메라 Transform을 더 흔든다(저혈당 쪽만, UI는 흔들지 않는다).
+    /// 실제 혈당이 낮을수록 카메라 Transform을 더 흔든다(저혈당 쪽만, UI는 흔들지 않는다). 탈락 장면 동안에는 살짝만 흔든다.
     /// 지난 프레임 오프셋을 먼저 빼고 새 오프셋을 더하므로 다른 코드가 카메라 위치를 정하든 멈추든 누적되지 않는다.
     /// </summary>
     public sealed class SymptomEffectPresenter : MonoBehaviour
@@ -14,6 +14,8 @@ namespace SugarDash.Presentation
         public Transform cameraTarget;
         public float maxAmplitude = 0.3f;
         public float frequency = 12f;
+        [Tooltip("탈락 장면 동안 흔들림 배율(0~1). 끄지 않고 살짝만 이어 간다.")]
+        [Range(0f, 1f)] public float eliminatedScale = 0.3f;
 
         private RunController _run;
         private double _startGlucose;
@@ -41,8 +43,9 @@ namespace SugarDash.Presentation
         public void LateUpdate()
         {
             // 2형 주행에는 화면 흔들림이 없다.
-            double intensity = _run != null && _run.State == RunState.Running && _run.TrackType != TrackType.Type2
-                ? SymptomShake.Intensity(_run.Actual, _startGlucose, _lowGlucose)
+            double intensity = _run != null && _run.TrackType != TrackType.Type2
+                ? SymptomShake.Intensity(_run.Actual, _startGlucose, _lowGlucose) *
+                  SymptomShake.StateScale(_run.State, eliminatedScale)
                 : 0;
             ApplyShake(intensity, Time.time);
         }

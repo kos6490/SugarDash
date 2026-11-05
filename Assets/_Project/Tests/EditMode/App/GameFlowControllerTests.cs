@@ -109,7 +109,9 @@ namespace SugarDash.App.Tests
         [SetUp]
         public void SetUp() => SetUpWith(new ConfigBuilder { RunDecayPerSec = 2 });
 
-        private void SetUpWith(ConfigBuilder builder)
+        private const double PauseCountdownSec = 3;
+
+        private void SetUpWith(ConfigBuilder builder, double eliminationSceneSec = 0)
         {
             var config = builder.Build();
             var bus = new DomainEventBus();
@@ -146,7 +148,8 @@ namespace SugarDash.App.Tests
             _best2 = new FakeBest();
             _settings = new FakeSettings { Stored = TrackType.Type1 };
             _tutorial = new TutorialController(_run, 3, 1.5);
-            _flow = new GameFlowController(_run, _query, _settings, Profiles(config.Score, config2.Score), _tutorial);
+            _flow = new GameFlowController(_run, _query, _settings, Profiles(config.Score, config2.Score), _tutorial,
+                PauseCountdownSec, eliminationSceneSec);
         }
 
         private IReadOnlyDictionary<TrackType, TrackTypeProfile> Profiles(
@@ -169,7 +172,7 @@ namespace SugarDash.App.Tests
             for (int i = 0; i < count; i++)
             {
                 _run.Tick(1);
-                _flow.Tick();
+                _flow.Tick(1);
             }
         }
 
@@ -313,7 +316,7 @@ namespace SugarDash.App.Tests
                 { TrackType.Type1, new TrackTypeProfile(new ConfigBuilder().Build().Score, _best, "v") },
             };
 
-            Assert.Throws<ArgumentException>(() => new GameFlowController(_run, _query, _settings, only1, _tutorial));
+            Assert.Throws<ArgumentException>(() => new GameFlowController(_run, _query, _settings, only1, _tutorial, 3, 0));
         }
 
         [Test]
@@ -382,7 +385,7 @@ namespace SugarDash.App.Tests
             {
                 _run.Tick(1);
                 if (_run.State == RunState.Eliminated) liveScore = _run.Score;
-                _flow.Tick();
+                _flow.Tick(1);
             }
 
             Assert.That(_flow.IsShowingResult, Is.True);
@@ -504,7 +507,7 @@ namespace SugarDash.App.Tests
             {
                 _run.Tick(1);
                 _tutorial.Tick(1);
-                _flow.Tick();
+                _flow.Tick(1);
             }
         }
 
@@ -719,6 +722,231 @@ namespace SugarDash.App.Tests
             _flow.Shutdown();
 
             Assert.That(_tutorial.IsActive, Is.False);
+        }
+
+        // 일시정지 메뉴
+
+        [Test]
+        public void OpenPauseMenu_WhileRunning_PausesRunAndHidesButton()
+        {
+            StartType1();
+            Frames(2);
+            Assert.That(_flow.CanPause, Is.True);
+
+            _flow.OpenPauseMenu();
+
+            Assert.That(_flow.IsPauseMenuOpen, Is.True);
+            Assert.That(_flow.CanPause, Is.False);
+            Assert.That(_run.State, Is.EqualTo(RunState.Paused));
+            Frames(5);
+            Assert.That(_run.WorldTime, Is.EqualTo(2).Within(1e-9), "메뉴가 떠 있는 동안 시계가 멈춘다");
+        }
+
+        [Test]
+        public void PauseMenu_OutsideRun_IsIgnored()
+        {
+            _flow.Begin();
+
+            _flow.OpenPauseMenu(true);
+
+            Assert.That(_flow.IsPauseMenuOpen, Is.False);
+            Assert.That(_flow.CanPause, Is.False);
+        }
+
+        [Test]
+        public void CanPause_FalseWhileChoicePanelUp_ForceStillOpens()
+        {
+            StartType1();
+            Frames(26);
+            Assert.That(_run.Phase, Is.EqualTo(HypoPhase.Recognize));
+            Assert.That(_flow.CanPause, Is.True, "1단계는 세계가 달린다");
+            _run.PressMeter();
+            Frames(1);
+            Assert.That(_run.Phase, Is.EqualTo(HypoPhase.Respond));
+
+            Assert.That(_flow.CanPause, Is.False);
+            _flow.OpenPauseMenu();
+            Assert.That(_flow.IsPauseMenuOpen, Is.False, "버튼이 숨은 동안은 열리지 않는다");
+
+            _flow.OpenPauseMenu(true);
+            Assert.That(_flow.IsPauseMenuOpen, Is.True, "앱에서 나가면 패널 중에도 연다");
+            Assert.That(_run.State, Is.EqualTo(RunState.Paused));
+        }
+
+        [Test]
+        public void ContinueFromPause_WorldWasRunning_CountsDown()
+        {
+            StartType1();
+            Frames(2);
+            _flow.OpenPauseMenu();
+
+            _flow.ContinueFromPause();
+
+            Assert.That(_flow.IsPauseMenuOpen, Is.False);
+            Assert.That(_run.State, Is.EqualTo(RunState.Running));
+            Assert.That(_run.ResumeCountdownRemaining, Is.EqualTo(PauseCountdownSec).Within(1e-9));
+            Assert.That(_flow.CanPause, Is.False, "3-2-1 동안 버튼을 숨긴다");
+            Frames(3);
+            Assert.That(_run.WorldTime, Is.EqualTo(2).Within(1e-9));
+            Assert.That(_flow.CanPause, Is.True);
+        }
+
+        [Test]
+        public void ContinueFromPause_PanelWasUp_ResumesWithoutCountdown()
+        {
+            StartType1();
+            Frames(26);
+            _run.PressMeter();
+            Frames(1);
+            _flow.OpenPauseMenu(true);
+
+            _flow.ContinueFromPause();
+
+            Assert.That(_run.State, Is.EqualTo(RunState.Running));
+            Assert.That(_run.ResumeCountdownRemaining, Is.EqualTo(0));
+            Assert.That(_run.Phase, Is.EqualTo(HypoPhase.Respond));
+        }
+
+        [Test]
+        public void QuitToTitle_EndsRunWithoutResultOrBest()
+        {
+            StartType1();
+            Frames(2);
+            _flow.OpenPauseMenu();
+
+            _flow.QuitToTitle();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+            Assert.That(_flow.IsPauseMenuOpen, Is.False);
+            Assert.That(_run.State, Is.EqualTo(RunState.Idle));
+            Assert.That(_log.Ended, Is.EqualTo(1));
+            Assert.That(_query.RequestedRunId, Is.Null, "결과를 계산하지 않는다");
+            Assert.That(_best.Saves, Is.EqualTo(0));
+            Assert.That(_flow.LastScore, Is.Null);
+        }
+
+        [Test]
+        public void QuitToTitle_MenuClosed_IsIgnored()
+        {
+            StartType1();
+
+            _flow.QuitToTitle();
+            _flow.ContinueFromPause();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Running));
+            Assert.That(_run.State, Is.EqualTo(RunState.Running));
+        }
+
+        [Test]
+        public void QuitToTitle_TutorialRun_KeepsTutorialPending()
+        {
+            _settings.TutorialPending = true;
+            StartType1();
+            Assert.That(_tutorial.IsActive, Is.True);
+            _flow.OpenPauseMenu(true);
+
+            _flow.QuitToTitle();
+
+            Assert.That(_tutorial.IsActive, Is.False);
+            Assert.That(_settings.TutorialPending, Is.True, "다음 시작하기도 튜토리얼 판이다");
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
+        }
+
+        [Test]
+        public void SkipTutorial_WithPauseMenuOpen_IsIgnored()
+        {
+            _settings.TutorialPending = true;
+            _settings.TutorialDone.Add(TrackType.Type1);
+            StartType1();
+            _flow.OpenPauseMenu(true);
+
+            _flow.SkipTutorial();
+
+            Assert.That(_log.Begun, Is.EqualTo(0));
+            Assert.That(_tutorial.IsActive, Is.True);
+            Assert.That(_flow.IsPauseMenuOpen, Is.True);
+        }
+
+        [Test]
+        public void Shutdown_WithPauseMenuOpen_ClosesMenuAndRun()
+        {
+            StartType1();
+            _flow.OpenPauseMenu();
+
+            _flow.Shutdown();
+
+            Assert.That(_flow.IsPauseMenuOpen, Is.False);
+            Assert.That(_log.Ended, Is.EqualTo(1));
+        }
+
+        // 탈락 장면
+
+        [Test]
+        public void Elimination_ShowsSceneThenResult()
+        {
+            SetUpWith(new ConfigBuilder { RunDecayPerSec = 2 }, 2.5);
+            StartType1();
+
+            HitObstacleOnce();
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Elimination));
+            Assert.That(_flow.IsShowingElimination, Is.True);
+            Assert.That(_flow.EliminatedBy, Is.EqualTo(EliminationCause.ObstacleHit));
+            Assert.That(_run.State, Is.EqualTo(RunState.Eliminated), "장면 동안 주행을 열어 둔다");
+            Assert.That(_log.Ended, Is.EqualTo(0));
+            Assert.That(_flow.CanPause, Is.False);
+
+            Frames(2);
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Elimination));
+            Frames(1);
+            Assert.That(_flow.IsShowingResult, Is.True);
+            Assert.That(_flow.EliminatedBy, Is.Null);
+            Assert.That(_log.Ended, Is.EqualTo(1));
+            Assert.That(_flow.LastScore, Is.Not.Null);
+        }
+
+        [Test]
+        public void Elimination_PauseMenuAndRetryIgnored()
+        {
+            SetUpWith(new ConfigBuilder { RunDecayPerSec = 2 }, 2.5);
+            StartType1();
+            HitObstacleOnce();
+
+            _flow.OpenPauseMenu(true);
+            _flow.Retry();
+            _flow.BackToTitle();
+
+            Assert.That(_flow.IsPauseMenuOpen, Is.False);
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Elimination));
+        }
+
+        [Test]
+        public void Elimination_TutorialRun_ShowsSceneThenTutorialResult()
+        {
+            SetUpWith(new ConfigBuilder { RunDecayPerSec = 2 }, 2.5);
+            _settings.TutorialPending = true;
+            StartType1();
+            DriveToDone();
+            TFrames(10); // 재개 카운트다운과 유예가 지나야 장애물이 닿는다.
+            _run.HitObstacle();
+            TFrames(1);
+
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Elimination));
+            TFrames(3);
+            Assert.That(_flow.IsShowingResult, Is.True);
+            Assert.That(_flow.IsTutorialResult, Is.True);
+        }
+
+        [Test]
+        public void Shutdown_DuringEliminationScene_ClosesLog()
+        {
+            SetUpWith(new ConfigBuilder { RunDecayPerSec = 2 }, 2.5);
+            StartType1();
+            HitObstacleOnce();
+
+            _flow.Shutdown();
+
+            Assert.That(_log.Ended, Is.EqualTo(1));
         }
     }
 }

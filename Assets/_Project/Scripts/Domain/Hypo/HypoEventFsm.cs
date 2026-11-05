@@ -94,6 +94,9 @@ namespace SugarDash.Domain.Hypo
 
         public bool IsInGrace => Phase == HypoPhase.Grace;
 
+        /// <summary>탈락한 방식. 탈락하지 않았으면 null.</summary>
+        public EliminationCause? EliminatedBy { get; private set; }
+
         /// <summary>
         /// 대처 중 선택(또는 시간 초과) 뒤 결과 문구 창이 열려 있다. 이 동안 선택 명령은 무시하고,
         /// 지금 단계의 판단 시간과 마감은 창이 끝난 뒤부터 잰다. 1단계·고혈당 알리기는 발동 직후라 창이 없다.
@@ -637,6 +640,7 @@ namespace SugarDash.Domain.Hypo
             Publish(new RunEliminated(EventId, step, reason, cause, _distanceM(), _model.SimTime,
                 _model.DecisionTime));
             _afterNotify = null;
+            EliminatedBy = cause;
             Phase = HypoPhase.Eliminated;
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SugarDash.Domain.Config;
+using SugarDash.Domain.Hypo;
 using SugarDash.Domain.Metrics;
 using SugarDash.Domain.Ports;
 using SugarDash.Domain.Scoring;
@@ -8,8 +9,9 @@ using SugarDash.Domain.Scoring;
 namespace SugarDash.App
 {
     /// <summary>
-    /// 화면과 게임 상태 흐름: 유형 선택 → 타이틀 → (설정) → 주행 → 결과.
-    /// 탈락하면 기록을 닫고, 닫힌 기록을 다시 읽어 결과를 계산한 뒤 결과 화면으로 간다.
+    /// 화면과 게임 상태 흐름: 유형 선택 → 타이틀 → (설정) → 주행 → 탈락 장면 → 결과.
+    /// 탈락하면 주행을 연 채로 탈락 장면을 보여 주고, 장면이 끝나면 기록을 닫고 닫힌 기록을 다시 읽어 결과를 계산한 뒤 결과 화면으로 간다.
+    /// 주행 중에는 일시정지 메뉴(계속하기, 타이틀로)를 연다.
     /// 결과도 기록과 같은 출처에서 계산한다(지표는 저장하지 않고 조회할 때 계산).
     /// 점수 설정·최고 점수 저장소·설정 버전은 방금 달린 유형의 프로필을 쓴다.
     /// 잘못된 화면에서 부른 명령은 무시한다.
@@ -21,12 +23,22 @@ namespace SugarDash.App
         private readonly ISettingsStore _settings;
         private readonly IReadOnlyDictionary<TrackType, TrackTypeProfile> _profiles;
         private readonly TutorialController _tutorial;
+        private readonly double _pauseCountdownSec;
+        private readonly double _eliminationSceneSec;
         private bool _begun;
         private bool _tutorialPending;
+        // 메뉴를 열 때 세계가 달리고 있었다. 계속하기에서 3-2-1을 보여 줄지 정한다.
+        private bool _pausedWhileWorldRunning;
+        private double _eliminationSceneRemaining;
 
         public GameFlowController(RunController run, ILogQuery query, ISettingsStore settings,
-            IReadOnlyDictionary<TrackType, TrackTypeProfile> profiles, TutorialController tutorial)
+            IReadOnlyDictionary<TrackType, TrackTypeProfile> profiles, TutorialController tutorial,
+            double pauseCountdownSec, double eliminationSceneSec)
         {
+            if (!(pauseCountdownSec >= 0) || double.IsInfinity(pauseCountdownSec))
+                throw new ArgumentOutOfRangeException(nameof(pauseCountdownSec), pauseCountdownSec, "0 이상의 유한수여야 한다");
+            if (!(eliminationSceneSec >= 0) || double.IsInfinity(eliminationSceneSec))
+                throw new ArgumentOutOfRangeException(nameof(eliminationSceneSec), eliminationSceneSec, "0 이상의 유한수여야 한다");
             _run = run ?? throw new ArgumentNullException(nameof(run));
             _query = query ?? throw new ArgumentNullException(nameof(query));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -38,6 +50,8 @@ namespace SugarDash.App
                     throw new ArgumentException("유형 프로필이 없다: " + type, nameof(profiles));
             }
             _profiles = profiles;
+            _pauseCountdownSec = pauseCountdownSec;
+            _eliminationSceneSec = eliminationSceneSec;
         }
 
         /// <summary>지금 보여 주는 화면.</summary>
@@ -45,6 +59,22 @@ namespace SugarDash.App
 
         /// <summary>고른 유형. 아직 고르지 않았으면 null.</summary>
         public TrackType? CurrentType { get; private set; }
+
+        /// <summary>탈락 장면을 보여 주는 중이다.</summary>
+        public bool IsShowingElimination => Screen == FlowScreen.Elimination;
+
+        /// <summary>탈락 장면에서 보여 줄 탈락 방식. 탈락 장면이 아니면 null.</summary>
+        public EliminationCause? EliminatedBy { get; private set; }
+
+        /// <summary>일시정지 메뉴가 떠 있다.</summary>
+        public bool IsPauseMenuOpen { get; private set; }
+
+        /// <summary>
+        /// 일시정지 버튼을 보여 준다. 주행 화면에서 세계가 달리고 있을 때만 참이다(1단계, 유예, 2형 쉬는 중 포함).
+        /// 대처·알리기 패널, 재개 카운트다운, 튜토리얼 설명 창이 떠 있으면 거짓이다.
+        /// </summary>
+        public bool CanPause => Screen == FlowScreen.Running && !IsPauseMenuOpen && _run.State == RunState.Running &&
+                                !_run.IsWorldFrozen && !_run.IsTutorialStopped;
 
         /// <summary>결과 화면을 보여 주는 중이다.</summary>
         public bool IsShowingResult => Screen == FlowScreen.Result;
@@ -133,7 +163,7 @@ namespace SugarDash.App
         /// </summary>
         public void SkipTutorial()
         {
-            if (Screen != FlowScreen.Running || CurrentType == null) return;
+            if (Screen != FlowScreen.Running || CurrentType == null || IsPauseMenuOpen) return;
             if (!_tutorial.IsGuided || !_tutorial.CanSkip) return;
 
             _tutorial.Stop();
@@ -158,12 +188,72 @@ namespace SugarDash.App
             _settings.SaveTutorialPending(pending);
         }
 
-        /// <summary>GameBootstrapper가 RunController.Tick 뒤 매 프레임 부른다.</summary>
-        public void Tick()
+        /// <summary>
+        /// 일시정지 메뉴를 열고 주행의 세 시계를 멈춘다. 일시정지 버튼은 <see cref="CanPause"/>일 때만 받는다.
+        /// </summary>
+        /// <param name="force">앱이 백그라운드로 갈 때 true. 패널이 떠 있어도 연다. 주행 중(탈락 전)일 때만 연다.</param>
+        public void OpenPauseMenu(bool force = false)
         {
-            if (Screen != FlowScreen.Running) return;
-            if (_run.State != RunState.Eliminated) return;
+            if (Screen != FlowScreen.Running || IsPauseMenuOpen || _run.State != RunState.Running) return;
+            if (!force && !CanPause) return;
 
+            _pausedWhileWorldRunning = !_run.IsWorldFrozen && !_run.IsTutorialStopped;
+            _run.Pause();
+            IsPauseMenuOpen = true;
+        }
+
+        /// <summary>메뉴를 닫고 이어 간다. 세계가 달리던 중이었으면 3-2-1 뒤에 흐른다.</summary>
+        public void ContinueFromPause()
+        {
+            if (!IsPauseMenuOpen) return;
+
+            IsPauseMenuOpen = false;
+            _run.Resume(_pausedWhileWorldRunning ? _pauseCountdownSec : 0);
+        }
+
+        /// <summary>
+        /// 메뉴에서 판을 그만두고 타이틀로 간다. 기록 파일을 닫지만 결과·점수·최고 점수는 계산하지 않는다
+        /// (탈락 기록이 없는 판으로 남는다). 튜토리얼 판이면 다음 시작하기도 튜토리얼 판이다.
+        /// </summary>
+        public void QuitToTitle()
+        {
+            if (!IsPauseMenuOpen) return;
+
+            IsPauseMenuOpen = false;
+            _tutorial.Stop();
+            _run.EndRun();
+            ClearResult();
+            Screen = FlowScreen.Title;
+        }
+
+        /// <summary>GameBootstrapper가 RunController.Tick 뒤 매 프레임 부른다.</summary>
+        /// <param name="dt">이번 프레임의 실제 경과 시간(초). 탈락 장면 길이를 센다.</param>
+        public void Tick(double dt)
+        {
+            if (!(dt >= 0) || double.IsInfinity(dt))
+                throw new ArgumentOutOfRangeException(nameof(dt), dt, "0 이상의 유한수여야 한다");
+
+            if (Screen == FlowScreen.Running)
+            {
+                if (_run.State != RunState.Eliminated) return;
+
+                // 탈락한 프레임의 dt는 주행에 이미 썼으므로 장면 시간은 다음 프레임부터 센다.
+                Screen = FlowScreen.Elimination;
+                EliminatedBy = _run.EliminatedBy;
+                _eliminationSceneRemaining = _eliminationSceneSec;
+            }
+            else if (Screen == FlowScreen.Elimination)
+            {
+                _eliminationSceneRemaining -= dt;
+            }
+            else
+            {
+                return;
+            }
+
+            if (_eliminationSceneRemaining > 0) return;
+
+            EliminatedBy = null;
             if (!_run.IsRecorded)
             {
                 // 튜토리얼 판: 기록·최고 점수를 건드리지 않고 점수 없는 결과 화면으로 간다.
@@ -224,6 +314,7 @@ namespace SugarDash.App
         /// <summary>씬 파괴·앱 종료 시 열린 주행의 기록을 닫는다.</summary>
         public void Shutdown()
         {
+            IsPauseMenuOpen = false;
             _tutorial.Stop();
             _run.EndRun();
         }

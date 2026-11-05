@@ -52,6 +52,14 @@ namespace SugarDash.Bootstrap
         [SerializeField] private SleepTransitionView sleepTransition;
         [SerializeField] private TutorialPromptView tutorialPrompt;
         [SerializeField] private TutorialLaneHighlightView laneHighlight;
+        [SerializeField] private PauseMenuView pauseMenu;
+        [SerializeField] private EliminationSpeechView eliminationSpeech;
+        [SerializeField] private GuardianArrivalView guardianArrival;
+        [Header("일시정지·탈락 장면")]
+        [Tooltip("일시정지 메뉴에서 계속하기를 누른 뒤 3-2-1 길이(초). 세계가 달리던 중이었을 때만 쓴다.")]
+        [SerializeField] private float pauseCountdownSec = 3f;
+        [Tooltip("탈락 장면(어른이 달려와 말풍선 한 줄) 길이(초). 끝나면 결과 화면으로 간다.")]
+        [SerializeField] private float eliminationSceneSec = 2.5f;
         [Header("튜토리얼")]
         [Tooltip("튜토리얼 대상이 캐릭터 앞 이 거리(m) 안에 오면 세계를 멈추고 설명 창을 띄운다. 트랙의 spawnAheadDistance보다 작아야 한다.")]
         [SerializeField] private float tutorialStopDistance = 12f;
@@ -136,7 +144,7 @@ namespace SugarDash.Bootstrap
             _tutorial = new TutorialController(_run, tutorialGlucoseMoveSec, tutorialRetryTextSec);
             _flow = new GameFlowController(_run, new ReportQueryService(logDirectory),
                 new SettingsRepository(Path.Combine(Application.persistentDataPath, "settings.json")), profiles,
-                _tutorial);
+                _tutorial, Mathf.Max(0f, pauseCountdownSec), Mathf.Max(0f, eliminationSceneSec));
 
             // HUD 막대 범위는 1형 levels를 쓴다. 2형의 min/max가 다르면 주행마다 다시 묶어야 한다.
             _subscriptions.Add(hud.Bind(_run, _flow, _bus, _config.Glucose.Levels));
@@ -159,6 +167,9 @@ namespace SugarDash.Bootstrap
             if (tutorialPrompt == null) Debug.LogWarning("tutorialPrompt가 비어 있다. 튜토리얼 설명 창이 보이지 않는다. docs/dev-scene.md 튜토리얼 절을 본다.");
             else _subscriptions.Add(tutorialPrompt.Bind(_flow));
             if (laneHighlight == null) Debug.LogWarning("laneHighlight가 비어 있다. 튜토리얼 통과 레인 띠가 보이지 않는다.");
+            if (pauseMenu == null) Debug.LogWarning("pauseMenu가 비어 있다. 일시정지 버튼·메뉴가 보이지 않는다. docs/dev-scene.md 일시정지 절을 본다.");
+            else _subscriptions.Add(pauseMenu.Bind(_flow));
+            if (eliminationSpeech != null) _subscriptions.Add(eliminationSpeech.Bind(_flow));
 
             // 장면이 바뀌면 트랙 배치를 그 장면 값으로 바로 바꾼다. 발행 시점에 CurrentScene은 이미 새 장면이다.
             _subscriptions.Add(_bus.Subscribe<SceneEntered>(e =>
@@ -168,6 +179,8 @@ namespace SugarDash.Bootstrap
             }));
 
             player.Init(_run, true);
+            // 어른은 레인을 옮겨 다니는 주인공 모습 옆에 서므로 모습이 생긴 뒤 묶는다.
+            if (guardianArrival != null) _subscriptions.Add(guardianArrival.Bind(_flow, player.View));
             track.Init(BuildLayout(_config), Environment.TickCount, true);
             input.Init(_run, player, _tutorial);
         }
@@ -175,14 +188,14 @@ namespace SugarDash.Bootstrap
         private void Start() => _flow.Begin();
 
         /// <summary>
-        /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 주행 종료 확인(결과 화면) → 튜토리얼 진행 →
+        /// 한 프레임의 순서를 여기서 고정한다: 도메인 진행 → 탈락 장면·결과 화면 흐름 → 튜토리얼 진행 →
         /// 튜토리얼 캐릭터 되돌리기 → 튜토리얼 대상 놓기 → 캐릭터 → 트랙 → 충돌 판정 → 튜토리얼 결과·멈춤 거리 확인.
         /// 러너 화면은 RunController가 정한 worldDt로만 움직인다.
         /// </summary>
         private void Update()
         {
             _run.Tick(Time.deltaTime);
-            _flow.Tick();
+            _flow.Tick(Time.deltaTime);
             _tutorial.Tick(Time.deltaTime);
 
             // 새 주행 초기화(ResetRun)가 앞쪽 장애물을 바로 놓으므로 그 전에 안내 구간 여부를 트랙에 알린다.
@@ -244,12 +257,15 @@ namespace SugarDash.Bootstrap
             }
         }
 
+        /// <summary>
+        /// 앱이 백그라운드로 가면 주행 중일 때 일시정지 메뉴를 연다(패널이 떠 있어도). 돌아와도 바로 이어 가지 않고
+        /// 메뉴에서 계속하기를 기다린다.
+        /// </summary>
         private void OnApplicationPause(bool paused)
         {
-            if (_run == null) return;
+            if (_flow == null) return;
 
-            if (paused) _run.Pause();
-            else _run.Resume();
+            if (paused) _flow.OpenPauseMenu(true);
         }
 
         private void OnDestroy()

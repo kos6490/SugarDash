@@ -21,6 +21,15 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void GuardianArrival_ProgressClampsToOne()
+        {
+            Assert.That(GuardianArrivalView.Progress(0f, 1f), Is.EqualTo(0f));
+            Assert.That(GuardianArrivalView.Progress(0.5f, 1f), Is.EqualTo(0.5f).Within(1e-6));
+            Assert.That(GuardianArrivalView.Progress(2f, 1f), Is.EqualTo(1f));
+            Assert.That(GuardianArrivalView.Progress(0f, 0f), Is.EqualTo(1f), "0초면 바로 옆에 선다");
+        }
+
+        [Test]
         public void TutorialPrompt_Visibility()
         {
             foreach (TutorialStage s in System.Enum.GetValues(typeof(TutorialStage)))

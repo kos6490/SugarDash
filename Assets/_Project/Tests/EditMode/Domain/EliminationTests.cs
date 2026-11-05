@@ -256,5 +256,29 @@ namespace SugarDash.Domain.Tests
 
             Assert.That(h.Last<RunEliminated>().DistanceM, Is.EqualTo(123.5));
         }
+
+        [Test]
+        public void EliminatedBy_NullUntilEliminated_ThenCause()
+        {
+            var h = Harness();
+            Assert.That(h.Fsm.EliminatedBy, Is.Null);
+
+            h.Fsm.EliminateObstacleHit();
+
+            Assert.That(h.Fsm.EliminatedBy, Is.EqualTo(EliminationCause.ObstacleHit));
+            Assert.That(h.Last<RunEliminated>().Cause, Is.EqualTo(EliminationCause.ObstacleHit));
+        }
+
+        [Test]
+        public void EliminatedBy_MatchesPublishedCause_GlucoseLow()
+        {
+            var h = Harness();
+            h.RunUntilTriggered();
+
+            h.Frames(5);
+
+            Assert.That(h.Fsm.EliminatedBy, Is.EqualTo(h.Last<RunEliminated>().Cause));
+            Assert.That(h.Fsm.EliminatedBy, Is.EqualTo(EliminationCause.GlucoseLow));
+        }
     }
 }

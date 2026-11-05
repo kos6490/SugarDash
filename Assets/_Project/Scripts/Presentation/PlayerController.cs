@@ -66,6 +66,9 @@ namespace SugarDash.Presentation
 
         /// <summary>목표 레인. -1(왼쪽), 0, 1(오른쪽).</summary>
         public int TargetLane => _targetLane;
+
+        /// <summary>레인을 옮겨 다니는 캐릭터 모습(Init 전이나 화면 없이 만들었으면 null).</summary>
+        public Transform View => _view;
         /// <summary>지금 위치에서 가장 가까운 레인. 충돌 판정에 쓴다.</summary>
         public int CurrentLane => Mathf.Clamp(Mathf.RoundToInt(_x / laneWidth), -1, 1);
         public float X => _x;

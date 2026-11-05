@@ -11,6 +11,17 @@ namespace SugarDash.Presentation.Runner
         public static Transform CreatePlayer(Transform parent) =>
             Create(PrimitiveType.Capsule, parent, "Player", new Vector3(0.8f, 1f, 0.8f), new Color(0.2f, 0.45f, 0.9f));
 
+        /// <summary>탈락 장면의 어른 캐릭터. 주인공보다 조금 크고 색이 다르다. 돌려주는 Transform은 발밑이 기준점이다.</summary>
+        public static Transform CreateGuardian(Transform parent)
+        {
+            var root = new GameObject("Guardian").transform;
+            root.SetParent(parent, false);
+            var body = Create(PrimitiveType.Capsule, root, "Body", new Vector3(0.9f, 1.3f, 0.9f),
+                new Color(0.95f, 0.55f, 0.3f));
+            body.localPosition = new Vector3(0f, 1.3f, 0f);
+            return root;
+        }
+
         public static Transform CreateGround(Transform parent, float width, float length)
         {
             var ground = Create(PrimitiveType.Cube, parent, "Ground", new Vector3(width, 0.1f, length),

@@ -34,8 +34,8 @@ namespace SugarDash.App
         private double _sceneEndM;
         // 쉬는 중이 끝나는 worldDt 누적 시각.
         private double _restEnd;
-        // 튜토리얼 멈춤(Pause/Resume과 따로 움직인다)과 풀린 뒤 3-2-1 남은 시간.
-        private double _tutorialCountdown;
+        // 튜토리얼 멈춤(Pause/Resume과 따로 움직인다)이 풀린 뒤, 또는 일시정지에서 이어 간 뒤 3-2-1 남은 시간.
+        private double _holdCountdown;
 
         /// <param name="sessionFactory">유형에 맞는 새 도메인 객체 묶음을 만든다. GameBootstrapper가 주입한다.
         /// runner·구간은 세션의 설정에서 읽는다(구간 0개 검사는 설정 검증이 맡는다).</param>
@@ -96,11 +96,13 @@ namespace SugarDash.App
         public bool IsGaugeWarningOn => _session?.Director.IsGaugeWarningOn ?? false;
         public HypoPhase Phase => _session?.Fsm.Phase ?? HypoPhase.Idle;
         public bool IsWorldFrozen => _session?.Fsm.IsWorldFrozen ?? false;
+        /// <summary>탈락한 방식. 탈락하지 않았거나 열린 주행이 없으면 null.</summary>
+        public EliminationCause? EliminatedBy => _session?.Fsm.EliminatedBy;
         /// <summary>선택 뒤 결과 문구 창이 열려 있다. 이 동안 패널은 문구만 보여 주고 선택 명령은 무시된다.</summary>
         public bool IsShowingAnswerFeedback => _session?.Fsm.IsShowingAnswerFeedback ?? false;
         /// <summary>재개 카운트다운의 남은 시간(초). 카운트다운 중이 아니면 0.</summary>
         public double ResumeCountdownRemaining =>
-            _tutorialCountdown > 0 ? _tutorialCountdown : _session?.Fsm.ResumeCountdownRemaining ?? 0;
+            _holdCountdown > 0 ? _holdCountdown : _session?.Fsm.ResumeCountdownRemaining ?? 0;
         /// <summary>3단계에서 양을 고를 간식.</summary>
         public string DoseSnackId => _session?.Fsm.DoseSnackId;
 
@@ -118,8 +120,11 @@ namespace SugarDash.App
         /// <summary>튜토리얼 설명 창 때문에 멈춰 있다. 카운트다운 중에는 false.</summary>
         public bool IsTutorialHeld { get; private set; }
 
-        /// <summary>튜토리얼 때문에 세계가 서 있다(설명 창, "다시 해봐요", 풀린 뒤 3-2-1). 이 동안 캐릭터 입력을 받지 않는다.</summary>
-        public bool IsTutorialStopped => IsTutorialHeld || _tutorialCountdown > 0;
+        /// <summary>
+        /// 튜토리얼 때문에 세계가 서 있다(설명 창, "다시 해봐요", 풀린 뒤 3-2-1). 일시정지에서 이어 간 뒤 3-2-1도 포함한다.
+        /// 이 동안 캐릭터 입력을 받지 않는다.
+        /// </summary>
+        public bool IsTutorialStopped => IsTutorialHeld || _holdCountdown > 0;
 
         /// <summary>튜토리얼 안내 주행. 장애물에 부딪혀도 탈락하지 않고 FSM이 연습 모드다.</summary>
         public bool IsTutorialGuided { get; private set; }
@@ -186,9 +191,13 @@ namespace SugarDash.App
             if (State == RunState.Running) State = RunState.Paused;
         }
 
-        public void Resume()
+        /// <param name="countdownSec">다시 흐르기 전 3-2-1 길이(초). 0이면 바로 흐른다.</param>
+        public void Resume(double countdownSec = 0)
         {
-            if (State == RunState.Paused) State = RunState.Running;
+            if (State != RunState.Paused) return;
+
+            State = RunState.Running;
+            _holdCountdown = Math.Max(_holdCountdown, countdownSec);
         }
 
         /// <param name="dt">이번 프레임의 실제 경과 시간(초).</param>
@@ -200,9 +209,9 @@ namespace SugarDash.App
             if (State != RunState.Running) return;
 
             if (IsTutorialHeld) return;
-            if (_tutorialCountdown > 0)
+            if (_holdCountdown > 0)
             {
-                _tutorialCountdown = Math.Max(0, _tutorialCountdown - dt);
+                _holdCountdown = Math.Max(0, _holdCountdown - dt);
                 return;
             }
 
@@ -232,7 +241,7 @@ namespace SugarDash.App
             if (_session == null) return;
 
             IsTutorialHeld = true;
-            _tutorialCountdown = 0;
+            _holdCountdown = 0;
         }
 
         /// <summary>설명 창을 닫는다. 멈춰 있지 않으면 아무것도 하지 않는다.</summary>
@@ -242,7 +251,7 @@ namespace SugarDash.App
             if (_session == null || !IsTutorialHeld) return;
 
             IsTutorialHeld = false;
-            _tutorialCountdown = Math.Max(0, countdownSec);
+            _holdCountdown = Math.Max(0, countdownSec);
         }
 
         public void SetTutorialGuided(bool guided)
@@ -264,7 +273,7 @@ namespace SugarDash.App
         {
             IsTutorialHeld = false;
             IsTutorialGuided = false;
-            _tutorialCountdown = 0;
+            _holdCountdown = 0;
         }
 
         // 화면 명령. 주행이 열려 있을 때만 받아 다음 Tick에서 처리한다.
