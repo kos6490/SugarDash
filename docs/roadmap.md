@@ -63,7 +63,7 @@
 | 구조 | 기존 화면의 2형 대응, 빈 틀 6개 만들기, 조립·개발 씬·문서, 작업 브랜치 push(계획 작업 10~12). 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.6~6.8, 9.10~9.11절 | | 완료 |
 | 구조 | 팀원이 push한 스크립트 확인, 작업 브랜치를 `dev`에 머지 | | 대기(빈 틀 채우기) |
 | 구조 | 2구간 2-A 공통 틀: 장면 설정·검증, 장면 진행과 기록, 주행 중 배치 바꾸기, 빈 틀 2개(`SceneLook`, `SleepTransitionView`), 조립·개발 씬 문서 | [section2.md](section2.md) | 완료 |
-| 구조 | 2구간 2-B 유형별 조건: 장면 조건 설정 자리(1형 운동장 달리기 감소, 2형 놀이터 쉬는 곳 간격, 나들이 음식 줄 간격·구성), 1형 혈당 재기 습관 순간(판정·기록·습관 확인률), 빈 틀 `HabitPromptView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.13, 9.14절 | [section2.md](section2.md) 7절 | 진행 중(구조) |
+| 구조 | 2구간 2-B 유형별 조건: 장면 조건 설정 자리(1형 운동장 달리기 감소, 2형 놀이터 쉬는 곳 간격, 나들이 음식 줄 간격·구성), 1형 혈당 재기 습관 순간(판정·기록·습관 확인률), 빈 틀 `HabitPromptView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.13, 9.14절 | [section2.md](section2.md) 7절 | 완료 |
 | 구조 | 튜토리얼 규칙 코드와 빈 틀: 튜토리얼 판 결정·건너뛰기·다시 하기, 안내 순서(`TutorialController`), 연습 모드, 기록하지 않는 판, 안내 중 조작 잠금, 통과할 레인 강조, 화면 터치로 설명 창 넘기기, 빈 틀 `TutorialPromptView`·`TutorialLaneHighlightView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.11, 9.13절 | [tutorial.md](tutorial.md) | 완료 |
 | 팀원1(캐릭터) | 주인공 모델, 기본 애니메이션(달리기, 점프, 슬라이드, 옆 이동) | | 시작 가능 |
 | 팀원1(캐릭터) | 2형 상태 애니메이션: 지친 표정·느린 걸음·처진 자세(고혈당·저혈당), 앉아 쉬기. 체형은 바꾸지 않음. 연출 방향은 출처 확인 뒤 고칠 수 있음 | [type-tracks.md](type-tracks.md) 5절 | 시작 가능 |
@@ -85,8 +85,8 @@
 | 팀원3(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원3(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
 | 팀원3(화면) | `TutorialPromptView` 채우기: 화면 전체를 덮어 아래 터치를 막고 화면 터치로 넘기는 설명 창(옅은 어두운 바탕 위 불투명 흰 박스, 검정 글자), 문구, `화면을 눌러요` 안내 글자, 그림 자리, `건너뛰기`, `다시 해봐요`. `SettingsView`의 `튜토리얼 다시 하기` 버튼 그림 | `Assets/_Project/Scripts/Presentation/Screen/TutorialPromptView.cs`, [tutorial.md](tutorial.md) 8절 | 시작 가능 |
-| 팀원3(화면) | `HabitPromptView` 채우기: 1형 혈당 재기 습관 순간의 말풍선(측정기 버튼 옆), 나타나고 사라지는 연출 | `Assets/_Project/Scripts/Presentation/Screen/HabitPromptView.cs`, [section2.md](section2.md) 7.1절 | 대기(빈 틀 push) |
-| 기획 | 습관 순간 말풍선 문구 확정(`HabitPromptText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/HabitPromptText.cs`, [section2.md](section2.md) 7.1절 | 대기(빈 틀 push) |
+| 팀원3(화면) | `HabitPromptView` 채우기: 1형 혈당 재기 습관 순간의 말풍선(측정기 버튼 옆), 나타나고 사라지는 연출 | `Assets/_Project/Scripts/Presentation/Screen/HabitPromptView.cs`, [section2.md](section2.md) 7.1절 | 시작 가능 |
+| 기획 | 습관 순간 말풍선 문구 확정(`HabitPromptText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/HabitPromptText.cs`, [section2.md](section2.md) 7.1절 | 시작 가능 |
 | 기획 | 튜토리얼 안내 문구 확정(`TutorialText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/TutorialText.cs`, [tutorial.md](tutorial.md) 6절 | 시작 가능 |
 
 ## 3. 완료한 작업

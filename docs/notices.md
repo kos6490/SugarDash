@@ -22,3 +22,12 @@
 - 내용:
   - 의학 출처 판본을 정했다: [medical-sources.md](medical-sources.md). 출처 발췌, 문구, 그림에 의학 내용이 들어가면 이 문서의 판본과 장만 쓴다.
   - 기사나 요약은 권고 내용의 근거로 쓰지 않는다. 원문을 열고 장·쪽을 적는다(team-rules 4절).
+
+## 공지 3
+
+- 날짜: 2026-11-05
+- 대상: 전원, 팀원3(화면)
+- 내용:
+  - 2구간 2-B(맵별 조건)가 들어왔다: [section2.md](section2.md) 7절. 1형은 운동장·집에 들어갈 때 측정기 위에 "혈당 재 볼까?" 말풍선이 잠깐 뜬다(혈당 재기 습관 순간). 2형은 놀이터에 쉬는 곳이 더 자주, 나들이에 음식 줄이 더 자주 나온다. 수치는 아직 개발용이다.
+  - 팀원3(화면): 빈 틀 `Screen/HabitPromptView`를 채울 수 있다(roadmap 2.2절 "시작 가능"). 말풍선 프리팹은 `Assets/_Project/Art/UI/Screens/HabitPrompt.prefab`이다. 모양만 바꾸고, 문구는 `HabitPromptText`의 따옴표 안만 바꾼다(team-rules 2.3절).
+  - 확인 방법은 [dev-scene.md](dev-scene.md) 9.14절이다.
