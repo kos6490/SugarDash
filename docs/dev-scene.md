@@ -248,7 +248,7 @@ Unity 에디터 기본 배치:
 - `UI > Legacy > Button`, `UI > Legacy > Text`로 만든다. 위치와 크기는 예시이며 마음대로 바꿔도 된다.
 
 ### 6.6.1 TitleScreen
-1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TitleScreen`. `Add Component` → `TitleScreenView`.
+1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TitleScreen`. `Add Component` → `TitleScreenView`. Rect Transform 왼쪽 위 네모(Anchor Presets)를 누르고 Alt(Mac은 Option)를 누른 채 오른쪽 아래 `stretch`·`stretch`를 고른다(화면 전체 크기). 이 단계를 빼면 `Root`가 가운데 작은 칸만 덮어 뒤의 게임 화면이 보인다.
 2. `TitleScreen` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `Root`. 크기는 화면 전체를 덮는 기본값 그대로 둔다. `Image`의 `Color` A를 `255`로 올려 뒤 화면을 가린다.
 3. `Root` 위에서 오른쪽 클릭하고, 아래 표의 오브젝트 3개(`TypeText`, `StartButton`, `SettingsButton`)를 만든다.
 
@@ -268,7 +268,7 @@ Unity 에디터 기본 배치:
 | Settings Button | `SettingsButton` |
 
 ### 6.6.2 TypeSelect
-1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TypeSelect`. `Add Component` → `TypeSelectView`.
+1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `TypeSelect`. `Add Component` → `TypeSelectView`. Anchor Presets를 6.6.1절 1번처럼 `stretch`·`stretch`로 바꾼다.
 2. `TypeSelect` 아래에 `UI > Panel`을 `Root`로 만들고(6.6.1절 2번과 같게), `Root` 아래에 만든다.
 
 | 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
@@ -281,8 +281,8 @@ Unity 에디터 기본 배치:
 3. `TypeSelect`를 선택하고 `Type Select View`의 칸을 연결한다: `Root`(`TypeSelect` 아래의 `Root`), `Title Text`, `Guide Text`, `Type 1 Button`, `Type 2 Button`.
 
 ### 6.6.3 Settings
-1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `Settings`. `Add Component` → `SettingsView`.
-2. `Settings` 아래에 `UI > Panel`을 `Root`로 만들고, `Root` 아래에 만든다.
+1. `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `Settings`. `Add Component` → `SettingsView`. Anchor Presets를 6.6.1절 1번처럼 `stretch`·`stretch`로 바꾼다.
+2. `Settings` 아래에 `UI > Panel`을 `Root`로 만들고(6.6.1절 2번과 같게, `Color` A `255`), `Root` 아래에 만든다.
 
 | 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
 | --- | --- | --- | --- | --- |
