@@ -14,7 +14,8 @@
 > 9. 튜토리얼을 더한 뒤라면 6.6.3절 표대로 `Settings > Root` 아래에 `TutorialButton`을 만들어 연결하고 `BackButton`을 아래로 옮긴다. 6.11절을 따라 `TutorialPrompt`를 만들고, 8절 3번 표의 `Tutorial Prompt` 칸을 연결한다.
 > 10. 튜토리얼 화면 터치·레인 강조를 더한 뒤라면 6.11.4절(이미 예전 안내대로 만든 경우)대로 `TutorialPrompt`를 고치고, 6.12절대로 `TutorialLaneHighlight`를 만들어 8절 3번 표의 `Lane Highlight` 칸을 연결한다.
 > 11. 2구간 2-B(혈당 재기 습관 순간)를 더한 뒤라면 6.13절대로 `HabitPrompt` 프리팹을 만들고 8절 3번 표의 `Habit Prompt` 칸을 연결한다.
-> 12. Cmd+S로 저장하고 9절 순서로 확인한다.
+> 12. 일시정지 메뉴·탈락 장면을 더한 뒤라면 6.14~6.16절대로 `PauseMenu`, `EliminationSpeech` 프리팹과 `GuardianArrival` 오브젝트를 만들고 8절 3번 표의 `Pause Menu`, `Elimination Speech`, `Guardian Arrival` 칸을 연결한다.
+> 13. Cmd+S로 저장하고 9절 순서로 확인한다.
 
 ## 0. 화면 구성과 기본 조작
 
@@ -80,6 +81,8 @@ Unity 에디터 기본 배치:
 | `TutorialPrompt` | `Assets/_Project/Art/UI/Screens/TutorialPrompt.prefab` | 6.11절 |
 | `SleepTransition` | `Assets/_Project/Art/UI/Screens/SleepTransition.prefab` | 6.10절 |
 | `HabitPrompt` | `Assets/_Project/Art/UI/Screens/HabitPrompt.prefab` | 6.13절 |
+| `EliminationSpeech` | `Assets/_Project/Art/UI/Screens/EliminationSpeech.prefab` | 6.15절 |
+| `PauseMenu` | `Assets/_Project/Art/UI/Screens/PauseMenu.prefab` | 6.14절 |
 
 - **모양 고치기**: Project 창에서 프리팹을 더블클릭하면 Prefab Mode로 열린다. 거기서 고치고 저장한다(Prefab Mode는 자동 저장이 켜져 있으면 바로 저장된다). 씬은 고치지 않는다.
 - **구조 담당 팀원**: 화면에 오브젝트나 스크립트 칸을 더할 때는 Prefab Mode에서 프리팹 안에 더하고, 프리팹 안의 칸도 프리팹 안에서 연결한다. 씬에 있는 칸(`Bootstrapper`의 칸)만 씬에서 연결한다. 씬의 인스턴스에서 직접 바꾸는 것(인스턴스 오버라이드, Inspector에서 굵은 글자로 보인다)은 만들지 않는다.
@@ -439,6 +442,52 @@ Unity 에디터 기본 배치:
 8. Cmd+S로 저장한다.
 9. 기대 결과: 1구간과 2형 주행에서는 말풍선이 보이지 않는다. 1형 운동장·집에 들어가면 약 5초 동안 보인다(9.14절). 말풍선이 떠 있어도 측정기 버튼이 눌린다.
 
+## 6.14 일시정지 메뉴 (PauseMenu)
+
+주행 화면 오른쪽 위의 일시정지 버튼과 메뉴(`계속하기`, `타이틀로`)다([pause-elimination.md](pause-elimination.md) 2절). 스크립트가 붙은 `PauseMenu`는 항상 켜 두고, 그 아래 `PauseButton`과 `MenuRoot`를 코드가 껐다 켠다. 메뉴는 다른 화면보다 앞에 그려져야 하므로 `Canvas`의 맨 아래 자식으로 둔다.
+
+1. Hierarchy의 `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `PauseMenu`. Hierarchy에서 끌어서 `Canvas` 자식 중 맨 아래(`SleepTransition` 아래)로 옮긴다.
+2. `PauseMenu`의 Rect Transform 왼쪽 위 네모(Anchor Presets)를 누르고 Alt(Mac은 Option)를 누른 채 오른쪽 아래 `stretch`·`stretch`를 고른다(화면 전체 크기).
+3. `PauseMenu` 위에서 오른쪽 클릭 → `UI > Legacy > Button`. 이름 `PauseButton`. Pos X `440`, Pos Y `860`, Width `150`, Height `150`. 자식 글자: Text `II`, Font Size 60.
+4. `PauseMenu` 위에서 오른쪽 클릭 → `UI > Panel`. 이름 `MenuRoot`. 화면 전체를 덮는 그대로 둔다. `Image`의 `Color`를 R `0`, G `0`, B `0`, A `150`으로 바꾼다. `Raycast Target`은 켜 둔다(켜져 있어야 메뉴 뒤의 측정기·선택 버튼이 눌리지 않는다).
+5. `MenuRoot` 위에서 오른쪽 클릭 → `UI > Legacy > Button`을 두 번 해서 아래 두 버튼을 만든다.
+
+| 이름 | Pos X, Pos Y | Width × Height | 자식 글자 |
+| --- | --- | --- | --- |
+| `ContinueButton` | 0, 80 | 520 × 130 | Text `계속하기`, Font Size 44 |
+| `TitleButton` | 0, -100 | 520 × 130 | Text `타이틀로`, Font Size 44 |
+
+6. `PauseMenu`를 선택하고 `Add Component` → `PauseMenuView`. `Pause Button` 칸에 `PauseButton`, `Menu Root` 칸에 `MenuRoot`, `Continue Button` 칸에 `ContinueButton`, `Title Button` 칸에 `PauseMenu > MenuRoot` 아래의 `TitleButton`을 끌어다 놓는다(`ResultScreen`에도 `TitleButton`이 있으니 위치를 확인한다).
+7. `PauseButton`과 `MenuRoot`를 각각 선택하고 Inspector 맨 위 이름 왼쪽 체크를 끈다(처음에는 숨겨 둔다).
+8. 프리팹으로 만든다: Project 창 `Assets > _Project > Art > UI > Screens` 폴더로 Hierarchy의 `PauseMenu`를 끌어다 놓는다.
+9. `Bootstrapper`를 선택하고 `Game Bootstrapper`의 `Pause Menu` 칸에 Hierarchy의 `PauseMenu`를 끌어다 놓는다. `Pause Countdown Sec`(`3`), `Elimination Scene Sec`(`2.5`)는 기본값 그대로 둔다.
+10. Cmd+S로 저장한다.
+11. 기대 결과: 주행 중 오른쪽 위에 `II` 버튼이 보이고, 선택 패널이나 3-2-1이 떠 있으면 사라진다(9.15절). Console에 `pauseMenu가 비어 있다` 경고가 없다.
+
+## 6.15 탈락 장면 말풍선 (EliminationSpeech)
+
+탈락 장면에서 어른이 하는 말 한 줄을 보여 주는 빈 틀이다([pause-elimination.md](pause-elimination.md) 3.2절). `EliminationSpeech`는 항상 켜 두고 그 아래 `Root`만 껐다 켠다.
+
+1. Hierarchy의 `Canvas` 위에서 오른쪽 클릭 → `Create Empty`. 이름 `EliminationSpeech`. Hierarchy에서 끌어서 `ResultScreen` 바로 위로 옮긴다. Rect Transform은 Pos X `0`, Pos Y `0`, Width `100`, Height `100` 그대로 둔다.
+2. `EliminationSpeech` 위에서 오른쪽 클릭 → `UI > Image`. 이름 `Root`. Pos X `0`, Pos Y `300`, Width `820`, Height `150`. Image Color 흰색. `Raycast Target` 체크를 끈다.
+3. `Root` 위에서 오른쪽 클릭 → `UI > Legacy > Text`. 이름 `SpeechText`. Anchor Presets에서 Alt(Option)를 누른 채 `stretch`·`stretch`. Text 비움, Font Size 46, 가운데 정렬, Color 검정. `Raycast Target` 체크를 끈다.
+4. `EliminationSpeech`를 선택하고 `Add Component` → `EliminationSpeechView`. `Root` 칸에 `Root`, `Speech Text` 칸에 `SpeechText`를 끌어다 놓는다.
+5. `Root`의 이름 왼쪽 체크를 끈다.
+6. 프리팹으로 만든다: `Assets > _Project > Art > UI > Screens` 폴더로 Hierarchy의 `EliminationSpeech`를 끌어다 놓는다.
+7. `Bootstrapper`의 `Elimination Speech` 칸에 Hierarchy의 `EliminationSpeech`를 끌어다 놓는다.
+8. Cmd+S로 저장한다.
+
+## 6.16 탈락 장면 어른 (GuardianArrival)
+
+탈락 장면에서 어른 캐릭터가 달려와 주인공 옆에 서는 빈 틀이다([pause-elimination.md](pause-elimination.md) 3.2절). 모델이 없는 동안에는 주황색 캡슐을 코드가 만든다.
+
+1. Hierarchy **빈 곳**에서 오른쪽 클릭 → `Create Empty`(Canvas 밖, 최상위). 이름 `GuardianArrival`.
+2. Inspector의 `Transform` 칸 오른쪽 끝 `⋮` → `Reset`.
+3. `Add Component` → `GuardianArrivalView`.
+4. 값은 기본값 그대로 둔다. `Guardian Prefab` 비움, `Start Offset` `3, 0, 8`, `Stand Offset` `1.2, 0, 0`, `Arrive Sec` `1`. 주인공 위치는 코드가 `Player`에서 받아 오므로 연결할 칸이 없다.
+5. `Bootstrapper`의 `Guardian Arrival` 칸에 `GuardianArrival`을 끌어다 놓는다.
+6. Cmd+S로 저장한다.
+
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
 캐릭터와 트랙의 모양(캡슐, 상자, 구)은 실행하면 코드가 만든다. 여기서는 빈 오브젝트 3개에 컴포넌트를 붙이고 카메라만 연결한다.
@@ -479,9 +528,13 @@ Unity 에디터 기본 배치:
 | Sleep Transition | Hierarchy의 `SleepTransition` (6.10절) |
 | Tutorial Prompt | Hierarchy의 `TutorialPrompt` (6.11절) |
 | Lane Highlight | Hierarchy의 `TutorialLaneHighlight` (6.12절) |
+| Pause Menu | Hierarchy의 `PauseMenu` (6.14절) |
+| Elimination Speech | Hierarchy의 `EliminationSpeech` (6.15절) |
+| Guardian Arrival | Hierarchy의 `GuardianArrival` (6.16절) |
+| Pause Countdown Sec, Elimination Scene Sec | 기본값 `3`, `2.5` 그대로 둔다(6.14절) |
 | Tutorial Stop Distance, Tutorial Glucose Move Sec, Tutorial Retry Text Sec | 기본값 `12`, `3`, `1.5` 그대로 둔다(6.11.3절) |
 
-빈 틀 칸(`Title Screen`~`Lane Highlight`)은 비워 두면 그 빈 틀은 연결되지 않고 건너뛴다(Console에 노란 경고가 뜰 수 있다). 단 `Title Screen`, `Type Select`가 비면 화면 흐름이 진행되지 않으므로 둘은 꼭 연결한다.
+빈 틀 칸(`Title Screen`~`Guardian Arrival`)은 비워 두면 그 빈 틀은 연결되지 않고 건너뛴다(Console에 노란 경고가 뜰 수 있다). 단 `Title Screen`, `Type Select`가 비면 화면 흐름이 진행되지 않으므로 둘은 꼭 연결한다.
 
 4. Cmd+S로 저장한다.
 
@@ -507,6 +560,8 @@ DevRun
 │   │       ├── RecheckText
 │   │       └── Buttons
 │   │           └── ButtonTemplate
+│   ├── EliminationSpeech
+│   │   └── Root           (SpeechText)
 │   ├── ResultScreen
 │   │   └── Root
 │   │       └── Box
@@ -525,7 +580,10 @@ DevRun
 │   │   ├── Root       (Image + Button)
 │   │   │   └── Box        (MessageText, HintText, SkipButton)
 │   │   └── RetryText      (Root 밖, Root와 나란히)
-│   └── SleepTransition  (맨 아래)
+│   ├── SleepTransition
+│   └── PauseMenu        (맨 아래)
+│       ├── PauseButton
+│       └── MenuRoot       (ContinueButton, TitleButton)
 ├── EventSystem
 ├── Player               (PlayerController, CharacterStateView)
 ├── Track
@@ -533,6 +591,7 @@ DevRun
 ├── SceneLook
 │   └── SceneGround
 ├── TutorialLaneHighlight
+├── GuardianArrival
 └── Bootstrapper
 ```
 
@@ -806,6 +865,21 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | 3 | 나들이 | 음식 줄이 더 자주 나오고(2.5~4초 간격), 음식은 물·주스·탄산음료·치킨·피자·햄버거만 나온다(사과 없음) |
 
 기록 파일(9.9절, 1형 판)에 `HabitCheck` 줄이 두 개 있다. 운동장 것은 `"outcome":"checked"`와 `reactionSec`, 집 것은 `"outcome":"missed"`다. 2번의 `MeterPressed` 줄에는 `"moment":"preExercise"`와 `"unnecessary":false`가 있다.
+
+### 9.15 시나리오 M: 일시정지 메뉴와 탈락 장면
+1형 한 판으로 본다.
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | Play, 타이틀에서 `시작하기` | 오른쪽 위에 `II` 버튼이 보인다 |
+| 2 | `II`를 누른다 | 화면이 어두워지고 `계속하기`, `타이틀로`가 뜬다. 캐릭터·혈당바·점수가 멈춘다. `II` 버튼이 사라진다 |
+| 3 | `계속하기` | 3-2-1이 지난 뒤 다시 달린다. 3-2-1 동안 스와이프해도 캐릭터가 움직이지 않는다 |
+| 4 | 저혈당 신호가 와서 측정기를 눌러 2단계 패널이 뜬다 | `II` 버튼이 사라진다. 패널을 마치고 3-2-1이 끝나면 다시 보인다 |
+| 5 | `II` → `타이틀로` | 결과 화면 없이 타이틀로 간다 |
+| 6 | 다시 `시작하기`, 장애물에 일부러 부딪힌다 | 세계가 멈추고 주황색 캡슐(어른)이 옆 레인 앞쪽에서 달려와 옆에 선다. `괜찮아? 어른이 왔어` 말풍선이 뜬다. 약 2.5초 뒤 결과 화면이 뜬다 |
+| 7 | `다시 하기`, 9.3절처럼 아무것도 하지 않고 탈락까지 기다린다 | 화면이 흔들리던 세기보다 약하게 계속 흔들리는 채로 어른이 오고 `힘들 땐 어른에게 알려 줘`가 뜬다. 흔들림은 결과 화면에서 멈춘다 |
+
+앱에서 나갔다 돌아오면 메뉴가 떠 있는 것(바로 다시 달리지 않음)은 실기기에서 확인한다(roadmap 5.6절).
 
 ## 10. 자주 생기는 문제
 
