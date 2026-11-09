@@ -105,7 +105,7 @@ git config core.hooksPath .githooks
 
 - [ ] Console에 빨간 에러 없음 (노란 경고는 무시 가능)
 - [ ] 상단 메뉴에 XCharts 표시
-- [ ] Project 창에서 `Assets/TutorialInfo/Scripts/Readme.cs`를 클릭하면 2-5에서 지정한 IDE로 열림
+- [ ] Project 창에서 `Assets/_Project/Scripts/Bootstrap/GameBootstrapper.cs`를 더블클릭하면 2-5에서 지정한 IDE로 열림
 - [ ] 에디터 버전이 `6000.3.26f1`과 일치 (Windows `Help > About Unity`, macOS `Unity > About Unity`)
 - [ ] Unity 종료 후 `git status`가 `nothing to commit, working tree clean` or `no changes added to commit`
 

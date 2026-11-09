@@ -42,5 +42,10 @@
 
 - 서명 키스토어: 보관 위치와 담당자 미정. 공개 저장소이므로 키스토어 파일과 비밀번호는 커밋하지 않는다.
 - 버전 올리는 규칙: 미정
-- 템플릿 패키지 정리(`visualscripting`, `multiplayer.center`, `collab-proxy`, `ai.navigation`, `timeline`): 미정
-- `Assets/TutorialInfo/` 정리: 미정. 지우면 README 2-6 설치 확인 항목도 고쳐야 한다.
+- 네트워크 관련 내장 모듈(`unitywebrequest*`, `unityanalytics`) 제거: 미정. `video` 등 다른 모듈이 의존하므로 영향 범위를 따로 확인한다.
+
+## 6. 정리한 템플릿 잔여물
+
+- 쓰지 않는 패키지 `visualscripting`, `multiplayer.center`, `collab-proxy`, `ai.navigation`, `timeline`을 뺐다. 다시 필요하면 버전을 정해 단독 PR로 넣는다.
+- `Assets/TutorialInfo/`와 `Assets/Readme.asset`(Unity 시작 템플릿 안내)을 지웠다. README 2-6 설치 확인은 `GameBootstrapper.cs`로 바꿨다.
+- `Assets/Scenes/SampleScene.unity`는 지금 유일한 빌드 씬이라 남겨 둔다. 정식 게임 씬을 만들 때 정리한다.
