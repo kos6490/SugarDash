@@ -21,12 +21,11 @@ namespace SugarDash.Presentation
 
         private RunController _run;
 
-        /// <summary>신호별 개발용 문구. 신호가 없으면 빈 문자열.</summary>
+        /// <summary>신호별 문구(docs/notice-evidence.md). 신호가 없으면 빈 문자열.</summary>
         public static string LabelOf(NoticeKind? signal)
         {
             if (signal == NoticeKind.High) return "목말라요";
-            // 저혈당 쪽 표시는 의학 출처 확인 전이므로 개발용 표시만 둔다.
-            if (signal == NoticeKind.Low) return "(개발용) 낮음 신호";
+            if (signal == NoticeKind.Low) return "몸이 떨려요";
             return "";
         }
 
@@ -57,13 +56,13 @@ namespace SugarDash.Presentation
             if (signalText != null)
             {
                 signalText.text = LabelOf(signal);
-                // 높음 신호만 깜빡인다. 낮음은 의학 출처 확인 전이라 가만히 둔다.
+                // 높음 신호만 깜빡인다(화장실 아이콘 깜빡임). 낮음은 가만히 둔다.
                 var color = signalText.color;
                 color.a = signal == NoticeKind.High ? BlinkAlpha(Time.unscaledTime, blinkPeriodSec, blinkMinAlpha) : 1f;
                 signalText.color = color;
             }
             // TODO(화면): High면 갈증 말풍선과 화장실 아이콘 그림을 넣고 같은 BlinkAlpha로 깜빡인다.
-            // TODO(화면): Low는 의학 출처 확인 뒤에 연출을 정한다. 지금은 개발용 표시만 둔다.
+            // TODO(화면): Low면 떨리는 손 그림을 넣는다(docs/notice-evidence.md).
         }
     }
 }

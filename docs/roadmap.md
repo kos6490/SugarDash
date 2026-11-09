@@ -85,8 +85,8 @@
 | 구조(화면) | 한글 글꼴 후보(무료 상업 이용 가능한 라이선스) | | 시작 가능 |
 | 구조(화면) | 화면 문구 초안: 유형 선택 안내, 타이틀, 2형 tell, 2형 결과 요약. `docs/handoff/`에 정리 | [type-select.md](type-select.md) 2.1·4.4·9.2절 | 시작 가능 |
 | 구조(화면) | `TitleScreenView`, `TypeSelectView`, `SettingsView` 채우기: 화면 배치, 버튼 그림·소리 | `Assets/_Project/Scripts/Presentation/Screen/TitleScreenView.cs`, `TypeSelectView.cs`, `SettingsView.cs`, [type-select.md](type-select.md) 2·11절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
-| 구조(화면) | notice 그림: 갈증 말풍선, 화장실 아이콘(고혈당). 지금 글자(`목말라요`)는 개발용이며 출처 확인 결과에 따라 바뀔 수 있음. 저혈당 신호 그림은 출처 확인 뒤 | [type-select.md](type-select.md) 11절 | 시작 가능 |
-| 구조(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤 | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
+| 구조(화면) | notice 그림: 갈증 말풍선, 화장실 아이콘(고혈당), 떨리는 손(저혈당). 근거 [notice-evidence.md](notice-evidence.md) | [type-select.md](type-select.md) 11절 | 시작 가능 |
+| 구조(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임), 저혈당 신호(떨리는 손) | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
 | 구조(화면) | `TutorialPromptView` 채우기: 화면 전체를 덮어 아래 터치를 막고 화면 터치로 넘기는 설명 창(옅은 어두운 바탕 위 불투명 흰 박스, 검정 글자), 문구, `화면을 눌러요` 안내 글자, 그림 자리, `건너뛰기`, `다시 해봐요`. `SettingsView`의 `튜토리얼 다시 하기` 버튼 그림 | `Assets/_Project/Scripts/Presentation/Screen/TutorialPromptView.cs`, [tutorial.md](tutorial.md) 8절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | `HabitPromptView` 채우기: 1형 혈당 재기 습관 순간의 말풍선(측정기 버튼 옆), 나타나고 사라지는 연출 | `Assets/_Project/Scripts/Presentation/Screen/HabitPromptView.cs`, [section2.md](section2.md) 7.1절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
@@ -145,7 +145,7 @@
 | 정할 것 | 분야 | 지금 상태 | 막고 있는 작업 |
 | --- | --- | --- | --- |
 | 2형 수치: 혈당 시작값, 고혈당·저혈당 기준과 유지 시간, 음식·쉬기·운동 반영량, tell 제한 시간 | 결정, 의학 | 정함. 빌드 설정에 모두 넣었고 두 유형 모두 불러오기·불변식 검사를 통과함. 출처 값은 [glucose-evidence.md](glucose-evidence.md), 게임 표현값은 [game-values.md](game-values.md). 게임 표현값은 플레이 테스트에서 조정. 2형 저혈당 쪽 근거 연구는 주로 1형 | 없음 |
-| notice 신호(갈증, 화장실, 피로)와 지친 캐릭터 연출의 출처 | 의학 | 연출 방향(지친 표정, 느려짐, 처진 자세, 체형 변화 없음)까지 정해짐. 화면의 갈증·화장실 표시는 개발용 | 2형 캐릭터 연출 그래픽, notice 그림 |
+| notice 신호(갈증, 화장실, 피로)와 지친 캐릭터 연출의 출처 | 의학 | 정함([notice-evidence.md](notice-evidence.md)): 높음은 갈증·화장실·피로(ISPAD 2024 2형), 낮음은 떨림(ISPAD 2022 저혈당). 문구 `목말라요`, `몸이 떨려요` | 없음 |
 | 2형 점수 가중치 | 결정 | 정함([game-values.md](game-values.md) 5절) | 없음 |
 | 2형 화면 문구(유형 선택, 타이틀, tell, 결과 요약) | 기획 | 정함: tell `몸이 신호를 보내요. 어떻게 할까요?`, 결과 격려 `다음에는 어른에게 꼭 알려요!`, 신호 없음 줄. 타이틀은 유형만(`1형`/`2형`) | 없음 |
 
@@ -214,7 +214,6 @@
 | 작업 | 선행 |
 | --- | --- |
 | 화면 문구 1차 검토는 마침. 치료·진단 주장, "나쁜 음식", 아이 탓하는 말투, "죽음"·"생존" 표현 없음. 결과 요약을 "혈당이 낮을 때·높을 때"로, 유형 선택 제목을 `어떤 당뇨가 있나요?`로 고침. 남은 것은 아래 행 | 없음 |
-| 2형 신호 문구 `목말라요`, `(개발용) 낮음 신호`(화면에 그대로 보임, 빌드 전 꼭 바꿈)와 튜토리얼 notice 문구(`목이 마르고 화장실에…`, `힘이 없는 신호가…`) | notice 신호 출처 |
 | 튜토리얼 `쉬는 동안은 혈당이 덜 내려가요`(2형): 게임 규칙을 말하지만 아이는 사실로 배움. 2형 달리기 하강 규칙(4.3절)을 정할 때 함께 봄 | 2형 달리기 하강 규칙 결정 |
 | 고혈당 알리기 제목 `혈당이 높아요. 어떻게 할까요?` 확정(4.1절). 2형 tell 제목은 `몸이 신호를 보내요. 어떻게 할까요?`로 정함 | 없음 |
 | `HypoChoice.prefab`에 남은 Unity 기본 글자 `Button`이 화면에 보이는지 Play로 확인하고, 보이면 지움 | 없음 |

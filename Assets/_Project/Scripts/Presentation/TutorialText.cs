@@ -37,7 +37,7 @@ namespace SugarDash.Presentation
                 case TutorialStep.HypoNotify: return "어른에게 알려요";
                 case TutorialStep.HyperNotify: return "혈당이 높을 때도 어른에게 알려요";
                 case TutorialStep.HighNotice: return "목이 마르고 화장실에 가고 싶은 신호가 보이면 어른에게 알려요";
-                case TutorialStep.LowNotice: return "힘이 없는 신호가 보이면 어른에게 알려요";
+                case TutorialStep.LowNotice: return "몸이 떨리는 신호가 보이면 어른에게 알려요";
                 case TutorialStep.HighTell:
                 case TutorialStep.LowTell: return Notify;
                 case TutorialStep.Finish: return "이제 혼자 달려 봐요!";

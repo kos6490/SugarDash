@@ -340,12 +340,12 @@
 ## 12. 남은 결정 (담당자)
 | 정할 것 | 분야 |
 | --- | --- |
-| 2형 모든 수치(8.2절) | 결정, 의학 |
+| 2형 모든 수치(8.2절). 정함: [glucose-evidence.md](glucose-evidence.md), [game-values.md](game-values.md) | 결정, 의학 |
 | 2형 저혈당을 얼마나 자주·세게 다룰지(값으로 조절) | 의학 |
-| notice 신호(고혈당·저혈당)와 지친 연출의 출처, 저혈당 신호 그림 | 의학 |
-| 음식 목록과 음식별 값·출처 | 결정, 의학 |
+| notice 신호(고혈당·저혈당)와 지친 연출의 출처, 저혈당 신호 그림. 정함: [notice-evidence.md](notice-evidence.md) | 의학 |
+| 음식 목록과 음식별 값·출처. 정함: [food-evidence.md](food-evidence.md) | 결정, 의학 |
 | 유형 변경에 보호자 확인을 둘지 | 결정 |
-| 화면 문구(유형 선택, 타이틀, tell, 결과 요약) | 기획 |
+| 화면 문구(유형 선택, 타이틀, tell, 결과 요약). 정함(roadmap 4.2절) | 기획 |
 
 ## 13. 팀원별로 알아야 할 것
 
@@ -367,4 +367,4 @@
 
 ### 팀원3(화면)
 - `Screen/TitleScreenView`, `TypeSelectView`, `SettingsView`: 화면 배치, 버튼 그림·소리. `root` 자식 오브젝트를 켜고 끄는 방식은 그대로 둔다.
-- `Screen/NoticeSignalView`: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임). 저혈당 신호 그림은 출처 확인 뒤에 한다.
+- `Screen/NoticeSignalView`: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임), 저혈당 신호(`몸이 떨려요`, 떨리는 손). 근거는 [notice-evidence.md](notice-evidence.md).
