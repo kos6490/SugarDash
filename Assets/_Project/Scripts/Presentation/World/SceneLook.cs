@@ -13,6 +13,10 @@ namespace SugarDash.Presentation
     {
         [Tooltip("장면마다 색을 바꿀 바닥. 비워 두면 아무것도 바꾸지 않는다.")]
         [SerializeField] private Renderer ground;
+        [Tooltip("장면별 맵 배경을 켜고 끄는 컴포넌트. 비워 두면 배경을 바꾸지 않는다.")]
+        [SerializeField] private SceneBackdropSwitcher backdrops;
+        [Tooltip("때별 조명·하늘을 바꾸는 컴포넌트. 비워 두면 조명을 바꾸지 않는다.")]
+        [SerializeField] private TimeOfDayLighting lighting;
 
         private Material _groundCopy;
 
@@ -46,8 +50,31 @@ namespace SugarDash.Presentation
         private void OnSceneEntered(SceneEntered e)
         {
             SetGround(e.Scene);
-            // TODO(월드): 장면 id(e.Scene)별 맵 배경(운동장, 놀이터, 나들이, 집)을 켜고 끈다.
-            // TODO(월드): 때(e.TimeOfDay)별 조명·하늘(아침, 오후, 저녁, 밤)을 바꾼다.
+            // 장면 id(e.Scene)별 맵 배경(운동장, 놀이터, 나들이, 집)을 켜고 끈다.
+            if (backdrops != null) backdrops.Show(e.Scene);
+            // 때(e.TimeOfDay)별 조명·하늘(아침, 오후, 저녁, 밤)을 바꾼다.
+            // 다음 날 첫 장면은 수면 전환(암전) 중에 바뀌므로 섞지 않고 바로 바꾼다.
+            if (lighting == null) return;
+            string key = TimeOfDayKey(e.TimeOfDay);
+            if (e.DayIndex > _lastDayIndex && _lastDayIndex >= 0) lighting.ApplyImmediate(key);
+            else lighting.Apply(key);
+            _lastDayIndex = e.DayIndex;
+        }
+
+        // 마지막으로 받은 하루 번호. 하루가 넘어가는 순간을 알아보는 데만 쓴다.
+        private int _lastDayIndex = -1;
+
+        /// <summary>설정 파일의 때 이름과 같은 소문자 키. TimeOfDayLighting 목록의 key와 맞춘다.</summary>
+        private static string TimeOfDayKey(Domain.Config.TimeOfDay timeOfDay)
+        {
+            switch (timeOfDay)
+            {
+                case Domain.Config.TimeOfDay.Morning: return "morning";
+                case Domain.Config.TimeOfDay.Afternoon: return "afternoon";
+                case Domain.Config.TimeOfDay.Evening: return "evening";
+                case Domain.Config.TimeOfDay.Night: return "night";
+                default: return null;
+            }
         }
 
         private void SetGround(string sceneId)
