@@ -94,6 +94,7 @@
 | 구조(화면) | `EliminationSpeechView` 채우기: 탈락 장면 말풍선 그림, 어른 쪽 꼬리, 나타나는 연출 | `Assets/_Project/Scripts/Presentation/Screen/EliminationSpeechView.cs`, [pause-elimination.md](pause-elimination.md) 3.2·5절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | 음식 8종 표시 이름: 문구 파일 `FoodText`(선택 패널 버튼, 양 묻는 제목, 고른 뒤 문구). "을/를"은 받침에 맞춰 붙음 | `Assets/_Project/Scripts/Presentation/FoodText.cs` | 완료 |
 | 구조(화면) | 선택지 그림(2D): 음식 8종, 측정기, 양(조금·알맞게·많이), 어른에게 알리기, 다시 재기 | [food-evidence.md](food-evidence.md) | 시작 가능 |
+| 구조(화면) | 화면 전환 덮개 `ScreenFadeView`: 화면이 바뀔 때 흰 덮개가 0.25초 동안 걷힘. 그림을 씌워도 그대로 동작 | [dev-scene.md](dev-scene.md) 6.17절 | 완료 |
 | 기획 | 탈락 장면 말풍선 문구 확정(`EliminationText`). 지금은 자리 채움 초안. 아이를 탓하지 않고 의학 설명을 넣지 않음 | `Assets/_Project/Scripts/Presentation/EliminationText.cs`, [pause-elimination.md](pause-elimination.md) 3.2절 | 시작 가능 |
 | 기획 | 습관 순간 말풍선 문구 확정(`HabitPromptText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/HabitPromptText.cs`, [section2.md](section2.md) 7.1절 | 시작 가능 |
 | 기획 | 튜토리얼 안내 문구 확정(`TutorialText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/TutorialText.cs`, [tutorial.md](tutorial.md) 6절 | 시작 가능 |

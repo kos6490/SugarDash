@@ -15,8 +15,9 @@
 > 10. 튜토리얼 화면 터치·레인 강조를 더한 뒤라면 6.11.4절(이미 예전 안내대로 만든 경우)대로 `TutorialPrompt`를 고치고, 6.12절대로 `TutorialLaneHighlight`를 만들어 8절 3번 표의 `Lane Highlight` 칸을 연결한다.
 > 11. 2구간 2-B(혈당 재기 습관 순간)를 더한 뒤라면 6.13절대로 `HabitPrompt` 프리팹을 만들고 8절 3번 표의 `Habit Prompt` 칸을 연결한다.
 > 12. 일시정지 메뉴·탈락 장면을 더한 뒤라면 6.14~6.16절대로 `PauseMenu`, `EliminationSpeech` 프리팹과 `GuardianArrival` 오브젝트를 만들고 8절 3번 표의 `Pause Menu`, `Elimination Speech`, `Guardian Arrival` 칸을 연결한다.
-> 13. 장애물 패턴을 더한 뒤라면 7절 6번대로 `Track`의 `Patterns` 칸에 `TrackPatterns`를 연결한다.
-> 14. Cmd+S로 저장하고 9절 순서로 확인한다.
+> 13. 화면 전환 덮개를 더한 뒤라면 6.17절대로 `ScreenFade`를 `Canvas`의 맨 아래에 두고 8절 3번 표의 `Screen Fade` 칸을 연결한다.
+> 14. 장애물 패턴을 더한 뒤라면 7절 6번대로 `Track`의 `Patterns` 칸에 `TrackPatterns`를 연결한다.
+> 15. Cmd+S로 저장하고 9절 순서로 확인한다.
 
 ## 0. 화면 구성과 기본 조작
 
@@ -84,6 +85,7 @@ Unity 에디터 기본 배치:
 | `HabitPrompt` | `Assets/_Project/Art/UI/Screens/HabitPrompt.prefab` | 6.13절 |
 | `EliminationSpeech` | `Assets/_Project/Art/UI/Screens/EliminationSpeech.prefab` | 6.15절 |
 | `PauseMenu` | `Assets/_Project/Art/UI/Screens/PauseMenu.prefab` | 6.14절 |
+| `ScreenFade` | `Assets/_Project/Art/UI/Screens/ScreenFade.prefab` | 6.17절 |
 
 - 나타나는 연출: `HabitPrompt`·`EliminationSpeech`의 `Root`, `PauseMenu`의 `MenuRoot`, `TutorialPrompt`의 `Box`에 `ScreenPopIn`(과 함께 붙는 `CanvasGroup`)이 있다. 켜질 때 0.2초 동안 흐릿하고 조금 작은 상태에서 또렷해진다(메뉴는 크기 그대로 또렷해지기만). 시간과 처음 크기는 Inspector 값이다.
 - `NoticeSignal`의 높음 신호 글자는 1초 주기로 흐려졌다 밝아진다(`Blink Period Sec`, `Blink Min Alpha`). `Settings`는 지금 유형 버튼을 `Current Type Color`로 칠한다.
@@ -498,6 +500,14 @@ Unity 에디터 기본 배치:
 5. `Bootstrapper`의 `Guardian Arrival` 칸에 `GuardianArrival`을 끌어다 놓는다.
 6. Cmd+S로 저장한다.
 
+## 6.17 화면 전환 덮개 (ScreenFade)
+
+화면(유형 선택, 타이틀, 설정, 게임, 결과)이 바뀔 때 모든 화면 위의 흰 덮개를 띄웠다가 0.25초 동안 걷어 새 화면이 서서히 드러나게 한다. 탈락 장면으로 넘어갈 때는 걸지 않는다. 터치를 막지 않는다. 그림을 바꿔도 그대로 동작한다(덮개는 화면 안이 아니라 위에 따로 있다).
+
+1. Project 창의 `Assets/_Project/Art/UI/Screens/ScreenFade`를 Hierarchy의 `Canvas` 위로 끌어다 놓는다. `ScreenFade`가 `Canvas` 자식 중 **맨 아래**(마지막)인지 확인한다. 나중에 화면 프리팹을 더 넣을 때도 `ScreenFade`보다 위에 넣는다. 아래에 있으면 그 화면은 덮개에 덮이지 않는다.
+2. `Bootstrapper`의 `Screen Fade` 칸에 `ScreenFade`를 끌어다 놓는다. 비워 두면 전환 없이 바로 바뀐다.
+3. 덮개 색은 `ScreenFade > Overlay`의 `Image` `Color`에서, 시간은 `ScreenFade`의 `Duration Sec`에서 바꾼다. 색의 A(투명도)는 코드가 바꾸므로 R·G·B만 고친다.
+
 ## 7. 러너 (캐릭터, 트랙, 입력)
 
 캐릭터와 트랙의 모양(캡슐, 상자, 구)은 실행하면 코드가 만든다. 여기서는 빈 오브젝트 3개에 컴포넌트를 붙이고 카메라만 연결한다.
@@ -542,6 +552,7 @@ Unity 에디터 기본 배치:
 | Pause Menu | Hierarchy의 `PauseMenu` (6.14절) |
 | Elimination Speech | Hierarchy의 `EliminationSpeech` (6.15절) |
 | Guardian Arrival | Hierarchy의 `GuardianArrival` (6.16절) |
+| Screen Fade | `Canvas` 아래 `ScreenFade` (6.17절) |
 | Pause Countdown Sec, Elimination Scene Sec | 기본값 `3`, `2.5` 그대로 둔다(6.14절) |
 | Tutorial Stop Distance, Tutorial Glucose Move Sec, Tutorial Retry Text Sec | 기본값 `12`, `3`, `1.5` 그대로 둔다(6.11.3절) |
 
