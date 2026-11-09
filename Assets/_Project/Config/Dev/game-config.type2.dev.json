@@ -18,6 +18,7 @@
     { "id": "juice", "totalRise": 30, "onsetRealMin": 2.5, "absorbRealMin": 5, "source": "dev-not-real" },
     { "id": "soda", "totalRise": 30, "onsetRealMin": 2.5, "absorbRealMin": 5, "source": "dev-not-real" },
     { "id": "apple", "totalRise": 15, "onsetRealMin": 5, "absorbRealMin": 12.5, "source": "dev-not-real" },
+    { "id": "cracker", "totalRise": 15, "onsetRealMin": 5, "absorbRealMin": 12.5, "source": "dev-not-real" },
     { "id": "chicken", "totalRise": 15, "onsetRealMin": 10, "absorbRealMin": 25, "source": "dev-not-real" },
     { "id": "pizza", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "dev-not-real" },
     { "id": "burger", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "dev-not-real" }

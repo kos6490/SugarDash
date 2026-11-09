@@ -475,7 +475,8 @@ namespace SugarDash.Infrastructure.Tests
 
             Assert.That(config.ConfigVersion, Is.EqualTo("dev-not-real-type2"));
             Assert.That(config.TrackType, Is.EqualTo(TrackType.Type2));
-            Assert.That(config.Glucose.Snacks, Has.Count.EqualTo(7));
+            // 두 유형이 같이 쓰는 음식 8개(docs/food-evidence.md).
+            Assert.That(config.Glucose.Snacks, Has.Count.EqualTo(8));
         }
 
         [Test]
