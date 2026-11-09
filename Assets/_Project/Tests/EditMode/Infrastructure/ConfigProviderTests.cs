@@ -632,14 +632,6 @@ namespace SugarDash.Infrastructure.Tests
         {
             string json = File.ReadAllText(Path.Combine(Application.dataPath, path));
 
-            var e = LoadFails(json);
-            Assert.That(e.MissingPaths, Is.SupersetOf(new[]
-            {
-                "sections[0].lengthM", "sections[1].scenes[0].lengthM", "sections[1].scenes[1].lengthM",
-                "sections[1].scenes[2].lengthM", "sections[1].scenes[3].lengthM",
-            }));
-            Assert.That(e.MissingPaths, Has.None.Contains("sections[1].scenes[4]"));
-
             var scenes = Regex.Matches(json, "\"id\":\\s*\"(\\w+)\",\\s*\"timeOfDay\":\\s*\"(\\w+)\"")
                 .Cast<Match>().ToList();
             Assert.That(scenes.Select(m => m.Groups[1].Value), Is.EqualTo(new[] { "schoolyard", "playground", "outing", "home" }));
@@ -647,36 +639,26 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(json, Does.Match("\"id\":\\s*\"home\"[^}]*\"spawns\":\\s*false"));
         }
 
-        // 2-B 장면 조건(docs/section2.md 7절). 값은 PLACEHOLDER(null)로 적어 두어 정하기 전에는 로드가 실패한다.
+        // 2-B 장면 조건(docs/section2.md 7절). 값은 docs/game-values.md 4절.
         [Test]
-        public void BuildConfig_Type1SceneConditions_ArePlaceholders()
+        public void BuildConfig_Type1SceneConditions()
         {
             string json = File.ReadAllText(Path.Combine(Application.dataPath, BuildConfigPath));
 
-            var e = LoadFails(json);
-            Assert.That(e.MissingPaths, Is.SupersetOf(new[]
-            {
-                "sections[1].scenes[0].overrides.runDecayPerSec",
-            }));
-            Assert.That(e.MissingPaths.Where(p => p.Contains(".overrides.")),
-                Is.EqualTo(new[] { "sections[1].scenes[0].overrides.runDecayPerSec" }));
+            Assert.That(json, Does.Match("\"id\":\\s*\"schoolyard\"[^}]*\"overrides\":\\s*\\{\\s*\"runDecayPerSec\":\\s*[0-9.]+\\s*\\}"));
             Assert.That(json, Does.Match("\"id\":\\s*\"schoolyard\"[^}]*\"habitCheck\":\\s*\"preExercise\""));
             Assert.That(json, Does.Match("\"id\":\\s*\"home\"[^}]*\"habitCheck\":\\s*\"bedtime\""));
             Assert.That(Regex.Matches(json, "habitCheck\"").Count, Is.EqualTo(2));
         }
 
         [Test]
-        public void BuildConfig_Type2SceneConditions_ArePlaceholders()
+        public void BuildConfig_Type2SceneConditions()
         {
             string json = File.ReadAllText(Path.Combine(Application.dataPath, BuildType2ConfigPath));
 
-            var e = LoadFails(json);
-            Assert.That(e.MissingPaths.Where(p => p.Contains(".overrides.")), Is.EqualTo(new[]
-            {
-                "sections[1].scenes[1].overrides.restIntervalMinSec", "sections[1].scenes[1].overrides.restIntervalMaxSec",
-                "sections[1].scenes[2].overrides.foodRowIntervalMinSec",
-                "sections[1].scenes[2].overrides.foodRowIntervalMaxSec", "sections[1].scenes[2].overrides.foodRowIds",
-            }));
+            Assert.That(json, Does.Match("\"id\":\\s*\"playground\"[^}]*\"restIntervalMinSec\"[^}]*\"restIntervalMaxSec\""));
+            Assert.That(json, Does.Match("\"id\":\\s*\"outing\"[^}]*\"foodRowIntervalMinSec\"[^}]*\"foodRowIntervalMaxSec\"[^}]*\"foodRowIds\""));
+            Assert.That(Regex.Matches(json, "\"overrides\":\\s*\\{\\s*\"").Count, Is.EqualTo(2), "놀이터·나들이만 덮어쓴다");
             Assert.That(json, Does.Not.Contain("habitCheck"));
         }
 

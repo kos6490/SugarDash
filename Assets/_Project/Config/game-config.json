@@ -37,7 +37,7 @@
   },
   "hyper": { "notifyTimeLimitSec": 10 },
   "type1": { "habitCheckWindowSec": 5 },
-  "suddenDrop": { "chancePerSec": null, "amount": null, "durationSec": null },
+  "suddenDrop": { "chancePerSec": 0.01, "amount": 20, "durationSec": 5 },
   "snacks": [
     {"id": "juice", "kind": "fast", "totalRise": 31.5, "onsetSec": 1, "absorbSec": 2, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (orange juice)"},
     {"id": "soda", "kind": "fast", "totalRise": 31.5, "onsetSec": 1, "absorbSec": 2, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (regular soft drink)"},
@@ -62,15 +62,15 @@
     }
   },
   "sections": [
-    { "id": "signal", "lengthM": null },
+    { "id": "signal", "lengthM": 300 },
     {
       "id": "condition",
       "scenes": [
-        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": null, "habitCheck": "preExercise",
-          "overrides": { "runDecayPerSec": null } },
-        { "id": "playground", "timeOfDay": "afternoon", "lengthM": null, "overrides": {} },
-        { "id": "outing", "timeOfDay": "evening", "lengthM": null, "overrides": {} },
-        { "id": "home", "timeOfDay": "night", "lengthM": null, "spawns": false, "habitCheck": "bedtime" }
+        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "habitCheck": "preExercise",
+          "overrides": { "runDecayPerSec": 1.3 } },
+        { "id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {} },
+        { "id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {} },
+        { "id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false, "habitCheck": "bedtime" }
       ]
     }
   ]

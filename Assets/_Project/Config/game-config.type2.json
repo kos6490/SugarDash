@@ -12,9 +12,9 @@
     "normalRangeMax": 180
   },
   "type2": {
-    "highHoldSec": null,
-    "lowHoldSec": null,
-    "noticeSec": null,
+    "highHoldSec": 4,
+    "lowHoldSec": 4,
+    "noticeSec": 2,
     "tellTimeLimitSec": 10,
     "guardianPromptTimeLimitSec": 8,
     "answerFeedbackSec": 1.5,
@@ -34,9 +34,9 @@
     {"id": "burger", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein"}
   ],
   "runner": {
-    "foodRowIntervalMinSec": null, "foodRowIntervalMaxSec": null,
-    "restIntervalMinSec": null, "restIntervalMaxSec": null,
-    "restDurationSec": null
+    "foodRowIntervalMinSec": 4, "foodRowIntervalMaxSec": 7,
+    "restIntervalMinSec": 15, "restIntervalMaxSec": 25,
+    "restDurationSec": 3
   },
   "elimination": { "glucoseLow": 54, "glucoseHigh": 300 },
   "score": {
@@ -47,16 +47,17 @@
                 "LO_KEEP_RUNNING": 0, "LO_TIMEOUT": null }
   },
   "sections": [
-    { "id": "signal", "lengthM": null },
+    { "id": "signal", "lengthM": 300 },
     {
       "id": "condition",
       "scenes": [
-        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": null, "overrides": {} },
-        { "id": "playground", "timeOfDay": "afternoon", "lengthM": null,
-          "overrides": { "restIntervalMinSec": null, "restIntervalMaxSec": null } },
-        { "id": "outing", "timeOfDay": "evening", "lengthM": null,
-          "overrides": { "foodRowIntervalMinSec": null, "foodRowIntervalMaxSec": null, "foodRowIds": null } },
-        { "id": "home", "timeOfDay": "night", "lengthM": null, "spawns": false }
+        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "overrides": {} },
+        { "id": "playground", "timeOfDay": "afternoon", "lengthM": 200,
+          "overrides": { "restIntervalMinSec": 8, "restIntervalMaxSec": 12 } },
+        { "id": "outing", "timeOfDay": "evening", "lengthM": 200,
+          "overrides": { "foodRowIntervalMinSec": 2.5, "foodRowIntervalMaxSec": 4,
+            "foodRowIds": ["water", "juice", "soda", "chicken", "pizza", "burger"] } },
+        { "id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false }
       ]
     }
   ]
