@@ -39,6 +39,7 @@ namespace SugarDash.Presentation
                 if (high != null) lines.Add(high);
                 string low = NotifySummary("낮을", result.LowEvents.Count, result.LowEvents.Count(e => e.AllCorrect));
                 if (low != null) lines.Add(low);
+                if (high == null && low == null) lines.Add(Type2NoSignal);
             }
             else
             {
@@ -53,11 +54,15 @@ namespace SugarDash.Presentation
                   Missed(result.LowEvents.Count, result.LowEvents.Count(e => e.AllCorrect))
                 : Missed(result.Events.Count, result.Events.Count(e => e.AllCorrect)) ||
                   Missed(result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect));
-            if (anyMissed) lines.Add(Encouragement);
+            if (anyMissed) lines.Add(type2 ? Type2Encouragement : Encouragement);
             return string.Join("\n", lines);
         }
 
         private const string Encouragement = "다음에 더 잘해봐요!";
+        /// <summary>2형 격려. 2형에서 놓치는 것은 모두 "어른에게 알리기"라 할 일을 말한다.</summary>
+        private const string Type2Encouragement = "다음에는 어른에게 꼭 알려요!";
+        /// <summary>2형에서 신호가 한 번도 없던 판.</summary>
+        private const string Type2NoSignal = "이번에는 몸이 신호를 보내지 않았어요";
 
         private static bool Missed(int count, int good) => count > 0 && good == 0;
 

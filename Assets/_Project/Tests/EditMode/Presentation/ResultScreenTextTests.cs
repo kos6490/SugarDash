@@ -68,13 +68,18 @@ namespace SugarDash.Presentation.Tests
             Assert.That(missed[0], Does.Contain("2"));
             Assert.That(missed[1], Does.Contain("1"));
             Assert.That(missed[2], Is.Not.Empty);
+            // 2형 격려는 1형 격려와 다르다(할 일인 "어른에게 알리기"를 말한다).
+            var type1Missed = Lines(ResultScreenText.Summary(Summary(RunOutcome.Eliminated, Event(false))));
+            Assert.That(missed[2], Is.Not.EqualTo(type1Missed[type1Missed.Length - 1]));
         }
 
         [Test]
-        public void Type2_NoHypoLineWhenNoEvents()
+        public void Type2_NoSignalLineOnlyWhenNoEvents()
         {
+            // 신호가 한 번도 없던 판은 한 줄(1형의 "혈당이 낮아지지 않았어요"와 짝)만 있고 격려는 없다.
             var none = ResultScreenText.Summary(Type2Summary(new bool[0], new bool[0]));
-            Assert.That(none, Is.Empty);
+            Assert.That(none, Is.Not.Empty);
+            Assert.That(none, Does.Not.Contain("\n"));
 
             var onlyLow = Lines(ResultScreenText.Summary(Type2Summary(new bool[0], new[] { true })));
             Assert.That(onlyLow.Length, Is.EqualTo(1));
