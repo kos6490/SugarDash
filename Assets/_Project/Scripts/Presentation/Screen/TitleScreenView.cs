@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace SugarDash.Presentation
 {
-    /// <summary>타이틀 화면. Screen이 Title일 때만 보이고, 고른 유형 문구와 시작·설정 버튼을 둔다.</summary>
+    /// <summary>타이틀 화면. Screen이 Title일 때만 보이고, 게임 타이틀 아래 지금 유형(1형·2형), 시작 버튼, 오른쪽 위 톱니바퀴 설정 버튼을 둔다.</summary>
     // [빈 틀] 담당: 화면
     public sealed class TitleScreenView : MonoBehaviour
     {
@@ -22,8 +22,8 @@ namespace SugarDash.Presentation
 
         public static string TypeLabel(TrackType? type)
         {
-            if (type == TrackType.Type1) return "1형으로 달려요";
-            if (type == TrackType.Type2) return "2형으로 달려요";
+            if (type == TrackType.Type1) return "1형";
+            if (type == TrackType.Type2) return "2형";
             return "";
         }
 

@@ -86,8 +86,8 @@ namespace SugarDash.Presentation.Tests
         [Test]
         public void TitleTypeLabel()
         {
-            Assert.That(TitleScreenView.TypeLabel(TrackType.Type1), Is.EqualTo("1형으로 달려요"));
-            Assert.That(TitleScreenView.TypeLabel(TrackType.Type2), Is.EqualTo("2형으로 달려요"));
+            Assert.That(TitleScreenView.TypeLabel(TrackType.Type1), Is.EqualTo("1형"));
+            Assert.That(TitleScreenView.TypeLabel(TrackType.Type2), Is.EqualTo("2형"));
             Assert.That(TitleScreenView.TypeLabel(null), Is.EqualTo(""));
         }
 
