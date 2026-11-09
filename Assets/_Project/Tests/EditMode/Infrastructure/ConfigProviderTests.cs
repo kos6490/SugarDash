@@ -460,9 +460,8 @@ namespace SugarDash.Infrastructure.Tests
             var e = LoadFails(json);
 
             Assert.That(e.MissingPaths, Does.Contain("type2.highHoldSec"));
-            Assert.That(e.MissingPaths, Does.Contain("foods[0].totalRise"));
-            // 음식 source는 채웠다(docs/food-evidence.md). 값이 없는 칸만 보고한다.
-            Assert.That(e.MissingPaths, Does.Not.Contain("foods[0].source"));
+            // 음식 값과 source는 채웠다(docs/game-values.md 3절). 값이 없는 칸만 보고한다.
+            Assert.That(e.MissingPaths.Where(p => p.StartsWith("foods[")), Is.Empty);
             Assert.That(e.MissingPaths, Does.Contain("runner.restDurationSec"));
             Assert.That(e.MissingPaths, Does.Contain("score.errors.HY_JUICE"));
         }

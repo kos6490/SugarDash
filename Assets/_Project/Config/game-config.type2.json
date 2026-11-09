@@ -4,10 +4,10 @@
   "unit": "mg/dL",
   "time": { "timeScale": 150 },
   "glucose": {
-    "initial": null, "min": null, "max": null,
-    "hypoThreshold": 70, "hypoReleaseMargin": null,
-    "hyperThreshold": 250, "hyperReleaseMargin": null,
-    "baseDecayPerSec": null, "runDecayPerSec": null,
+    "initial": 120, "min": 20, "max": 400,
+    "hypoThreshold": 70, "hypoReleaseMargin": 10,
+    "hyperThreshold": 250, "hyperReleaseMargin": 20,
+    "baseDecayPerSec": 0.3, "runDecayPerSec": 0.7,
     "normalRangeMin": 70,
     "normalRangeMax": 180
   },
@@ -24,20 +24,21 @@
     "juiceChoiceFoodId": "juice"
   },
   "foods": [
-    { "id": "water",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, PDF p.7 (sugar-free drinks including water)" },
-    { "id": "juice",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (orange juice)" },
-    { "id": "soda",    "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (regular soft drink)" },
-    { "id": "apple",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (fruit); ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 9 GI (temperate fruits)" },
-    { "id": "chicken", "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein" },
-    { "id": "pizza",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein" },
-    { "id": "burger",  "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein" }
+    {"id": "water", "totalRise": 0, "onsetRealMin": 1, "absorbRealMin": 1, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, PDF p.7 (sugar-free drinks including water)"},
+    {"id": "juice", "totalRise": 31.5, "onsetRealMin": 2.5, "absorbRealMin": 5, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (orange juice)"},
+    {"id": "soda", "totalRise": 31.5, "onsetRealMin": 2.5, "absorbRealMin": 5, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (regular soft drink)"},
+    {"id": "apple", "totalRise": 15, "onsetRealMin": 5, "absorbRealMin": 12.5, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (fruit); ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 9 GI (temperate fruits)"},
+    {"id": "cracker", "totalRise": 15, "onsetRealMin": 5, "absorbRealMin": 12.5, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (slower-acting carbohydrate: biscuits)"},
+    {"id": "chicken", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein"},
+    {"id": "pizza", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein"},
+    {"id": "burger", "totalRise": 25, "onsetRealMin": 10, "absorbRealMin": 25, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein"}
   ],
   "runner": {
     "foodRowIntervalMinSec": null, "foodRowIntervalMaxSec": null,
     "restIntervalMinSec": null, "restIntervalMaxSec": null,
     "restDurationSec": null
   },
-  "elimination": { "glucoseLow": 54, "glucoseHigh": null },
+  "elimination": { "glucoseLow": 54, "glucoseHigh": 300 },
   "score": {
     "inRangePerSec": null,
     "perMeter": null,

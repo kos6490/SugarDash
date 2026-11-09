@@ -1,4 +1,5 @@
 using System.Linq;
+using SugarDash.Domain.Config;
 using NUnit.Framework;
 
 namespace SugarDash.Presentation.Tests
@@ -37,6 +38,40 @@ namespace SugarDash.Presentation.Tests
                 .Select(seed => string.Join("", ChoiceOrder.Shuffle(Items, new System.Random(seed))))
                 .Distinct().Count();
             Assert.That(orders, Is.GreaterThanOrEqualTo(2));
+        }
+
+        private static SnackConfig Snack(string id, SnackKind kind) => new SnackConfig(id, kind, 30, 1, 2, "test");
+
+        private static readonly SnackConfig[] Snacks =
+        {
+            Snack("juice", SnackKind.Fast), Snack("soda", SnackKind.Fast),
+            Snack("cracker", SnackKind.Slow), Snack("apple", SnackKind.Slow),
+        };
+
+        [Test]
+        public void RespondSnacks_PicksOneFastAndOneSlow()
+        {
+            for (int seed = 0; seed < 20; seed++)
+            {
+                var picked = ChoiceOrder.RespondSnacks(Snacks, new System.Random(seed));
+                Assert.That(picked.Select(s => s.Kind), Is.EqualTo(new[] { SnackKind.Fast, SnackKind.Slow }));
+            }
+        }
+
+        [Test]
+        public void RespondSnacks_VariesAcrossSeeds_AndCoversEverySnack()
+        {
+            var seen = Enumerable.Range(0, 50)
+                .SelectMany(seed => ChoiceOrder.RespondSnacks(Snacks, new System.Random(seed)))
+                .Select(s => s.Id).Distinct().OrderBy(x => x);
+            Assert.That(seen, Is.EqualTo(new[] { "apple", "cracker", "juice", "soda" }));
+        }
+
+        [Test]
+        public void RespondSnacks_WithoutSlow_PicksOnlyFast()
+        {
+            var picked = ChoiceOrder.RespondSnacks(new[] { Snack("juice", SnackKind.Fast) }, new System.Random(1));
+            Assert.That(picked.Single().Id, Is.EqualTo("juice"));
         }
     }
 }

@@ -9,20 +9,20 @@
     "fastForwardTickSimSec": 0.5
   },
   "glucose": {
-    "initial": null,
-    "min": null,
-    "max": null,
+    "initial": 120,
+    "min": 20,
+    "max": 400,
     "hypoThreshold": 70,
-    "hypoReleaseMargin": null,
+    "hypoReleaseMargin": 10,
     "hyperThreshold": 250,
-    "hyperReleaseMargin": null,
-    "baseDecayPerSec": null,
-    "runDecayPerSec": null,
+    "hyperReleaseMargin": 20,
+    "baseDecayPerSec": 0.5,
+    "runDecayPerSec": 1,
     "normalRangeMin": 70,
     "normalRangeMax": 180
   },
-  "recurrence": { "cooldownSec": null },
-  "display": { "delaySec": 3, "warningThreshold": null },
+  "recurrence": { "cooldownSec": 10 },
+  "display": { "delaySec": 3, "warningThreshold": 80 },
   "hypo": {
     "step1TimeLimitSec": 10,
     "step2TimeLimitSec": 10,
@@ -33,21 +33,23 @@
     "graceSec": 3,
     "answerFeedbackSec": 1.5,
     "guardianSnackId": "juice",
-    "doses": { "under": null, "proper": null, "over": null }
+    "doses": { "under": 1, "proper": 2, "over": 3 }
   },
   "hyper": { "notifyTimeLimitSec": 10 },
   "type1": { "habitCheckWindowSec": 5 },
   "suddenDrop": { "chancePerSec": null, "amount": null, "durationSec": null },
   "snacks": [
-    { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (orange juice)" },
-    { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (slower-acting carbohydrate: biscuits)" }
+    {"id": "juice", "kind": "fast", "totalRise": 31.5, "onsetSec": 1, "absorbSec": 2, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (orange juice)"},
+    {"id": "soda", "kind": "fast", "totalRise": 31.5, "onsetSec": 1, "absorbSec": 2, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (regular soft drink)"},
+    {"id": "cracker", "kind": "slow", "totalRise": 15, "onsetSec": 2, "absorbSec": 5, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (slower-acting carbohydrate: biscuits)"},
+    {"id": "apple", "kind": "slow", "totalRise": 15, "onsetSec": 2, "absorbSec": 5, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (slower-acting carbohydrate: fruit)"}
   ],
   "runner": {
-    "trackSnackServings": null,
-    "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null
+    "trackSnackServings": 0.5,
+    "trackSnackIntervalMinSec": 6, "trackSnackIntervalMaxSec": 10
   },
-  "elimination": { "glucoseLow": 54, "glucoseHigh": null },
-  "symptom": { "shakeStartGlucose": null },
+  "elimination": { "glucoseLow": 54, "glucoseHigh": 300 },
+  "symptom": { "shakeStartGlucose": 80 },
   "score": {
     "inRangePerSec": null, "perMeter": null,
     "correct": {

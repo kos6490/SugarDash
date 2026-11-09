@@ -89,7 +89,7 @@ namespace SugarDash.Presentation
                 case HypoPhase.Respond:
                     Show(ChoicePanelText.RespondTitle);
                     var respond = new List<(string, Action)>();
-                    foreach (var snack in _snacks)
+                    foreach (var snack in ChoiceOrder.RespondSnacks(_snacks, _random))
                     {
                         string id = snack.Id;
                         respond.Add((id, () => _run.ChooseSnack(id)));
