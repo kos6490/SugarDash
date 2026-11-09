@@ -40,11 +40,11 @@
   },
   "elimination": { "glucoseLow": 54, "glucoseHigh": 300 },
   "score": {
-    "inRangePerSec": null,
-    "perMeter": null,
-    "correct": { "hyperNotify": null, "lowNotify": null },
-    "errors": { "HY_KEEP_RUNNING": 0, "HY_JUICE": null, "HY_TIMEOUT": null,
-                "LO_KEEP_RUNNING": 0, "LO_TIMEOUT": null }
+    "inRangePerSec": 1,
+    "perMeter": 0.1,
+    "correct": { "hyperNotify": 10, "lowNotify": 10 },
+    "errors": { "HY_KEEP_RUNNING": 0, "HY_JUICE": 2, "HY_TIMEOUT": 0,
+                "LO_KEEP_RUNNING": 0, "LO_TIMEOUT": 0 }
   },
   "sections": [
     { "id": "signal", "lengthM": 300 },
