@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d55ffdc799844e3d83d5848abdc128a, type: 3}
+  m_Name: TrackPatterns
+  m_EditorClassIdentifier: SugarDash.Presentation::SugarDash.Presentation.TrackPatternSet
+  patterns:
+  - id: single_low
+    rows:
+    - left: 1
+      center: 0
+      right: 0
+      gapBeforeM: 0
+    easy: 1
+    startDistanceM: 0
+    weight: 2
+    mirror: 1
+  - id: single_low_center
+    rows:
+    - left: 0
+      center: 1
+      right: 0
+      gapBeforeM: 0
+    easy: 1
+    startDistanceM: 0
+    weight: 1
+    mirror: 0
+  - id: single_high
+    rows:
+    - left: 2
+      center: 0
+      right: 0
+      gapBeforeM: 0
+    easy: 1
+    startDistanceM: 0
+    weight: 2
+    mirror: 1
+  - id: single_high_center
+    rows:
+    - left: 0
+      center: 2
+      right: 0
+      gapBeforeM: 0
+    easy: 1
+    startDistanceM: 0
+    weight: 1
+    mirror: 0
+  - id: single_block
+    rows:
+    - left: 3
+      center: 0
+      right: 0
+      gapBeforeM: 0
+    easy: 1
+    startDistanceM: 0
+    weight: 2
+    mirror: 1
+  - id: single_block_center
+    rows:
+    - left: 0
+      center: 3
+      right: 0
+      gapBeforeM: 0
+    easy: 1
+    startDistanceM: 0
+    weight: 1
+    mirror: 0
+  timing:
+    maxRunSpeed: 20
+    jumpSec: 0.7
+    laneChangeSec: 0.15
+    reactionSec: 0.2

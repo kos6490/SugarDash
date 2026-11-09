@@ -526,6 +526,7 @@ MonoBehaviour:
   markerSpacing: 5
   laneWidth: 2.5
   look: {fileID: 0}
+  patterns: {fileID: 11400000, guid: 7b72ce1eee79149a282d8c0111f89d80, type: 2}
 --- !u!4 &374208454
 Transform:
   m_ObjectHideFlags: 0
