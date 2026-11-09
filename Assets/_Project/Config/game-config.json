@@ -3,50 +3,50 @@
   "configVersion": "0.1.0",
   "unit": "mg/dL",
   "time": {
-    "timeScale": null,
+    "timeScale": 150,
     "recheckIntervalRealMin": 15,
     "recheckIntervalSource": "ISPAD 2022 Ch.12, doi:10.1111/pedi.13443",
-    "fastForwardTickSimSec": null
+    "fastForwardTickSimSec": 0.5
   },
   "glucose": {
     "initial": null,
     "min": null,
     "max": null,
-    "hypoThreshold": null,
+    "hypoThreshold": 70,
     "hypoReleaseMargin": null,
-    "hyperThreshold": null,
+    "hyperThreshold": 250,
     "hyperReleaseMargin": null,
     "baseDecayPerSec": null,
     "runDecayPerSec": null,
-    "normalRangeMin": null,
-    "normalRangeMax": null
+    "normalRangeMin": 70,
+    "normalRangeMax": 180
   },
   "recurrence": { "cooldownSec": null },
-  "display": { "delaySec": null, "warningThreshold": null },
+  "display": { "delaySec": 3, "warningThreshold": null },
   "hypo": {
-    "step1TimeLimitSec": null,
-    "step2TimeLimitSec": null,
-    "step3TimeLimitSec": null,
-    "step4TimeLimitSec": null,
-    "guardianPromptTimeLimitSec": null,
-    "resumeCountdownSec": null,
-    "graceSec": null,
-    "answerFeedbackSec": null,
+    "step1TimeLimitSec": 10,
+    "step2TimeLimitSec": 10,
+    "step3TimeLimitSec": 10,
+    "step4TimeLimitSec": 10,
+    "guardianPromptTimeLimitSec": 8,
+    "resumeCountdownSec": 3,
+    "graceSec": 3,
+    "answerFeedbackSec": 1.5,
     "guardianSnackId": "juice",
     "doses": { "under": null, "proper": null, "over": null }
   },
-  "hyper": { "notifyTimeLimitSec": null },
-  "type1": { "habitCheckWindowSec": null },
+  "hyper": { "notifyTimeLimitSec": 10 },
+  "type1": { "habitCheckWindowSec": 5 },
   "suddenDrop": { "chancePerSec": null, "amount": null, "durationSec": null },
   "snacks": [
-    { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null },
-    { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": null }
+    { "id": "juice", "kind": "fast", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (orange juice)" },
+    { "id": "cracker", "kind": "slow", "totalRise": null, "onsetSec": null, "absorbSec": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (slower-acting carbohydrate: biscuits)" }
   ],
   "runner": {
     "trackSnackServings": null,
     "trackSnackIntervalMinSec": null, "trackSnackIntervalMaxSec": null
   },
-  "elimination": { "glucoseLow": null, "glucoseHigh": null },
+  "elimination": { "glucoseLow": 54, "glucoseHigh": null },
   "symptom": { "shakeStartGlucose": null },
   "score": {
     "inRangePerSec": null, "perMeter": null,

@@ -2,42 +2,42 @@
   "configVersion": "0.1.0-type2",
   "trackType": "type2",
   "unit": "mg/dL",
-  "time": { "timeScale": null },
+  "time": { "timeScale": 150 },
   "glucose": {
     "initial": null, "min": null, "max": null,
-    "hypoThreshold": null, "hypoReleaseMargin": null,
-    "hyperThreshold": null, "hyperReleaseMargin": null,
+    "hypoThreshold": 70, "hypoReleaseMargin": null,
+    "hyperThreshold": 250, "hyperReleaseMargin": null,
     "baseDecayPerSec": null, "runDecayPerSec": null,
-    "normalRangeMin": null,
-    "normalRangeMax": null
+    "normalRangeMin": 70,
+    "normalRangeMax": 180
   },
   "type2": {
     "highHoldSec": null,
     "lowHoldSec": null,
     "noticeSec": null,
-    "tellTimeLimitSec": null,
-    "guardianPromptTimeLimitSec": null,
-    "answerFeedbackSec": null,
-    "resumeCountdownSec": null,
-    "graceSec": null,
+    "tellTimeLimitSec": 10,
+    "guardianPromptTimeLimitSec": 8,
+    "answerFeedbackSec": 1.5,
+    "resumeCountdownSec": 3,
+    "graceSec": 3,
     "guardianSnackId": "juice",
     "juiceChoiceFoodId": "juice"
   },
   "foods": [
-    { "id": "water",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": null },
-    { "id": "juice",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": null },
-    { "id": "soda",    "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": null },
-    { "id": "apple",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": null },
-    { "id": "chicken", "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": null },
-    { "id": "pizza",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": null },
-    { "id": "burger",  "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": null }
+    { "id": "water",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, PDF p.7 (sugar-free drinks including water)" },
+    { "id": "juice",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (orange juice)" },
+    { "id": "soda",    "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (regular soft drink)" },
+    { "id": "apple",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Hypoglycemia, Pediatr Diabetes 23(8):1322-1340, doi:10.1111/pedi.13443, 9 Hypoglycemia Treatment (fruit); ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 9 GI (temperate fruits)" },
+    { "id": "chicken", "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein" },
+    { "id": "pizza",   "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein" },
+    { "id": "burger",  "totalRise": null, "onsetRealMin": null, "absorbRealMin": null, "source": "ISPAD 2022 Nutritional management, Pediatr Diabetes 23(8):1297-1321, doi:10.1111/pedi.13429, 10.1 Fat and protein" }
   ],
   "runner": {
     "foodRowIntervalMinSec": null, "foodRowIntervalMaxSec": null,
     "restIntervalMinSec": null, "restIntervalMaxSec": null,
     "restDurationSec": null
   },
-  "elimination": { "glucoseLow": null, "glucoseHigh": null },
+  "elimination": { "glucoseLow": 54, "glucoseHigh": null },
   "score": {
     "inRangePerSec": null,
     "perMeter": null,
