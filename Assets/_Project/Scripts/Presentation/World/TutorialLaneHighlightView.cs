@@ -28,6 +28,18 @@ namespace SugarDash.Presentation
         [SerializeField] private GameObject stripPrefab;
         [SerializeField] private Color stripColor = new Color(1f, 0.92f, 0.1f, 0.35f);
 
+        [Header("반짝임")]
+        [Tooltip("반짝임 한 번(흐림 → 진함 → 흐림)에 걸리는 시간(초). 0이면 반짝이지 않고 Strip Color 그대로다.")]
+        [Min(0f)] [SerializeField] private float pulsePeriod = 0.8f;
+        [Tooltip("가장 흐릴 때의 투명도. 가장 진할 때는 Strip Color의 투명도다.")]
+        [Range(0f, 1f)] [SerializeField] private float pulseMinAlpha = 0.12f;
+
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private MaterialPropertyBlock _block;
+        private readonly List<Renderer[]> _stripRenderers = new List<Renderer[]>();
+        private float _shownSince;
+
         private readonly List<Transform> _strips = new List<Transform>();
         // 기본 띠가 함께 쓰는 머티리얼 사본 하나. 저절로 지워지지 않아 OnDestroy에서 지운다.
         private Material _stripMaterial;
@@ -46,6 +58,7 @@ namespace SugarDash.Presentation
         public void Show(IReadOnlyList<int> lanes, float laneWidth, float toZ)
         {
             if (lanes == null || lanes.Count == 0) { Hide(); return; }
+            if (!_visible) _shownSince = Time.time;
             _visible = true;
             // Inspector에서 바꾼 색이 플레이 중에도 보이게 매번 넣는다.
             if (_stripMaterial != null) _stripMaterial.color = stripColor;
@@ -59,7 +72,32 @@ namespace SugarDash.Presentation
                 strip.localPosition = StripCenter(lanes[i], laneWidth, toZ);
                 strip.localScale = new Vector3(laneWidth * StripWidthRatio, StripThickness, StripLength(toZ));
             }
-            // TODO(월드): 띠 모양·색·반짝임을 꾸민다.
+            // 띠 반짝임: 보이기 시작한 때부터 투명도가 흐림 ↔ 진함으로 오간다(진할 때가 Strip Color).
+            ApplyPulse(lanes.Count);
+        }
+
+        private void ApplyPulse(int usedCount)
+        {
+            float alpha = WorldMotion.Pulse(Time.time - _shownSince, pulseMinAlpha, stripColor.a, pulsePeriod);
+            var color = WorldMotion.WithAlpha(stripColor, alpha);
+            if (_stripMaterial != null) _stripMaterial.color = color;
+            if (stripPrefab == null) return;
+
+            // 프리팹 띠는 머티리얼 사본을 만들지 않고 색만 덮어쓴다(URP Lit은 _BaseColor, 그 밖은 _Color).
+            if (_block == null) _block = new MaterialPropertyBlock();
+            // Show는 매 프레임 불리므로 띠마다 렌더러 목록을 한 번만 찾아 둔다.
+            while (_stripRenderers.Count < _strips.Count)
+                _stripRenderers.Add(_strips[_stripRenderers.Count].GetComponentsInChildren<Renderer>(true));
+            for (int i = 0; i < usedCount && i < _strips.Count; i++)
+            {
+                foreach (var rend in _stripRenderers[i])
+                {
+                    rend.GetPropertyBlock(_block);
+                    _block.SetColor(BaseColorId, color);
+                    _block.SetColor(ColorId, color);
+                    rend.SetPropertyBlock(_block);
+                }
+            }
         }
 
         public void Hide()
