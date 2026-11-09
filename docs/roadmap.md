@@ -74,8 +74,8 @@
 | 팀원2(월드) | 1구간 트랙·배경, 장애물 3종(점프로 넘는 낮은 것, 슬라이드로 지나가는 높은 것, 옆으로 피하는 레인 막이) | | 시작 가능 |
 | 팀원2(월드) | 쉬는 곳 오브젝트(벤치, 게임기) | | 시작 가능 |
 | 팀원2(월드) | 장애물 패턴 만들기: `TrackPatterns.asset`에 패턴 더하기(두 레인 막이, 골라 지나가기, 점프 뒤 슬라이드, 지그재그 등), 나오기 시작하는 거리·비율 정하기, Play로 지나가 보기. Console 경고가 없고 `ProjectAsset_PassesRules_AndSpacing` 테스트가 통과해야 push | [track-patterns.md](track-patterns.md) | 시작 가능 |
-| 팀원2(월드) | 트랙 음식 모델 7종: 물, 주스, 탄산음료, 사과, 치킨, 피자, 햄버거 | [type-select.md](type-select.md) 4.2절 | 시작 가능 |
-| 팀원2(월드) | 음식 7종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 시작 가능 |
+| 팀원2(월드) | 트랙 음식 모델 8종: 물, 주스, 탄산음료, 사과, 크래커, 치킨, 피자, 햄버거 | [type-select.md](type-select.md) 4.2절 | 시작 가능 |
+| 팀원2(월드) | 음식 8종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 시작 가능 |
 | 팀원2(월드) | `TrackItemLook` 채우기: 장애물·음식 id·쉬는 곳마다 프리팹 연결 | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원2(월드) | `SceneLook` 채우기: 장면별 맵 배경(운동장, 놀이터, 나들이, 집), 때별 조명·하늘 | `Assets/_Project/Scripts/Presentation/World/SceneLook.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
 | 팀원2(월드) | `TrackItemLook` 장면별 장애물 모양(운동장 축구공, 놀이터 미끄럼틀 등) | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
@@ -127,7 +127,7 @@
 | 정할 것 | 분야 | 지금 상태 | 막고 있는 작업 |
 | --- | --- | --- | --- |
 | 모든 게임 수치: 혈당 시작값·임계값, 표시 지연, 단계별 제한 시간, 처치량(조금·알맞게·많이), 급하강, 혈당 안전 범위, 흔들림 시작 혈당, 점수 가중치, 시간 압축 배율 | 결정, 의학 | 빌드 설정 `game-config.json`이 전부 `null`(PLACEHOLDER). 빌드 설정 검증 테스트는 값이 없어 건너뛰는 중 | 실기기 빌드, 실제 플레이 테스트 |
-| 음식 목록(햄버거, 치킨, 물, 주스 등)과 음식별 혈당 영향, 1형 빠른 당·느린 당 종류, 출처 | 결정, 의학 | 개발용으로 `juice`, `cracker` 두 개만 있음. `source` 필드 비어 있음 | 음식 표시 이름·그림, 선택지 그림, 음식 아이템 확장 |
+| 음식 목록(햄버거, 치킨, 물, 주스 등)과 음식별 혈당 영향, 1형 빠른 당·느린 당 종류, 출처 | 결정, 의학 | 등급 방식으로 정함: 음식별 등급과 1형 빠른 당(주스·탄산음료)·느린 당(크래커·사과)은 [food-evidence.md](food-evidence.md). 발췌 원문 대조(담당자)와 등급별 게임 수치가 남음. 설정 `source` 칸은 대조 뒤 채움 | 음식 표시 이름·그림, 선택지 그림, 음식 아이템 확장 |
 | 1형 주행에서 일반 음식을 혈당에 어떻게 반영할지(게임은 인슐린 투여를 다루지 않음) | 결정, 의학 | 미정 | 음식 아이템 확장 |
 | 의학 출처의 해당 장·페이지 | 의학 | 판본·장·쪽 정리함([medical-sources.md](medical-sources.md)). ADA 6·14장 쪽, 국문 전문 쪽, ADA 소아 수면 권고는 미확인 | 음식 목록, 2형 규칙, 퀴즈 문항 작성 |
 | 설정 화면의 다른 항목(소리 등) | 기획 | 설정 화면에는 유형 바꾸기와 튜토리얼 다시 하기만 있음 | 없음(항목이 생길 때만) |
