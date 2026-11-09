@@ -113,7 +113,7 @@ namespace SugarDash.Domain.Director
         public bool IsGaugeWarningOn { get; private set; }
 
         /// <summary>
-        /// 실제 혈당이 적정 범위(normalRangeMin 이상, hyperThreshold 미만) 안이면 true.
+        /// 실제 혈당이 적정 범위(normalRangeMin 이상, normalRangeMax 미만) 안이면 true.
         /// <see cref="EvaluateTargetRange"/>를 처음 부르기 전에는 false.
         /// </summary>
         public bool IsInTargetRange { get; private set; }
@@ -177,7 +177,7 @@ namespace SugarDash.Domain.Director
         {
             var levels = _config.Levels;
             double actual = _model.Actual;
-            bool inRange = levels.NormalRangeMin <= actual && actual < levels.HyperThreshold;
+            bool inRange = levels.NormalRangeMin <= actual && actual < levels.NormalRangeMax;
 
             bool first = !_targetRangeEvaluated;
             _targetRangeEvaluated = true;

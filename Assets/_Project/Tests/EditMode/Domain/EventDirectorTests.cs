@@ -352,6 +352,22 @@ namespace SugarDash.Domain.Tests
         }
 
         [Test]
+        public void TargetRange_UsesNormalRangeMax_BelowHyperThreshold()
+        {
+            // 적정 범위 위쪽(180)은 고혈당 알리기 기준(250)과 따로다.
+            Setup(b => { b.Initial = 165; b.NormalRangeMax = 180; });
+            _model.EatSnack("juice", 1); // 30 상승, onset 1, absorb 2
+
+            Run(1); // 165
+            Assert.That(_exited, Is.Empty);
+            Run(1); // 180: 위쪽 경계와 같으면 범위 밖
+
+            Assert.That(_exited, Has.Count.EqualTo(1));
+            Assert.That(_exited[0].Actual, Is.EqualTo(180).Within(1e-9));
+            Assert.That(_hypers, Is.Empty, "고혈당 알리기 기준(250)에는 닿지 않았다");
+        }
+
+        [Test]
         public void SetSuddenDropChance_Zero_NeverStarts()
         {
             Setup(b => b.SuddenDropChancePerSec = 1, 0.5); // 확률 0이면 난수를 읽지 않는다

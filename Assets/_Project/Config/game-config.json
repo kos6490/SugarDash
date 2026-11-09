@@ -18,7 +18,8 @@
     "hyperReleaseMargin": null,
     "baseDecayPerSec": null,
     "runDecayPerSec": null,
-    "normalRangeMin": null
+    "normalRangeMin": null,
+    "normalRangeMax": null
   },
   "recurrence": { "cooldownSec": null },
   "display": { "delaySec": null, "warningThreshold": null },

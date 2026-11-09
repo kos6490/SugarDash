@@ -255,10 +255,11 @@ namespace SugarDash.Domain.Config
                 errors.Add($"glucose: hypoThreshold + hypoReleaseMargin < hyperThreshold − hyperReleaseMargin 이어야 한다 " +
                            $"({levels.HypoReleaseLevel} ≥ {levels.HyperReleaseLevel})");
             // 3
-            if (!(levels.HypoThreshold <= levels.NormalRangeMin && levels.NormalRangeMin < levels.HyperThreshold))
-                errors.Add($"glucose: hypoThreshold ≤ normalRangeMin < hyperThreshold 이어야 한다 " +
+            if (!(levels.HypoThreshold <= levels.NormalRangeMin && levels.NormalRangeMin < levels.NormalRangeMax &&
+                  levels.NormalRangeMax <= levels.HyperThreshold))
+                errors.Add($"glucose: hypoThreshold ≤ normalRangeMin < normalRangeMax ≤ hyperThreshold 이어야 한다 " +
                            $"(hypoThreshold={levels.HypoThreshold}, normalRangeMin={levels.NormalRangeMin}, " +
-                           $"hyperThreshold={levels.HyperThreshold})");
+                           $"normalRangeMax={levels.NormalRangeMax}, hyperThreshold={levels.HyperThreshold})");
 
             // 4
             NonNegative(errors, "type2.highHoldSec", t2.HighHoldSec);
@@ -447,10 +448,11 @@ namespace SugarDash.Domain.Config
             var doses = hypo.Doses;
 
             // 13
-            if (!(levels.HypoThreshold <= levels.NormalRangeMin && levels.NormalRangeMin < levels.HyperThreshold))
-                errors.Add($"glucose: hypoThreshold ≤ normalRangeMin < hyperThreshold 이어야 한다 " +
+            if (!(levels.HypoThreshold <= levels.NormalRangeMin && levels.NormalRangeMin < levels.NormalRangeMax &&
+                  levels.NormalRangeMax <= levels.HyperThreshold))
+                errors.Add($"glucose: hypoThreshold ≤ normalRangeMin < normalRangeMax ≤ hyperThreshold 이어야 한다 " +
                            $"(hypoThreshold={levels.HypoThreshold}, normalRangeMin={levels.NormalRangeMin}, " +
-                           $"hyperThreshold={levels.HyperThreshold})");
+                           $"normalRangeMax={levels.NormalRangeMax}, hyperThreshold={levels.HyperThreshold})");
 
             // W가 유효하지 않으면 9번이 이미 보고하므로 W에서 나온 14·18번은 건너뛴다.
             double recheck = g.Time.RecheckIntervalGameSec;

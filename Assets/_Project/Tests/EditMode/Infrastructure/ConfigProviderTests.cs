@@ -29,7 +29,7 @@ namespace SugarDash.Infrastructure.Tests
   ""glucose"": {
     ""initial"": 120, ""min"": 20, ""max"": 400, ""hypoThreshold"": 70, ""hypoReleaseMargin"": 10,
     ""hyperThreshold"": 180, ""hyperReleaseMargin"": 20, ""baseDecayPerSec"": 0.3, ""runDecayPerSec"": 0.7,
-    ""normalRangeMin"": 72
+    ""normalRangeMin"": 72, ""normalRangeMax"": 180
   },
   ""type2"": {
     ""highHoldSec"": 4, ""lowHoldSec"": 4, ""noticeSec"": 2, ""tellTimeLimitSec"": 8,
@@ -62,7 +62,8 @@ namespace SugarDash.Infrastructure.Tests
     ""fastForwardTickSimSec"": 0.5 },
   ""glucose"": {
     ""initial"": 120, ""min"": 20, ""max"": 400, ""hypoThreshold"": 70, ""hypoReleaseMargin"": 10,
-    ""hyperThreshold"": 250, ""hyperReleaseMargin"": 20, ""baseDecayPerSec"": 0.5, ""runDecayPerSec"": 1, ""normalRangeMin"": 72
+    ""hyperThreshold"": 250, ""hyperReleaseMargin"": 20, ""baseDecayPerSec"": 0.5, ""runDecayPerSec"": 1, ""normalRangeMin"": 72,
+    ""normalRangeMax"": 250
   },
   ""recurrence"": { ""cooldownSec"": 10 },
   ""display"": { ""delaySec"": 3, ""warningThreshold"": 80 },

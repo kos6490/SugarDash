@@ -56,6 +56,8 @@ namespace SugarDash.Domain.Tests
             yield return Case("GlucoseHighAtHyper", "elimination.glucoseHigh", b => b.GlucoseHigh = 250);
             yield return Case("ReleaseBandsOverlap", "hyperReleaseMargin", b => b.HyperReleaseMargin = 175);
             yield return Case("NormalRangeBelowHypo", "normalRangeMin", b => b.NormalRangeMin = 60);
+            yield return Case("NormalRangeMaxAboveHyper", "normalRangeMax", b => b.NormalRangeMax = 251);
+            yield return Case("NormalRangeMaxNotAboveMin", "normalRangeMax", b => b.NormalRangeMax = 80);
             yield return Case("HighHoldNegative", "type2.highHoldSec", b => b.HighHoldSec = -1);
             yield return Case("NoticeNegative", "type2.noticeSec", b => b.NoticeSec = -1);
             yield return Case("TellLimitZero", "type2.tellTimeLimitSec", b => b.TellTimeLimitSec = 0);
@@ -127,6 +129,8 @@ namespace SugarDash.Domain.Tests
             yield return Case("Step1NotLongerThanDelay", b => b.Step1TimeLimitSec = 3);
             yield return Case("NormalRangeBelowHypo", b => b.NormalRangeMin = 60);
             yield return Case("NormalRangeNotBelowHyper", b => { b.NormalRangeMin = 250; b.DoseProper = 8; b.DoseOver = 9; });
+            yield return Case("NormalRangeMaxAboveHyper", b => b.NormalRangeMax = 251);
+            yield return Case("NormalRangeMaxNotAboveMin", b => b.NormalRangeMax = 80);
             yield return Case("RecheckNotLongerThanDelay", b => { b.DelaySec = 6; b.Step1TimeLimitSec = 7; }, 2);
             yield return Case("FastForwardTickZero", b => b.FastForwardTickSimSec = 0);
             yield return Case("FastForwardTickNotBelowDelay", b => b.FastForwardTickSimSec = 3);

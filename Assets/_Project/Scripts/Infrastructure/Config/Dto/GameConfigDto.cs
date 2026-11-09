@@ -52,6 +52,7 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? BaseDecayPerSec { get; set; }
         public double? RunDecayPerSec { get; set; }
         public double? NormalRangeMin { get; set; }
+        public double? NormalRangeMax { get; set; }
     }
 
     [Preserve]

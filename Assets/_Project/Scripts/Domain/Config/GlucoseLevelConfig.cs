@@ -5,7 +5,7 @@ namespace SugarDash.Domain.Config
     {
         public GlucoseLevelConfig(double initial, double min, double max, double hypoThreshold,
             double hypoReleaseMargin, double hyperThreshold, double hyperReleaseMargin, double baseDecayPerSec, double runDecayPerSec,
-            double normalRangeMin)
+            double normalRangeMin, double normalRangeMax)
         {
             Initial = initial;
             Min = min;
@@ -17,6 +17,7 @@ namespace SugarDash.Domain.Config
             BaseDecayPerSec = baseDecayPerSec;
             RunDecayPerSec = runDecayPerSec;
             NormalRangeMin = normalRangeMin;
+            NormalRangeMax = normalRangeMax;
         }
 
         public double Initial { get; }
@@ -32,6 +33,11 @@ namespace SugarDash.Domain.Config
         public double RunDecayPerSec { get; }
         /// <summary>적정 처치 후 재측정에서 도달해야 하는 하한(불변식 18).</summary>
         public double NormalRangeMin { get; }
+        /// <summary>
+        /// 적정 범위(혈당 유지 점수) 위쪽 경계. 이 값 미만이어야 범위 안이다. hyperThreshold와 따로 둔다:
+        /// 목표 범위 위쪽 끝과 고혈당 알리기 기준이 다르다(docs/glucose-evidence.md).
+        /// </summary>
+        public double NormalRangeMax { get; }
 
         public double HypoReleaseLevel => HypoThreshold + HypoReleaseMargin;
         public double HyperReleaseLevel => HyperThreshold - HyperReleaseMargin;

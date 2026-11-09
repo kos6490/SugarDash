@@ -123,7 +123,8 @@ namespace SugarDash.Infrastructure.Config
                     Number(glucose?.HyperReleaseMargin, "glucose.hyperReleaseMargin", glucose),
                     Number(glucose?.BaseDecayPerSec, "glucose.baseDecayPerSec", glucose),
                     Number(glucose?.RunDecayPerSec, "glucose.runDecayPerSec", glucose),
-                    Number(glucose?.NormalRangeMin, "glucose.normalRangeMin", glucose));
+                    Number(glucose?.NormalRangeMin, "glucose.normalRangeMin", glucose),
+                    Number(glucose?.NormalRangeMax, "glucose.normalRangeMax", glucose));
 
                 var recurrence = Section(dto.Recurrence, "recurrence");
                 var recurrenceConfig = new RecurrenceConfig(
@@ -231,7 +232,8 @@ namespace SugarDash.Infrastructure.Config
                     Number(glucose?.HyperReleaseMargin, "glucose.hyperReleaseMargin", glucose),
                     Number(glucose?.BaseDecayPerSec, "glucose.baseDecayPerSec", glucose),
                     Number(glucose?.RunDecayPerSec, "glucose.runDecayPerSec", glucose),
-                    Number(glucose?.NormalRangeMin, "glucose.normalRangeMin", glucose));
+                    Number(glucose?.NormalRangeMin, "glucose.normalRangeMin", glucose),
+                    Number(glucose?.NormalRangeMax, "glucose.normalRangeMax", glucose));
 
                 var t2 = Section(dto.Type2, "type2");
                 var runner = Section(dto.Runner, "runner");

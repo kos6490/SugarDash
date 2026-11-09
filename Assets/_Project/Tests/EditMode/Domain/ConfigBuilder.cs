@@ -39,6 +39,8 @@ namespace SugarDash.Domain.Tests
         public double BaseDecayPerSec = 0;
         public double RunDecayPerSec = 0;
         public double NormalRangeMin = 80;
+        /// <summary>비워 두면 HyperThreshold와 같게 둔다.</summary>
+        public double? NormalRangeMax;
 
         public double CooldownSec = 10;
 
@@ -120,7 +122,7 @@ namespace SugarDash.Domain.Tests
         public GlucoseConfig BuildGlucose() => new GlucoseConfig(
             new TimeConfig(TimeScale, RecheckIntervalRealMin, RecheckIntervalSource, FastForwardTickSimSec),
             new GlucoseLevelConfig(Initial, Min, Max, HypoThreshold, HypoReleaseMargin, HyperThreshold,
-                HyperReleaseMargin, BaseDecayPerSec, RunDecayPerSec, NormalRangeMin),
+                HyperReleaseMargin, BaseDecayPerSec, RunDecayPerSec, NormalRangeMin, NormalRangeMax ?? HyperThreshold),
             new RecurrenceConfig(CooldownSec),
             new DisplayConfig(DelaySec, WarningThreshold),
             new SuddenDropConfig(SuddenDropChancePerSec, SuddenDropAmount, SuddenDropDurationSec),
@@ -141,7 +143,7 @@ namespace SugarDash.Domain.Tests
         /// <summary>2형 설정. 음식은 기존 Snacks 목록을 그대로 쓴다.</summary>
         public GameConfig BuildType2() => GameConfig.ForType2(ConfigVersion, Unit, TimeScale,
             new GlucoseLevelConfig(Initial, Min, Max, HypoThreshold, HypoReleaseMargin, HyperThreshold,
-                HyperReleaseMargin, BaseDecayPerSec, RunDecayPerSec, NormalRangeMin),
+                HyperReleaseMargin, BaseDecayPerSec, RunDecayPerSec, NormalRangeMin, NormalRangeMax ?? HyperThreshold),
             Snacks.Select(s => new SnackConfig(s.Id, s.Kind, s.TotalRise, s.OnsetSec, s.AbsorbSec, s.Source))
                 .ToList(),
             new Type2Config(HighHoldSec, LowHoldSec, NoticeSec, TellTimeLimitSec, GuardianPromptTimeLimitSec,

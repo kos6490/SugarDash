@@ -7,7 +7,7 @@
   "glucose": {
     "initial": 120, "min": 10, "max": 400, "hypoThreshold": 70, "hypoReleaseMargin": 10,
     "hyperThreshold": 135, "hyperReleaseMargin": 20,
-    "baseDecayPerSec": 0.5, "runDecayPerSec": 1, "normalRangeMin": 72
+    "baseDecayPerSec": 0.5, "runDecayPerSec": 1, "normalRangeMin": 72, "normalRangeMax": 135
   },
   "recurrence": { "cooldownSec": 10 },
   "display": { "delaySec": 3, "warningThreshold": 80 },

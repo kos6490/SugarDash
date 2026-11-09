@@ -8,7 +8,8 @@
     "hypoThreshold": null, "hypoReleaseMargin": null,
     "hyperThreshold": null, "hyperReleaseMargin": null,
     "baseDecayPerSec": null, "runDecayPerSec": null,
-    "normalRangeMin": null
+    "normalRangeMin": null,
+    "normalRangeMax": null
   },
   "type2": {
     "highHoldSec": null,

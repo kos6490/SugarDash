@@ -1,6 +1,6 @@
 namespace SugarDash.Domain.Events
 {
-    /// <summary>실제 혈당이 적정 범위(normalRangeMin 이상, hyperThreshold 미만)에 들어왔다.</summary>
+    /// <summary>실제 혈당이 적정 범위(normalRangeMin 이상, normalRangeMax 미만)에 들어왔다.</summary>
     public sealed class GlucoseRangeEntered
     {
         public GlucoseRangeEntered(double actual, double simT, double t)
