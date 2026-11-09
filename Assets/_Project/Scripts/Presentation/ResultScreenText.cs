@@ -35,9 +35,9 @@ namespace SugarDash.Presentation
             if (type2)
             {
                 // 2형: 고혈당·저혈당 줄을 각각 이벤트가 있을 때만 넣는다.
-                string high = Type2Summary("높을", result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect));
+                string high = NotifySummary("높을", result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect));
                 if (high != null) lines.Add(high);
-                string low = Type2Summary("낮을", result.LowEvents.Count, result.LowEvents.Count(e => e.AllCorrect));
+                string low = NotifySummary("낮을", result.LowEvents.Count, result.LowEvents.Count(e => e.AllCorrect));
                 if (low != null) lines.Add(low);
             }
             else
@@ -63,16 +63,16 @@ namespace SugarDash.Presentation
 
         private static string HypoSummary(RunSummary result)
         {
-            if (result.Events.Count == 0) return "이번에는 저혈당이 없었어요";
+            if (result.Events.Count == 0) return "이번에는 혈당이 낮아지지 않았어요";
 
             int good = result.Events.Count(e => e.AllCorrect);
-            if (good == 0) return $"저혈당 {result.Events.Count}번 모두 아쉬웠어요";
-            if (good == result.Events.Count) return $"저혈당 {good}번 모두 잘 해냈어요";
-            return $"저혈당 {result.Events.Count}번 중 {good}번 모두 잘 해냈어요";
+            if (good == 0) return $"혈당이 낮을 때 {result.Events.Count}번 모두 아쉬웠어요";
+            if (good == result.Events.Count) return $"혈당이 낮을 때 {good}번 모두 잘 해냈어요";
+            return $"혈당이 낮을 때 {result.Events.Count}번 중 {good}번 잘 해냈어요";
         }
 
-        /// <summary>2형 한 줄. 이벤트가 없으면 null(줄을 더하지 않는다).</summary>
-        private static string Type2Summary(string level, int count, int good)
+        /// <summary>알리기 한 줄(2형 높을 때·낮을 때, 1형 고혈당). 이벤트가 없으면 null(줄을 더하지 않는다).</summary>
+        private static string NotifySummary(string level, int count, int good)
         {
             if (count == 0) return null;
             if (good == 0) return $"혈당이 {level} 때 {count}번 모두 아쉬웠어요";
@@ -80,16 +80,8 @@ namespace SugarDash.Presentation
             return $"혈당이 {level} 때 {count}번 중 {good}번 바로 알렸어요";
         }
 
-        /// <summary>고혈당이 없었으면 null(줄을 더하지 않는다).</summary>
-        private static string HyperSummary(RunSummary result)
-        {
-            int count = result.HyperEvents.Count;
-            if (count == 0) return null;
-
-            int good = result.HyperEvents.Count(e => e.AllCorrect);
-            if (good == 0) return $"고혈당 {count}번 모두 아쉬웠어요";
-            if (good == count) return $"고혈당 {count}번 모두 바로 알렸어요";
-            return $"고혈당 {count}번 중 {good}번 바로 알렸어요";
-        }
+        /// <summary>고혈당이 없었으면 null(줄을 더하지 않는다). 2형 높을 때 줄과 같은 글이다.</summary>
+        private static string HyperSummary(RunSummary result) =>
+            NotifySummary("높을", result.HyperEvents.Count, result.HyperEvents.Count(e => e.AllCorrect));
     }
 }
