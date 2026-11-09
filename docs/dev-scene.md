@@ -179,7 +179,7 @@ Unity 에디터 기본 배치:
    - `Height` 110
    - 자식 글자: Font Size 40 (Text 내용은 실행 중에 바뀌므로 그대로 둬도 된다)
 
-실행하면 `ButtonTemplate`은 숨겨지고, 이것을 복제해 선택지 버튼을 만든다.
+실행하면 `ButtonTemplate`은 숨겨지고, 이것을 복제해 선택지 버튼을 만든다. 복제한 버튼의 글자는 코드가 선택지 이름으로 바꾼다. 프리팹에서는 `ButtonTemplate`을 꺼 두고(Inspector 이름 왼쪽 체크 해제) 자식 글자를 `선택지`로 둔다. 모양을 고칠 때만 잠깐 켜서 보고 다시 끈다.
 
 ### 6.3 HypoChoicePanel 필드 연결
 `HypoChoice`를 선택하고:
