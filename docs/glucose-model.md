@@ -164,7 +164,8 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
     "hyperReleaseMargin": null,
     "baseDecayPerSec": null,
     "runDecayPerSec": null,
-    "normalRangeMin": null
+    "normalRangeMin": null,
+    "normalRangeMax": null
   },
   "recurrence": { "cooldownSec": null },
   "display": { "delaySec": null, "warningThreshold": null },
@@ -210,6 +211,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 - `hypo.guardianSnackId`는 아동이 간식을 고르지 못했을 때(계속 달리기, 당 없음, 시간 초과, 선택 대신 알리기) 어른이 건네는 빠른 당이다. 수치가 아니라 간식 id 참조라서 `"juice"`로 둔다.
 - `type1.habitCheckWindowSec`는 혈당 재기 습관 순간의 말풍선이 떠 있는 시간(decisionDt 기준 초)이다([section2.md](section2.md) 7.1절).
 - `glucose.normalRangeMin`은 적정 처치 후 재측정에서 도달해야 하는 하한이다(불변식 18).
+- `glucose.normalRangeMax`는 적정 범위(혈당 유지 점수, `GlucoseRangeEntered`·`Exited`)의 위쪽 경계다. 이 값 미만이어야 범위 안이다. 고혈당 알리기 기준 `hyperThreshold`와 따로 둔다. 왜: 출처의 목표 범위 위쪽 끝(180)과 알리기 기준(250)이 다르다([glucose-evidence.md](glucose-evidence.md)).
 - `runner.trackSnackServings`는 트랙 간식 하나에 곱하는 배수, `runner.trackSnackIntervalMinSec`·`MaxSec`는 트랙 간식 간격의 범위(worldDt 기준 초)다.
 - `elimination.glucoseLow`·`glucoseHigh`는 탈락하는 실제 혈당 범위, `symptom.shakeStartGlucose`는 실제 혈당이 이 값 아래로 내려가면 카메라가 흔들리기 시작하는 혈당(탈락 하한 `glucoseLow`에 가까워질수록 흔들림이 커져 하한에서 최대가 된다. 저혈당 쪽만이고 UI는 흔들지 않는다. 최대 흔들림 폭과 떨림 속도는 JSON이 아니라 `SymptomEffectPresenter`의 Inspector 값이다), `score.*`는 점수 값, `sections`는 구간 목록(마지막 구간만 `lengthM` 없이 끝없이 이어짐)이다. `score.correct`는 단계별 정답 가중치(`recognize`~`hyperNotify`), `score.errors`는 오류 코드별 가중치(키는 로그의 오류 코드와 같다)이고 `RS_KEEP_RUNNING`·`HY_KEEP_RUNNING`은 위험한 선택이라 0으로 고정한다. 달리기 속도, 레인 폭, 점프·슬라이드 시간, 장애물 간격, 충돌 감속 같은 러너 감각 수치는 혈당과 무관하므로 JSON이 아니라 각 컴포넌트의 Inspector 값으로 둔다.
 
@@ -230,7 +232,7 @@ PLACEHOLDER는 `null`로 둔다. 로더는 `null` 필드의 경로를 모두 모
 
 ### 8.2 교차 검증 (모든 설정 로드 후)
 12. `hypo.step1TimeLimitSec > display.delaySec` ← 핵심. 1단계 제한 시간은 HypoEventFsm 설정에 속한다.
-13. `hypoThreshold ≤ normalRangeMin < hyperThreshold`
+13. `hypoThreshold ≤ normalRangeMin < normalRangeMax ≤ hyperThreshold`
 14. 재측정 간격(게임 초) `> display.delaySec`, `0 < fastForwardTickSimSec < display.delaySec`
 15. `step2~4TimeLimitSec`, `guardianPromptTimeLimitSec`, `resumeCountdownSec`, `graceSec` 모두 `> 0`, `answerFeedbackSec ≥ 0`(NaN 거부)
 16. `0 < doses.under < doses.proper < doses.over`

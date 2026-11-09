@@ -213,7 +213,7 @@
     "hypoThreshold": null, "hypoReleaseMargin": null,
     "hyperThreshold": null, "hyperReleaseMargin": null,
     "baseDecayPerSec": null, "runDecayPerSec": null,
-    "normalRangeMin": null
+    "normalRangeMin": null, "normalRangeMax": null
   },
   "type2": {
     "highHoldSec": null,
@@ -260,7 +260,7 @@
 ### 8.3 2형 불변식 (로드 시 검증, 위반 시 실패)
 1. `glucose.min ≤ glucoseLow < hypoThreshold`, `hyperThreshold < glucoseHigh ≤ glucose.max` (탈락 범위 안쪽에서 notice가 먼저 나올 수 있게)
 2. `hypoThreshold + hypoReleaseMargin < hyperThreshold − hyperReleaseMargin` (1형과 같음)
-3. `hypoThreshold ≤ normalRangeMin < hyperThreshold`
+3. `hypoThreshold ≤ normalRangeMin < normalRangeMax ≤ hyperThreshold`
 4. `highHoldSec ≥ 0`, `lowHoldSec ≥ 0`, `noticeSec ≥ 0`, `tellTimeLimitSec > 0`, `guardianPromptTimeLimitSec > 0`, `restDurationSec > 0`
 5. `foodRowIntervalMinSec ≤ foodRowIntervalMaxSec`, `restIntervalMinSec ≤ restIntervalMaxSec`, 둘 다 `> 0`
 6. `guardianSnackId`, `juiceChoiceFoodId`가 `foods`에 있음. `foods` id 중복 없음, 2개 이상(음식 줄에 서로 다른 2개가 필요)
