@@ -246,6 +246,9 @@ namespace SugarDash.App.Tests
             _flow.OpenSettings();
             Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Settings));
             _flow.SelectType(TrackType.Type2);
+            Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Settings), "설정에서 바꾸면 설정 화면에 그대로 있는다");
+            Assert.That(_flow.CurrentType, Is.EqualTo(TrackType.Type2));
+            _flow.CloseSettings();
             Assert.That(_flow.Screen, Is.EqualTo(FlowScreen.Title));
             // 다른 유형은 튜토리얼 판으로 열리므로, 끝낸 적 있는 유형으로 두고 건너뛰어 일반 판을 연다.
             _settings.TutorialDone.Add(TrackType.Type2);
@@ -592,6 +595,7 @@ namespace SugarDash.App.Tests
             _flow.Begin();
             _flow.OpenSettings();
             _flow.SelectType(TrackType.Type1);
+            _flow.CloseSettings();
             _flow.StartRun();
 
             Assert.That(_settings.TutorialPending, Is.False);
@@ -605,6 +609,7 @@ namespace SugarDash.App.Tests
             _flow.Begin();
             _flow.OpenSettings();
             _flow.SelectType(TrackType.Type2);
+            _flow.CloseSettings();
             _flow.StartRun();
 
             Assert.That(_settings.TutorialPending, Is.True);

@@ -111,7 +111,10 @@ namespace SugarDash.App
             Screen = CurrentType == null ? FlowScreen.TypeSelect : FlowScreen.Title;
         }
 
-        /// <summary>유형을 고르고 저장한 뒤 타이틀로 간다. 유형 선택·설정 화면에서만 받는다.</summary>
+        /// <summary>
+        /// 유형을 고르고 저장한다. 유형 선택 화면에서는 타이틀로 가고, 설정 화면에서는 설정 화면에 그대로 있는다(돌아가기로 나간다).
+        /// 유형 선택·설정 화면에서만 받는다.
+        /// </summary>
         public void SelectType(TrackType type)
         {
             // 나중에 이 앞에 보호자 확인 절차를 끼운다.
@@ -125,7 +128,7 @@ namespace SugarDash.App
             }
             _settings.SaveTrackType(type);
             CurrentType = type;
-            Screen = FlowScreen.Title;
+            if (Screen == FlowScreen.TypeSelect) Screen = FlowScreen.Title;
         }
 
         public void OpenSettings()
