@@ -25,6 +25,10 @@ crashlytics-build.properties
 # 빌드 산출물
 *.apk
 *.aab
+
+# 서명 키스토어(공개 저장소라 절대 커밋하지 않는다, docs/build.md 5절)
+*.keystore
+*.jks
 *.unitypackage
 *.app
 
