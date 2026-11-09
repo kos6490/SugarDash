@@ -29,7 +29,7 @@ namespace SugarDash.Presentation
                 case TutorialStep.Slide: return "아래로 밀면 미끄러져요";
                 case TutorialStep.Snack: return "간식이 있는 줄로 가면 먹어요. 먹으면 혈당이 올라요";
                 case TutorialStep.FoodRow: return "달리면서 먹을 음식을 골라요. 먹으면 혈당이 올라요";
-                case TutorialStep.Rest: return "여기로 가면 쉴 수 있어요. 쉬는 동안은 혈당이 덜 내려가요";
+                case TutorialStep.Rest: return "여기로 가면 잠깐 쉴 수 있어요";
                 case TutorialStep.HypoRecognize: return "화면이 흔들리면 몸이 보내는 신호예요. 측정기를 눌러요";
                 case TutorialStep.HypoRespond: return "빠른 당을 골라요";
                 case TutorialStep.HypoDose: return "알맞은 양을 골라요";

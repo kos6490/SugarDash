@@ -61,3 +61,15 @@ B-3. 낮은 쪽(Grade B):
 > <4% <3.9 mmol/L (70 mg/dL)
 
 > <1% <3.0 mmol/L (54 mg/dL)
+
+## 3. 2형 달리기 하강 (2026-11-09)
+
+- 정함: 2형도 달리는 동안 혈당이 더 내려간다(`glucose.runDecayPerSec` 0.7, [game-values.md](game-values.md) 2절). 2형 move(쉬는 곳)는 이 규칙 위에 서 있다(쉬면 달리기 하강이 멈춘다).
+- 방향의 근거는 꾸준한 운동의 장기 효과(C-1)다. 운동하는 순간의 혈당 변화는 2형 아동 근거가 적다(C-2). 그래서 달리는 순간 내려가는 것은 시간을 줄인 게임 표현이다.
+- 튜토리얼과 화면 문구에는 "쉬면 혈당이 덜 내려간다"처럼 효과를 사실로 말하지 않는다. 쉬는 곳 문구는 `여기로 가면 잠깐 쉴 수 있어요`.
+
+C-1. ISPAD 2024 2형 아동 장(PMC11854986, Increasing Physical Activity and Limiting Sedentary Time):
+> Regular exercise improves blood glucose levels, reduces cardiovascular risk factors, contributes to weight loss, and improved sense of well-being
+
+C-2. ISPAD 2022 운동 장(5.4 Reasons for dysglycemia during exercise in youth with T1D, [section2b-evidence.md](section2b-evidence.md) A-5):
+> For youth with T2D, there is little evidence for the influence of duration, type, or intensity of exercise on acute glycemic excursions or glucose time‐in‐range.
