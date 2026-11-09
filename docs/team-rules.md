@@ -151,6 +151,7 @@ push할 때도 8.2절 순서(`git pull` 뒤 `git push`)를 지킨다.
   - 어느 화면이 어느 프리팹인지는 [dev-scene.md](dev-scene.md) 3.1절 표에 있다. 표에 없는 화면은 구조 담당 팀원에게 묻는다.
   - `DevRun` 씬은 여전히 고치지 않는다(2절).
   - 프리팹 하나를 두 사람이 동시에 고치지 않는다(7절).
+- **장애물 패턴 에셋**: `Assets/_Project/Art/World/TrackPatterns.asset`의 `Patterns` 목록(패턴 더하기·빼기, 줄 모양, 줄 간격, `Easy`, `Start Distance M`, `Weight`, `Mirror`)은 월드 담당 팀원이 고친다([track-patterns.md](track-patterns.md)). `Timing` 칸, 에셋 파일 이름·위치, 규칙 확인 코드는 구조다.
 - **문구 파일**: 클래스 바로 위에 `// [문구 파일]` 표시가 있는 파일은 영역 담당 팀원과 기획 담당(구조 담당 팀원)이 따옴표 안의 글자만 바꿀 수 있다.
   - 상수 이름, 메서드, 코드 구조는 바꾸지 않는다. 따옴표 안의 `{count}`처럼 중괄호로 된 자리도 그대로 둔다.
   - 줄 끝에 `// 확정` 표시가 있는 문구는 바꾸지 않는다.

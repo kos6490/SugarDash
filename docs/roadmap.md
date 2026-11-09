@@ -50,7 +50,7 @@
 ### 2.2 할 일 목록
 
 - 이 목록은 일정표가 아니라 지금 단계에서 할 일의 목록임. 2.1절은 영역별로 앞으로 맡을 전체 범위임
-- 지금 작업: 유형 선택 + 2형 1구간, 2구간 공통 틀, 튜토리얼, 일시정지 메뉴·탈락 장면. 설계 [type-select.md](type-select.md), [section2.md](section2.md), [tutorial.md](tutorial.md), [pause-elimination.md](pause-elimination.md)
+- 지금 작업: 유형 선택 + 2형 1구간, 2구간 공통 틀, 튜토리얼, 일시정지 메뉴·탈락 장면, 장애물 패턴. 설계 [type-select.md](type-select.md), [section2.md](section2.md), [tutorial.md](tutorial.md), [pause-elimination.md](pause-elimination.md), [track-patterns.md](track-patterns.md)
 - 작업 브랜치: `feat/section2-frame` 하나. 위 작업은 모두 이 브랜치에서 함(`feat/type-select`, `feat/tutorial`의 내용을 모두 포함함. 두 브랜치에는 더 push하지 않음)
 - 담당 칸: `구조`, `팀원1(캐릭터)`, `팀원2(월드)`, `팀원3(화면)`, `기획`(구조 담당 팀원이 맡음)
 - 상태: "대기(이유)" → "시작 가능" → "진행 중(이름)" → "완료". 상태를 바꾼 이 문서도 작업 브랜치에 함께 push함. 영역 담당 팀원은 자기 담당 줄 중 "시작 가능"인 일을 골라 시작하고 상태를 고침
@@ -66,12 +66,14 @@
 | 구조 | 2구간 2-B 유형별 조건: 장면 조건 설정 자리(1형 운동장 달리기 감소, 2형 놀이터 쉬는 곳 간격, 나들이 음식 줄 간격·구성), 1형 혈당 재기 습관 순간(판정·기록·습관 확인률), 빈 틀 `HabitPromptView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.13, 9.14절 | [section2.md](section2.md) 7절 | 완료 |
 | 구조 | 튜토리얼 규칙 코드와 빈 틀: 튜토리얼 판 결정·건너뛰기·다시 하기, 안내 순서(`TutorialController`), 연습 모드, 기록하지 않는 판, 안내 중 조작 잠금, 통과할 레인 강조, 화면 터치로 설명 창 넘기기, 빈 틀 `TutorialPromptView`·`TutorialLaneHighlightView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.11, 9.13절 | [tutorial.md](tutorial.md) | 완료 |
 | 구조 | 일시정지 메뉴(버튼 숨김 조건, 계속하기 3-2-1, 타이틀로, 앱 복귀 시 메뉴)와 탈락 장면(장면 시간, 탈락 이유 세 갈래, 흔들림 약하게), 빈 틀 `PauseMenuView`·`EliminationSpeechView`·`GuardianArrivalView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.14~6.16, 9.15절 | [pause-elimination.md](pause-elimination.md) | 완료 |
+| 구조 | 장애물 패턴: 패턴 묶음 에셋(`TrackPatternSet`)과 지나갈 수 있는지 자동 확인, 패턴 고르기·놓기, 1형 1단계 쉬운 패턴만, 간식·음식 줄·쉬는 곳 주변 비움, 처음 패턴 6개, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 9.16절 | [track-patterns.md](track-patterns.md) | 완료 |
 | 팀원1(캐릭터) | 주인공 모델, 기본 애니메이션(달리기, 점프, 슬라이드, 옆 이동) | | 시작 가능 |
 | 팀원1(캐릭터) | 2형 상태 애니메이션: 지친 표정·느린 걸음·처진 자세(고혈당·저혈당), 앉아 쉬기. 체형은 바꾸지 않음. 연출 방향은 출처 확인 뒤 고칠 수 있음 | [type-tracks.md](type-tracks.md) 5절 | 시작 가능 |
 | 팀원1(캐릭터) | `CharacterStateView` 채우기: 보통·쉬는 중·지침(높음)·지침(낮음) 상태를 애니메이터에 연결 | `Assets/_Project/Scripts/Presentation/Character/CharacterStateView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원1(캐릭터) | `GuardianArrivalView` 채우기: 탈락 장면 어른 캐릭터 프리팹(발밑 기준점), 달려오기·서서 말하기 애니메이션. 지금은 주황색 캡슐 | `Assets/_Project/Scripts/Presentation/Character/GuardianArrivalView.cs`, [pause-elimination.md](pause-elimination.md) 3.2·5절 | 시작 가능 |
 | 팀원2(월드) | 1구간 트랙·배경, 장애물 3종(점프로 넘는 낮은 것, 슬라이드로 지나가는 높은 것, 옆으로 피하는 레인 막이) | | 시작 가능 |
 | 팀원2(월드) | 쉬는 곳 오브젝트(벤치, 게임기) | | 시작 가능 |
+| 팀원2(월드) | 장애물 패턴 만들기: `TrackPatterns.asset`에 패턴 더하기(두 레인 막이, 골라 지나가기, 점프 뒤 슬라이드, 지그재그 등), 나오기 시작하는 거리·비율 정하기, Play로 지나가 보기. Console 경고가 없고 `ProjectAsset_PassesRules_AndSpacing` 테스트가 통과해야 push | [track-patterns.md](track-patterns.md) | 시작 가능 |
 | 팀원2(월드) | 트랙 음식 모델 7종: 물, 주스, 탄산음료, 사과, 치킨, 피자, 햄버거 | [type-select.md](type-select.md) 4.2절 | 시작 가능 |
 | 팀원2(월드) | 음식 7종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 시작 가능 |
 | 팀원2(월드) | `TrackItemLook` 채우기: 장애물·음식 id·쉬는 곳마다 프리팹 연결 | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
@@ -212,7 +214,7 @@
 | 고혈당 알리기 제목 `혈당이 높아요. 어떻게 할까요?`, 2형 tell 제목 `몸이 힘들어요. 어떻게 할까요?` 확정(4.1·4.2절) | 없음 |
 | 양 묻는 제목 `juice을(를) 얼마나 먹을까요?`, 결과 문구 `{간식 id}을(를) 골랐어요` | 음식 표시 이름(5.2절) |
 | `HypoChoice.prefab`에 남은 Unity 기본 글자 `Button`이 화면에 보이는지 Play로 확인하고, 보이면 지움 | 없음 |
-| 1구간 레벨 구성: 장애물·음식 배치 패턴, 난이도 | 없음 |
+| 1구간 장애물 패턴의 실제 구성과 난이도 확인(팀원2가 만든 패턴을 직접 해 보고 거리·비율 조정) | 팀원2 패턴 만들기(2.2절) |
 | 생활 환경 맵별 레벨 구성 | 생활 환경 맵 목록 결정 |
 
 ### 5.6 빌드·확인

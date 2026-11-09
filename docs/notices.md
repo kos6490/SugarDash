@@ -42,3 +42,12 @@
   - 팀원3(화면): 빈 틀 `Screen/PauseMenuView`, `Screen/EliminationSpeechView`를 채울 수 있다. 프리팹은 `Assets/_Project/Art/UI/Screens/PauseMenu.prefab`, `EliminationSpeech.prefab`이다. 말풍선 문구는 `EliminationText`의 따옴표 안만 바꾼다(team-rules 2.3절).
   - 작업 브랜치는 그대로 `feat/section2-frame`이다(roadmap 2.2절).
   - 확인 방법은 [dev-scene.md](dev-scene.md) 9.15절이다.
+
+## 공지 5
+
+- 날짜: 2026-11-09
+- 대상: 전원, 팀원2(월드)
+- 내용:
+  - 장애물이 패턴(묶음) 단위로 나오게 바뀌었다: [track-patterns.md](track-patterns.md). 지금은 예전과 같은 "장애물 하나" 패턴만 들어 있어 보기에는 거의 같다. 1형 저혈당 1단계(측정기 누르기) 동안에는 쉬운 패턴만 새로 나온다.
+  - 팀원2(월드): `Assets/_Project/Art/World/TrackPatterns.asset`에 패턴을 만들 수 있다(roadmap 2.2절 "시작 가능"). Inspector에서 고치고, Console 경고가 없고 `ProjectAsset_PassesRules_AndSpacing` 테스트가 통과하면 push한다. `Timing` 칸은 바꾸지 않는다(team-rules 2.3절).
+  - 확인 방법은 [dev-scene.md](dev-scene.md) 9.16절이다.

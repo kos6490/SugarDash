@@ -15,7 +15,8 @@
 > 10. 튜토리얼 화면 터치·레인 강조를 더한 뒤라면 6.11.4절(이미 예전 안내대로 만든 경우)대로 `TutorialPrompt`를 고치고, 6.12절대로 `TutorialLaneHighlight`를 만들어 8절 3번 표의 `Lane Highlight` 칸을 연결한다.
 > 11. 2구간 2-B(혈당 재기 습관 순간)를 더한 뒤라면 6.13절대로 `HabitPrompt` 프리팹을 만들고 8절 3번 표의 `Habit Prompt` 칸을 연결한다.
 > 12. 일시정지 메뉴·탈락 장면을 더한 뒤라면 6.14~6.16절대로 `PauseMenu`, `EliminationSpeech` 프리팹과 `GuardianArrival` 오브젝트를 만들고 8절 3번 표의 `Pause Menu`, `Elimination Speech`, `Guardian Arrival` 칸을 연결한다.
-> 13. Cmd+S로 저장하고 9절 순서로 확인한다.
+> 13. 장애물 패턴을 더한 뒤라면 7절 6번대로 `Track`의 `Patterns` 칸에 `TrackPatterns`를 연결한다.
+> 14. Cmd+S로 저장하고 9절 순서로 확인한다.
 
 ## 0. 화면 구성과 기본 조작
 
@@ -501,7 +502,8 @@ Unity 에디터 기본 배치:
 3. 세 오브젝트 모두 위치를 원점으로 맞춘다. 하나씩 선택하고 Inspector의 `Transform` 칸 오른쪽 끝 `⋮`(점 세 개) → `Reset`. Position이 0, 0, 0이 되면 된다.
 4. `Player`를 선택하고 `Player Controller`의 `Camera Rig` 칸에 Hierarchy의 `Main Camera`를 끌어다 놓는다. 카메라 위치는 실행하면 코드가 맞춘다.
 5. `Main Camera`를 선택하고 `Add Component` → `SymptomEffectPresenter`. `Camera Target` 칸에 `Main Camera` 자신을 끌어다 놓는다(실제 혈당이 낮을수록 카메라만 흔들리고 UI는 흔들리지 않는다).
-6. `Track`의 `TrackSpawner`에 `Look` 칸(`TrackItemLook`)이 있다. 월드 담당 팀원이 `TrackItemLook`을 채워 push하면 구조 담당 팀원이 연결한다. 그전에는 비워 둔다. 비어 있으면 코드가 만든 기본 도형(상자, 구)이 나온다.
+6. `Track`의 `TrackSpawner`에 `Patterns` 칸이 있다. Project 창의 `Assets > _Project > Art > World > TrackPatterns`를 끌어다 놓는다(장애물 패턴 묶음, [track-patterns.md](track-patterns.md)). 비워 두면 장애물을 하나씩 무작위로 놓는다.
+   - `TrackSpawner`에 `Look` 칸(`TrackItemLook`)도 있다. 월드 담당 팀원이 `TrackItemLook`을 채워 push하면 구조 담당 팀원이 연결한다. 그전에는 비워 둔다. 비어 있으면 코드가 만든 기본 도형(상자, 구)이 나온다.
 7. 그 밖의 값(속도, 점프 높이, 흔들림 폭 등)은 기본값 그대로 둔다. 나중에 감각을 맞출 때 Inspector에서 바꾼다(Play 중에 바꾼 값은 멈추면 되돌아간다).
 
 ## 8. 조립 지점 (GameBootstrapper)
@@ -884,6 +886,19 @@ macOS 기준 Finder에서 Cmd+Shift+G를 누르고 `~/Library/Application Suppor
 | 7 | `다시 하기`, 9.3절처럼 아무것도 하지 않고 탈락까지 기다린다 | 화면이 흔들리던 세기보다 약하게 계속 흔들리는 채로 어른이 오고 `힘들 땐 어른에게 알려 줘`가 뜬다. 흔들림은 결과 화면에서 멈춘다 |
 
 앱에서 나갔다 돌아오면 메뉴가 떠 있는 것(바로 다시 달리지 않음)은 실기기에서 확인한다(roadmap 5.6절).
+
+### 9.16 시나리오 N: 장애물 패턴
+1형 한 판으로 본다. 처음 들어 있는 패턴은 쉬운 패턴(장애물 하나)뿐이라 예전과 비슷하게 보인다.
+
+| 순서 | 할 일 | 결과 |
+| --- | --- | --- |
+| 1 | Play 전에 Console을 비우고(`Clear`) Play, `시작하기` | Console에 `패턴 묶음` 빨간 오류가 없다. 장애물이 한 줄에 하나씩 나온다 |
+| 2 | 멈추고, Project 창에서 `TrackPatterns`를 선택해 `Patterns` 맨 아래 `+`. `+`는 맨 아래 패턴을 복사하므로 새 7번째 항목을 펼쳐 `Id`를 `wall`로, `Rows`의 `Element 0`의 `Left`·`Center`·`Right`를 모두 `Low`로, `Easy` 체크, `Weight` 3으로 고친다 | `Id`를 고치기 전에는 `id가 다른 패턴과 겹친다` 노란 경고가 뜨고, 다 고치면 경고가 없다 |
+| 3 | Play, `시작하기` | 세 레인 모두 낮은 장애물인 줄이 자주 나온다. 점프로 넘는다 |
+| 4 | 2번의 `wall` 줄에서 `Left`·`Center`·`Right`를 모두 `Block`으로 바꾼다 | Console에 `wall: 1번째 줄은 세 레인이 모두 레인 막이라…` 노란 경고가 뜬다 |
+| 5 | Play | Console에 빨간 `패턴 묶음 … 쓰지 않는다` 오류가 뜨고 장애물이 하나씩 나온다 |
+| 6 | 멈추고 `wall` 패턴을 `-`로 지운 뒤 Cmd+S | 경고가 없다. `TrackPatterns.asset`이 바뀌었으면 커밋하지 않고 되돌린다(구조 담당 확인용 변경이다) |
+| 7 | 저혈당이 올 때까지 달린다 | 1단계(측정기 누르기) 동안 새로 나오는 장애물은 쉬운 패턴뿐이다(지금은 모두 쉬운 패턴이라 차이가 없다) |
 
 ## 10. 자주 생기는 문제
 
