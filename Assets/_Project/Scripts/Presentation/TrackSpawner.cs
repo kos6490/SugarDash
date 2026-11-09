@@ -8,8 +8,8 @@ namespace SugarDash.Presentation
 {
     /// <summary>
     /// 트랙, 장애물, 간식 배치. 앞쪽에 미리 놓고 캐릭터 뒤로 지나간 것은 지운다.
-    /// 세계 시간(worldDt)으로만 움직인다. 장애물은 줄마다 한 레인에만 놓아 항상 피할 길이 있다.
-    /// 간식은 설정의 간격(worldDt 기준 초)마다 놓는다.
+    /// 세계 시간(worldDt)으로만 움직인다. 장애물은 패턴 묶음(TrackPatternSet)에서 골라 놓는다.
+    /// 묶음이 없으면 줄마다 한 레인에만 장애물 하나를 놓는다. 간식은 설정의 간격(worldDt 기준 초)마다 놓는다.
     /// </summary>
     public sealed class TrackSpawner : MonoBehaviour
     {
@@ -31,6 +31,8 @@ namespace SugarDash.Presentation
         [SerializeField] private float laneWidth = 2.5f;
         [Tooltip("물체 모습을 만드는 월드 담당 도우미. 비워 두면 기본 도형(PrimitiveViews)을 쓴다.")]
         [SerializeField] private TrackItemLook look;
+        [Tooltip("장애물 패턴 묶음(docs/track-patterns.md). 비워 두면 장애물을 하나씩 무작위로 놓는다.")]
+        [SerializeField] private TrackPatternSet patterns;
 
         private readonly List<TrackItem> _items = new List<TrackItem>();
         private readonly List<TrackItem> _crossed = new List<TrackItem>();
@@ -50,10 +52,27 @@ namespace SugarDash.Presentation
         private int _lastObstacleLane;
         private double _lastObstacleZ = double.NegativeInfinity;
         private bool _tutorialGuided;
+        private TrackPatternSet _activePatterns;
+        private bool _easyOnly;
+        private double _lastFoodRowAt = double.NegativeInfinity;
+        private readonly List<PendingRow> _pendingRows = new List<PendingRow>();
+        private readonly List<TrackPattern> _candidates = new List<TrackPattern>();
+
+        /// <summary>놓을 차례를 기다리는 패턴 줄. at은 달린 거리 기준 위치.</summary>
+        private struct PendingRow
+        {
+            public double At;
+            public PatternRow Row;
+            public bool Mirrored;
+        }
 
         public float SpawnAheadDistance => spawnAheadDistance;
         public float StartClearDistance => startClearDistance;
         public float ObstacleSpacing => obstacleSpacing;
+        /// <summary>지금 주행이 패턴 묶음으로 장애물을 놓는지.</summary>
+        public bool UsesPatterns => _activePatterns != null;
+        /// <summary>Inspector에 연결된 패턴 묶음. 없으면 null.</summary>
+        public TrackPatternSet Patterns => patterns;
         public IReadOnlyList<TrackItem> Items => _items;
         /// <summary>주행 시작부터 달린 거리.</summary>
         public double Distance => _distance;
@@ -168,12 +187,19 @@ namespace SugarDash.Presentation
             if (layout == null) throw new ArgumentNullException(nameof(layout));
             layout.Validate();
             _layout = layout;
-            if (!layout.SpawnsItems) RemoveItemsAhead();
+            if (!layout.SpawnsItems)
+            {
+                RemoveItemsAhead();
+                _pendingRows.Clear();
+            }
             _snackTimer = 0;
             _nextSnackIntervalSec = NextSnackInterval();
             _restTimer = 0;
             _nextRestIntervalSec = _layout.HasRestSpots ? NextRestInterval() : 0;
         }
+
+        /// <summary>패턴 묶음을 바꾼다. null이면 장애물을 하나씩 무작위로 놓는다. 다음 <see cref="ResetRun"/>부터 적용한다.</summary>
+        public void SetPatterns(TrackPatternSet set) => patterns = set;
 
         /// <summary>지금 장면 id를 모습 도우미에 넘긴다. 장면 없는 구간이면 null.</summary>
         public void SetScene(string sceneId)
@@ -192,6 +218,10 @@ namespace SugarDash.Presentation
                 _pendingLayout = null;
             }
             _random = new System.Random(seed);
+            _activePatterns = patterns != null && patterns.Patterns.Count > 0 ? patterns : null;
+            _pendingRows.Clear();
+            _lastFoodRowAt = double.NegativeInfinity;
+            _easyOnly = false;
             _distance = 0;
             _nextObstacleAt = startClearDistance;
             _nextMarkerAt = 0;
@@ -209,10 +239,16 @@ namespace SugarDash.Presentation
         /// 이번에 캐릭터 위치(z = 0)를 지나간 물체를 돌려준다. 돌려준 목록은 다음 호출 때 바뀐다.
         /// </summary>
         /// <param name="obstaclesAllowed">false면 장애물을 모두 지우고 새로 놓지 않는다(재개 카운트다운·유예 시간).</param>
-        public IReadOnlyList<TrackItem> Advance(double worldDt, double speed, bool obstaclesAllowed)
+        /// <param name="easyOnly">true면 새로 고르는 패턴은 쉬운 패턴만 쓴다(1형 저혈당 1단계). 이미 놓인 패턴은 그대로 둔다.</param>
+        public IReadOnlyList<TrackItem> Advance(double worldDt, double speed, bool obstaclesAllowed, bool easyOnly = false)
         {
             _crossed.Clear();
-            if (!obstaclesAllowed) RemoveObstacles();
+            _easyOnly = easyOnly;
+            if (!obstaclesAllowed)
+            {
+                RemoveObstacles();
+                _pendingRows.Clear();
+            }
             if (!(worldDt > 0)) return _crossed;
 
             double move = speed * worldDt;
@@ -264,7 +300,8 @@ namespace SugarDash.Presentation
                 _nextMarkerAt += markerSpacing;
             }
 
-            while (_nextObstacleAt <= horizon)
+            if (_activePatterns != null) FillPatterns(obstaclesAllowed, horizon);
+            while (_activePatterns == null && _nextObstacleAt <= horizon)
             {
                 // 장애물을 못 놓는 동안(유예, 쉬는 곳 근처, 물체를 놓지 않는 장면) 지나간 줄은 건너뛴다.
                 if (obstaclesAllowed && _layout.SpawnsItems && !_tutorialGuided && !InRestClearZone(_nextObstacleAt))
@@ -288,9 +325,12 @@ namespace SugarDash.Presentation
 
             while (!_tutorialGuided && _snackTimer >= _nextSnackIntervalSec)
             {
+                double z = spawnAheadDistance;
+                // 패턴 줄이 세 레인을 모두 막고 있으면 간식 차례를 미뤘다가 빈 레인이 생길 때 놓는다.
+                if (_activePatterns != null && !_layout.FoodRows && !InRestClearZone(_distance + z) &&
+                    FreeSnackLanes(z).Count == 0) break;
                 _snackTimer -= _nextSnackIntervalSec;
                 _nextSnackIntervalSec = NextSnackInterval();
-                double z = spawnAheadDistance;
                 // 쉬는 곳 근처에는 음식을 놓지 않는다(시간만 소비한다).
                 if (InRestClearZone(_distance + z)) continue;
                 if (_layout.FoodRows) PlaceFoodRow(z);
@@ -298,8 +338,125 @@ namespace SugarDash.Presentation
             }
         }
 
+        /// <summary>패턴을 고르고, 줄이 spawnAheadDistance에 닿으면 놓는다.</summary>
+        private void FillPatterns(bool obstaclesAllowed, double horizon)
+        {
+            bool allowed = obstaclesAllowed && _layout.SpawnsItems && !_tutorialGuided;
+            // 간식이 spawnAheadDistance에 놓일 때 바로 뒤에 올 줄도 알 수 있게 snackObstacleGap만큼 미리 고른다.
+            while (_nextObstacleAt <= horizon + snackObstacleGap)
+            {
+                // 장애물을 못 놓는 동안 지나간 자리는 건너뛴다.
+                if (!allowed)
+                {
+                    _nextObstacleAt += obstacleSpacing;
+                    continue;
+                }
+                var pattern = PickPattern();
+                if (pattern == null)
+                {
+                    _nextObstacleAt += obstacleSpacing;
+                    continue;
+                }
+                bool mirrored = pattern.Mirror && _random.Next(2) == 1;
+                double at = _nextObstacleAt;
+                for (int i = 0; i < pattern.Rows.Count; i++)
+                {
+                    if (i > 0) at += pattern.Rows[i].GapBeforeM;
+                    _pendingRows.Add(new PendingRow { At = at, Row = pattern.Rows[i], Mirrored = mirrored });
+                }
+                _nextObstacleAt = at + obstacleSpacing;
+            }
+
+            while (_pendingRows.Count > 0 && _pendingRows[0].At <= horizon)
+            {
+                var pending = _pendingRows[0];
+                _pendingRows.RemoveAt(0);
+                // 쉬는 곳·음식 줄 근처에 걸친 줄은 버린다(장애물이 줄어 더 쉬워질 뿐이다).
+                if (InClearZone(pending.At)) continue;
+                double z = Ahead(pending.At);
+                for (int lane = -1; lane <= 1; lane++)
+                {
+                    var kind = KindOf(pending.Row.CellAt(pending.Mirrored ? -lane : lane));
+                    if (kind == null) continue;
+                    Add(new TrackItem(kind.Value, lane, z));
+                }
+            }
+        }
+
+        /// <summary>지금 거리에서 쓸 수 있는 패턴 중 weight 비율로 하나 고른다. 없으면 null.</summary>
+        private TrackPattern PickPattern()
+        {
+            _candidates.Clear();
+            double total = 0;
+            foreach (var p in _activePatterns.Patterns)
+            {
+                if (p == null || p.Rows.Count == 0 || !(p.Weight > 0) || p.StartDistanceM > _distance) continue;
+                if (_easyOnly && !p.Easy) continue;
+                _candidates.Add(p);
+                total += p.Weight;
+            }
+            if (_candidates.Count == 0) return null;
+            double r = _random.NextDouble() * total;
+            foreach (var p in _candidates)
+            {
+                r -= p.Weight;
+                if (r < 0) return p;
+            }
+            return _candidates[_candidates.Count - 1];
+        }
+
+        private static TrackItemKind? KindOf(PatternCell cell)
+        {
+            switch (cell)
+            {
+                case PatternCell.Low: return TrackItemKind.LowObstacle;
+                case PatternCell.High: return TrackItemKind.HighObstacle;
+                case PatternCell.Block: return TrackItemKind.LaneBlock;
+                default: return null;
+            }
+        }
+
+        private readonly List<int> _freeLanes = new List<int>();
+
+        /// <summary>z 앞뒤 snackObstacleGap 안의 장애물(놓인 것과 대기 중인 줄)과 겹치지 않는 레인.</summary>
+        private List<int> FreeSnackLanes(double z)
+        {
+            _freeLanes.Clear();
+            for (int lane = -1; lane <= 1; lane++)
+            {
+                bool free = true;
+                foreach (var item in _items)
+                {
+                    if (item.IsObstacle && item.Lane == lane && Math.Abs(item.Z - z) < snackObstacleGap)
+                    {
+                        free = false;
+                        break;
+                    }
+                }
+                if (free)
+                {
+                    foreach (var pending in _pendingRows)
+                    {
+                        if (Math.Abs(Ahead(pending.At) - z) >= snackObstacleGap) continue;
+                        if (pending.Row.CellAt(pending.Mirrored ? -lane : lane) == PatternCell.Empty) continue;
+                        free = false;
+                        break;
+                    }
+                }
+                if (free) _freeLanes.Add(lane);
+            }
+            return _freeLanes;
+        }
+
         private void PlaceSnack(double z)
         {
+            if (_activePatterns != null)
+            {
+                var free = FreeSnackLanes(z);
+                int pick = free[_random.Next(free.Count)];
+                Add(new TrackItem(TrackItemKind.Snack, pick, z, _layout.SnackIds[_random.Next(_layout.SnackIds.Count)]));
+                return;
+            }
             int lane = _random.Next(-1, 2);
             if (lane == _lastObstacleLane && Math.Abs(z - _lastObstacleZ) < snackObstacleGap)
                 lane = lane == 1 ? -1 : lane + 1;
@@ -316,7 +473,8 @@ namespace SugarDash.Presentation
             if (second >= first) second++;
 
             int empty = _random.Next(-1, 2);
-            if (Math.Abs(z - _lastObstacleZ) < snackObstacleGap) empty = _lastObstacleLane;
+            if (_activePatterns != null) ClearObstaclesNear(z);
+            else if (Math.Abs(z - _lastObstacleZ) < snackObstacleGap) empty = _lastObstacleLane;
 
             var ids = new[] { _layout.SnackIds[first], _layout.SnackIds[second] };
             int n = 0;
@@ -345,6 +503,23 @@ namespace SugarDash.Presentation
         }
 
         private bool InRestClearZone(double atDistance) => Math.Abs(atDistance - _lastRestAt) < restClearDistance;
+
+        /// <summary>쉬는 곳이나 음식 줄(패턴을 쓸 때) 앞뒤 restClearDistance 안인지.</summary>
+        private bool InClearZone(double atDistance) =>
+            InRestClearZone(atDistance) || Math.Abs(atDistance - _lastFoodRowAt) < restClearDistance;
+
+        /// <summary>패턴을 쓸 때 음식 줄 앞뒤 restClearDistance 안의 장애물을 치운다. 고르는 동안 피하기까지 겹치지 않게 한다.</summary>
+        private void ClearObstaclesNear(double z)
+        {
+            _lastFoodRowAt = _distance + z;
+            for (int i = _items.Count - 1; i >= 0; i--)
+            {
+                var item = _items[i];
+                if (!item.IsObstacle || item.IsTutorialTarget || Math.Abs(item.Z - z) >= restClearDistance) continue;
+                DestroyView(item);
+                _items.RemoveAt(i);
+            }
+        }
 
         private double NextRestInterval() =>
             _layout.RestIntervalMinSec + (_layout.RestIntervalMaxSec - _layout.RestIntervalMinSec) * _random.NextDouble();

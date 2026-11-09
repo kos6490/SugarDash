@@ -181,8 +181,32 @@ namespace SugarDash.Bootstrap
             player.Init(_run, true);
             // 어른은 레인을 옮겨 다니는 주인공 모습 옆에 서므로 모습이 생긴 뒤 묶는다.
             if (guardianArrival != null) _subscriptions.Add(guardianArrival.Bind(_flow, player.View));
+            CheckPatterns();
             track.Init(BuildLayout(_config), Environment.TickCount, true);
             input.Init(_run, player, _tutorial);
+        }
+
+        /// <summary>
+        /// 패턴 묶음이 규칙을 어기면 오류를 남기고 장애물을 하나씩 놓는 방식으로 돌아간다.
+        /// 기준 값이 캐릭터 값과 다르면 확인 결과를 믿을 수 없으므로 오류만 남긴다.
+        /// </summary>
+        private void CheckPatterns()
+        {
+            var set = track.Patterns;
+            if (set == null) return;
+            var problems = set.Validate();
+            string spacing = TrackPatternRules.ValidateSpacing(track.ObstacleSpacing, set.Timing);
+            if (spacing != null) problems.Add(spacing);
+            if (problems.Count > 0)
+            {
+                Debug.LogError("패턴 묶음 " + set.name + "이 규칙에 맞지 않아 쓰지 않는다: " + string.Join(" / ", problems));
+                track.SetPatterns(null);
+                return;
+            }
+            var t = set.Timing;
+            if (!Mathf.Approximately(t.MaxRunSpeed, player.MaxRunSpeed) || !Mathf.Approximately(t.JumpSec, player.JumpSec) ||
+                !Mathf.Approximately(t.LaneChangeSec, player.LaneChangeSec))
+                Debug.LogError("패턴 묶음 " + set.name + "의 기준 값(Timing)이 Player 값과 다르다. 구조 담당이 맞춰야 한다.");
         }
 
         private void Start() => _flow.Begin();
@@ -229,7 +253,7 @@ namespace SugarDash.Bootstrap
             // 안내 구간에는 무작위 장애물을 놓지 않으므로 남는 장애물은 안내 대상뿐이다.
             bool obstaclesAllowed = guided || (phase != HypoPhase.ResumeCountdown && phase != HypoPhase.Grace);
             bool targetPassed = false, hit = false, collected = false, rested = false;
-            foreach (var item in track.Advance(worldDt, player.CurrentSpeed, obstaclesAllowed))
+            foreach (var item in track.Advance(worldDt, player.CurrentSpeed, obstaclesAllowed, phase == HypoPhase.Recognize))
             {
                 var outcome = player.Resolve(item);
                 if (item.IsTutorialTarget)
