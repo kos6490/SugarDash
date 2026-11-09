@@ -92,7 +92,7 @@
 | 구조(화면) | `HabitPromptView` 채우기: 1형 혈당 재기 습관 순간의 말풍선(측정기 버튼 옆), 나타나고 사라지는 연출 | `Assets/_Project/Scripts/Presentation/Screen/HabitPromptView.cs`, [section2.md](section2.md) 7.1절 | 시작 가능 |
 | 구조(화면) | `PauseMenuView` 채우기: 일시정지 버튼 아이콘, 메뉴 배치·그림, 버튼 소리 | `Assets/_Project/Scripts/Presentation/Screen/PauseMenuView.cs`, [pause-elimination.md](pause-elimination.md) 2·5절 | 시작 가능 |
 | 구조(화면) | `EliminationSpeechView` 채우기: 탈락 장면 말풍선 그림, 어른 쪽 꼬리, 나타나는 연출 | `Assets/_Project/Scripts/Presentation/Screen/EliminationSpeechView.cs`, [pause-elimination.md](pause-elimination.md) 3.2·5절 | 시작 가능 |
-| 구조(화면) | 음식 8종 표시 이름 표 초안(선택 패널·양 묻는 제목에 쓸 이름). 지금은 id(`juice`)가 그대로 나옴 | [type-select.md](type-select.md) 4.2절, [food-evidence.md](food-evidence.md) | 시작 가능 |
+| 구조(화면) | 음식 8종 표시 이름: 문구 파일 `FoodText`(선택 패널 버튼, 양 묻는 제목, 고른 뒤 문구). "을/를"은 받침에 맞춰 붙음 | `Assets/_Project/Scripts/Presentation/FoodText.cs` | 완료 |
 | 구조(화면) | 선택지 그림(2D): 음식 8종, 측정기, 양(조금·알맞게·많이), 어른에게 알리기, 다시 재기 | [food-evidence.md](food-evidence.md) | 시작 가능 |
 | 기획 | 탈락 장면 말풍선 문구 확정(`EliminationText`). 지금은 자리 채움 초안. 아이를 탓하지 않고 의학 설명을 넣지 않음 | `Assets/_Project/Scripts/Presentation/EliminationText.cs`, [pause-elimination.md](pause-elimination.md) 3.2절 | 시작 가능 |
 | 기획 | 습관 순간 말풍선 문구 확정(`HabitPromptText`). 지금은 자리 채움 초안 | `Assets/_Project/Scripts/Presentation/HabitPromptText.cs`, [section2.md](section2.md) 7.1절 | 시작 가능 |
@@ -176,7 +176,7 @@
 
 | 작업 | 선행 |
 | --- | --- |
-| 음식 표시 이름·그림: 지금 선택 패널이 간식 id(`juice`)를 그대로 보여 주고, 양 묻는 제목도 `juice을(를)`처럼 나옴 | 음식 목록 결정 |
+| 음식 그림: 선택 패널 버튼과 트랙 음식에 그림 쓰기(표시 이름은 `FoodText`로 정함) | 선택지 그림(2D), 트랙 음식 모델 |
 | 정식 게임 씬 만들기와 빌드 씬 등록. 지금 빌드 씬은 템플릿 `SampleScene`뿐이고 `DevRun`은 개발용. 이때 `SampleScene`도 지움. 팀원 작업이 다 들어온 뒤 마지막에 함 | 팀원 빈 틀 작업 통합 |
 | 그래픽 에셋 연결: 코드로 만든 기본 도형(PrimitiveViews)을 모델·프리팹으로 바꾸기 | 캐릭터, 트랙·배경, 장애물, 트랙 음식 모델 |
 
@@ -216,7 +216,6 @@
 | 2형 신호 문구 `목말라요`, `(개발용) 낮음 신호`(화면에 그대로 보임, 빌드 전 꼭 바꿈)와 튜토리얼 notice 문구(`목이 마르고 화장실에…`, `힘이 없는 신호가…`) | notice 신호 출처 |
 | 튜토리얼 `쉬는 동안은 혈당이 덜 내려가요`(2형): 게임 규칙을 말하지만 아이는 사실로 배움. 2형 달리기 하강 규칙(4.3절)을 정할 때 함께 봄 | 2형 달리기 하강 규칙 결정 |
 | 고혈당 알리기 제목 `혈당이 높아요. 어떻게 할까요?`, 2형 tell 제목 `몸이 힘들어요. 어떻게 할까요?` 확정(4.1·4.2절) | 없음 |
-| 양 묻는 제목 `juice을(를) 얼마나 먹을까요?`, 결과 문구 `{간식 id}을(를) 골랐어요` | 음식 표시 이름(5.2절) |
 | `HypoChoice.prefab`에 남은 Unity 기본 글자 `Button`이 화면에 보이는지 Play로 확인하고, 보이면 지움 | 없음 |
 | 1구간 장애물 패턴의 실제 구성과 난이도 확인(팀원2가 만든 패턴을 직접 해 보고 거리·비율 조정) | 팀원2 패턴 만들기(2.2절) |
 | 생활 환경 맵별 레벨 구성 | 생활 환경 맵 목록 결정 |

@@ -29,7 +29,7 @@ namespace SugarDash.Presentation
                 case "run_again": return "다시 달리기를 골랐어요";
                 case "juice": return "주스를 마셨어요";
                 case "help": return Notified;
-                default: return $"{e.ChoiceId}을(를) 골랐어요"; // 간식 id
+                default: return $"{FoodText.WithObjectParticle(e.ChoiceId)} 골랐어요"; // 간식 id
             }
         }
 

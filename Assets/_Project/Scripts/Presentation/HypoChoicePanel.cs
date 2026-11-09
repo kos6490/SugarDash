@@ -92,7 +92,7 @@ namespace SugarDash.Presentation
                     foreach (var snack in ChoiceOrder.RespondSnacks(_snacks, _random))
                     {
                         string id = snack.Id;
-                        respond.Add((id, () => _run.ChooseSnack(id)));
+                        respond.Add((FoodText.Name(id), () => _run.ChooseSnack(id)));
                     }
                     respond.Add((ChoicePanelText.KeepRunning, () => _run.ChooseKeepRunning()));
                     respond.Add((ChoicePanelText.NoSugar, () => _run.ChooseNoSugar()));

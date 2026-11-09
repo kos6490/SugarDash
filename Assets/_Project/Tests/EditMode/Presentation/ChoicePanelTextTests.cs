@@ -39,9 +39,9 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
-        public void DoseTitle_ShowsSnackId()
+        public void DoseTitle_ShowsFoodName()
         {
-            Assert.That(ChoicePanelText.DoseTitle("cracker"), Does.Contain("cracker"));
+            Assert.That(ChoicePanelText.DoseTitle("cracker"), Does.Contain(FoodText.Name("cracker")));
         }
 
         [Test]

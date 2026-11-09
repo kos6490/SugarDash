@@ -38,9 +38,9 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
-        public void For_SnackId_ShowsTheId()
+        public void For_SnackId_ShowsFoodName()
         {
-            Assert.That(AnswerFeedbackText.For(Answer("cracker")), Does.Contain("cracker"));
+            Assert.That(AnswerFeedbackText.For(Answer("cracker")), Does.Contain(FoodText.Name("cracker")));
         }
 
         [Test]

@@ -21,7 +21,7 @@ namespace SugarDash.Presentation
         public const string Type2TellTitle = "몸이 힘들어요. 어떻게 할까요?";
         public const string GuardianPromptTitle = "도움이 필요해요!";
 
-        public static string DoseTitle(string snackId) => $"{snackId}을(를) 얼마나 먹을까요?";
+        public static string DoseTitle(string snackId) => $"{FoodText.WithObjectParticle(snackId)} 얼마나 먹을까요?";
 
         public static string RecheckResult(double glucoseAfter) => $"다시 잰 혈당: {glucoseAfter:0} mg/dL";
     }
