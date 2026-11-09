@@ -111,7 +111,7 @@ namespace SugarDash.Presentation
 
             bool retry = IsRetryVisible(stage);
             if (retryText != null && retryText.gameObject.activeSelf != retry) retryText.gameObject.SetActive(retry);
-            // TODO(화면): 그림, 배치, 손가락 안내를 꾸민다.
+            // TODO(화면): 그림, 배치, 손가락 안내를 꾸민다. 설명 창이 나타나는 연출은 Box의 ScreenPopIn이 한다.
         }
     }
 }

@@ -85,6 +85,9 @@ Unity 에디터 기본 배치:
 | `EliminationSpeech` | `Assets/_Project/Art/UI/Screens/EliminationSpeech.prefab` | 6.15절 |
 | `PauseMenu` | `Assets/_Project/Art/UI/Screens/PauseMenu.prefab` | 6.14절 |
 
+- 나타나는 연출: `HabitPrompt`·`EliminationSpeech`의 `Root`, `PauseMenu`의 `MenuRoot`, `TutorialPrompt`의 `Box`에 `ScreenPopIn`(과 함께 붙는 `CanvasGroup`)이 있다. 켜질 때 0.2초 동안 흐릿하고 조금 작은 상태에서 또렷해진다(메뉴는 크기 그대로 또렷해지기만). 시간과 처음 크기는 Inspector 값이다.
+- `NoticeSignal`의 높음 신호 글자는 1초 주기로 흐려졌다 밝아진다(`Blink Period Sec`, `Blink Min Alpha`). `Settings`는 지금 유형 버튼을 `Current Type Color`로 칠한다.
+
 - **모양 고치기**: Project 창에서 프리팹을 더블클릭하면 Prefab Mode로 열린다. 거기서 고치고 저장한다(Prefab Mode는 자동 저장이 켜져 있으면 바로 저장된다). 씬은 고치지 않는다.
 - **구조 담당 팀원**: 화면에 오브젝트나 스크립트 칸을 더할 때는 Prefab Mode에서 프리팹 안에 더하고, 프리팹 안의 칸도 프리팹 안에서 연결한다. 씬에 있는 칸(`Bootstrapper`의 칸)만 씬에서 연결한다. 씬의 인스턴스에서 직접 바꾸는 것(인스턴스 오버라이드, Inspector에서 굵은 글자로 보인다)은 만들지 않는다.
 - 5~6.11절의 처음부터 만드는 순서로 이 오브젝트들을 만들었다. 참고용으로 남겨 둔다. 새로 만든다면 같은 순서를 Prefab Mode 안에서 하면 된다.
@@ -289,13 +292,13 @@ Unity 에디터 기본 배치:
 | 이름 | 만드는 메뉴 | Pos X, Pos Y | Width × Height | 그 밖의 설정 |
 | --- | --- | --- | --- | --- |
 | `TitleText` | `UI > Legacy > Text` | 0, 300 | 900 × 100 | Text 비움(코드가 `설정`을 넣는다), Font Size 52, 가운데 정렬 |
-| `CurrentTypeText` | `UI > Legacy > Text` | 0, 190 | 900 × 80 | Text 비움(코드가 지금 유형 `1형`/`2형`을 넣는다), Font Size 40, 가운데 정렬 |
 | `Type1Button` | `UI > Legacy > Button` | -230, 20 | 420 × 120 | 자식 글자: Text `1형`, Font Size 44. `Type2Button`과 한 줄 |
 | `Type2Button` | `UI > Legacy > Button` | 230, 20 | 420 × 120 | 자식 글자: Text `2형`, Font Size 44 |
 | `TutorialButton` | `UI > Legacy > Button` | 0, -140 | 880 × 120 | 자식 글자: Font Size 40. Text는 비워 둬도 된다(코드가 `튜토리얼 다시 하기`를 넣는다) |
 | `BackButton` | `UI > Legacy > Button` | 0, -300 | 880 × 120 | 자식 글자: Text `돌아가기`, Font Size 44 |
 
-3. `Settings`를 선택하고 `Settings View`의 칸을 연결한다: `Root`(`Settings` 아래의 `Root`), `Title Text`, `Current Type Text`, `Type 1 Button`, `Type 2 Button`, `Tutorial Button`, `Back Button`.
+3. `Settings`를 선택하고 `Settings View`의 칸을 연결한다: `Root`(`Settings` 아래의 `Root`), `Title Text`, `Type 1 Button`, `Type 2 Button`, `Tutorial Button`, `Back Button`, `Type 1 Current Badge`(`Type1Button` 아래 `CurrentBadge`), `Type 2 Current Badge`.
+   - `Type1Button`, `Type2Button` 안에 각각 `CurrentBadge`(`UI > Legacy > Text`)를 만든다: Anchor Presets 왼쪽 위(`top`·`left`, Alt·Shift 없이)에 Pivot X `0`, Y `0`(버튼 바깥, 왼쪽 위 모서리 바로 위), Pos 0, 6, 크기 120 × 44, Text `지금`, Font Size 30, 왼쪽 아래 정렬, `Raycast Target` 끔. 처음에는 꺼 둔다(지금 유형 쪽만 코드가 켠다).
    - 버튼 줄은 모두 전체 너비 880, 높이 120이다(1형·2형 줄은 420 두 개와 간격 40). 줄 사이 세로 간격도 40이다(줄 중심 Pos Y 20, -140, -300).
    - 이미 만든 설정 화면이면 위 표대로 위치를 맞추고 `TutorialButton`을 더한다. `Tutorial Button` 칸이 비어 있으면 Console에 노란 경고 `SettingsView: tutorialButton이 비어 있다`가 뜬다.
 4. 같은 이름(`Root`, `TitleText`, `Type1Button`)이 여러 화면에 있으므로 끌어다 놓을 때 맞는 화면 아래의 것인지 확인한다.
@@ -306,7 +309,7 @@ Unity 에디터 기본 배치:
 1. `Canvas` 위에서 오른쪽 클릭 → `UI > Legacy > Text`. 이름 `NoticeSignal`. Pos X `0`, Pos Y `600`, Width `800`, Height `100`, Text 비움, Font Size 44, 가운데 정렬.
 2. `Add Component` → `NoticeSignalView`. `Signal Text` 칸에 `NoticeSignal` 자신(같은 오브젝트의 Text)을 끌어다 놓는다.
    - 이 화면은 `Root`가 없다. 신호가 없으면 코드가 글자를 비우므로 켜 둔 채로 둔다.
-3. 기대 결과: 2형 주행 중 고혈당 신호가 나오면 `목말라요`, 저혈당 쪽 신호가 나오면 `(개발용) 낮음 신호`가 보인다(9.10절). 문구는 개발용이다.
+3. 기대 결과: 2형 주행 중 고혈당 신호가 나오면 `목말라요`, 저혈당 쪽 신호가 나오면 `(개발용) 낮음 신호`가 보인다(9.10절). 글자 크기 72, 높음 신호는 깜빡인다. 문구는 개발용이다.
 
 ## 6.8 캐릭터 상태 (CharacterStateView)
 
@@ -582,7 +585,7 @@ DevRun
 │   ├── TypeSelect
 │   │   └── Root           (TitleText, GuideText, Type1Button, Type2Button)
 │   ├── Settings
-│   │   └── Root           (TitleText, CurrentTypeText, Type1Button, Type2Button, TutorialButton, BackButton)
+│   │   └── Root           (TitleText, Type1Button, Type2Button, TutorialButton, BackButton)
 │   ├── NoticeSignal
 │   ├── TutorialPrompt
 │   │   ├── Root       (Image + Button)

@@ -35,7 +35,7 @@ namespace SugarDash.Presentation
         {
             if (_run == null) return;
             Show(_run.ActiveHabitMoment);
-            // TODO(화면): 측정기 쪽을 가리키는 말풍선 그림, 나타나고 사라지는 연출을 넣는다.
+            // TODO(화면): 측정기 쪽을 가리키는 말풍선 그림을 넣는다. 나타나는 연출은 Root의 ScreenPopIn이 한다.
         }
 
         private void Show(HabitMoment? moment)

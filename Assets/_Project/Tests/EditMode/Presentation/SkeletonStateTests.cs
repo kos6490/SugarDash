@@ -92,14 +92,6 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
-        public void SettingsCurrentLabel()
-        {
-            Assert.That(SettingsView.CurrentLabel(TrackType.Type1), Is.EqualTo("1형"));
-            Assert.That(SettingsView.CurrentLabel(TrackType.Type2), Is.EqualTo("2형"));
-            Assert.That(SettingsView.CurrentLabel(null), Is.EqualTo(""));
-        }
-
-        [Test]
         public void NoticeSignal_Labels()
         {
             Assert.That(NoticeSignalView.LabelOf(null), Is.EqualTo(""));

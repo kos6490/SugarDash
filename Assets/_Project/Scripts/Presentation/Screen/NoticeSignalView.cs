@@ -14,6 +14,10 @@ namespace SugarDash.Presentation
     public sealed class NoticeSignalView : MonoBehaviour
     {
         [SerializeField] private Text signalText;
+        [Tooltip("높음 신호가 흐려졌다 밝아지는 한 번의 시간(실제 초).")]
+        [SerializeField] private float blinkPeriodSec = 1f;
+        [Tooltip("깜빡일 때 가장 흐린 투명도.")]
+        [SerializeField] private float blinkMinAlpha = 0.3f;
 
         private RunController _run;
 
@@ -24,6 +28,15 @@ namespace SugarDash.Presentation
             // 저혈당 쪽 표시는 의학 출처 확인 전이므로 개발용 표시만 둔다.
             if (signal == NoticeKind.Low) return "(개발용) 낮음 신호";
             return "";
+        }
+
+        /// <summary>깜빡임 투명도. 주기의 처음과 끝이 1, 가운데가 minAlpha. 주기가 0 이하이면 1.</summary>
+        public static float BlinkAlpha(float time, float periodSec, float minAlpha)
+        {
+            if (!(periodSec > 0)) return 1f;
+            float phase = Mathf.Repeat(time, periodSec) / periodSec;
+            float wave = 0.5f + 0.5f * Mathf.Cos(phase * 2f * Mathf.PI);
+            return Mathf.Lerp(minAlpha, 1f, wave);
         }
 
         /// <summary>GameBootstrapper가 연결한다. 반환값을 Dispose하면 연결을 해제한다.</summary>
@@ -41,8 +54,15 @@ namespace SugarDash.Presentation
         {
             if (_run == null) return;
             var signal = _run.ActiveSignal;
-            if (signalText != null) signalText.text = LabelOf(signal);
-            // TODO(화면): High면 갈증 말풍선과 화장실 아이콘 깜빡임을 넣는다.
+            if (signalText != null)
+            {
+                signalText.text = LabelOf(signal);
+                // 높음 신호만 깜빡인다. 낮음은 의학 출처 확인 전이라 가만히 둔다.
+                var color = signalText.color;
+                color.a = signal == NoticeKind.High ? BlinkAlpha(Time.unscaledTime, blinkPeriodSec, blinkMinAlpha) : 1f;
+                signalText.color = color;
+            }
+            // TODO(화면): High면 갈증 말풍선과 화장실 아이콘 그림을 넣고 같은 BlinkAlpha로 깜빡인다.
             // TODO(화면): Low는 의학 출처 확인 뒤에 연출을 정한다. 지금은 개발용 표시만 둔다.
         }
     }

@@ -62,6 +62,8 @@ GameObject:
   - component: {fileID: 5096374078001316973}
   - component: {fileID: 4948626025068412381}
   - component: {fileID: 1688158397612954098}
+  - component: {fileID: 8136880565649860643}
+  - component: {fileID: 1119691441276063216}
   m_Layer: 5
   m_Name: Root
   m_TagString: Untagged
@@ -127,6 +129,32 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!225 &8136880565649860643
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6187402907816100677}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &1119691441276063216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6187402907816100677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c164f8482f6941619d32c9d3ba6c462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SugarDash.Presentation::SugarDash.Presentation.ScreenPopIn
+  durationSec: 0.2
+  startScale: 0.9
 --- !u!1 &7077654358503535340
 GameObject:
   m_ObjectHideFlags: 0

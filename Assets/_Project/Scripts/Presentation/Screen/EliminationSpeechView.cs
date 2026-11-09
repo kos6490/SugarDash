@@ -36,7 +36,7 @@ namespace SugarDash.Presentation
             bool visible = _flow.IsShowingElimination;
             Show(visible);
             if (visible && speechText != null) speechText.text = EliminationText.For(_flow.EliminatedBy);
-            // TODO(화면): 말풍선 그림, 어른 머리 위를 가리키는 꼬리, 나타나는 연출을 넣는다.
+            // TODO(화면): 말풍선 그림, 어른 머리 위를 가리키는 꼬리를 넣는다. 나타나는 연출은 Root의 ScreenPopIn이 한다.
         }
 
         private void Show(bool visible)
