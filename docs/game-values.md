@@ -86,3 +86,17 @@
 | 위험하거나 놓친 오답 `S_MISSED`, `RS_NONE`, 시간 초과 전부, `RC_NO_RECHECK`, `RC_NO_NOTIFY`, 계속 달리기 | 0 | |
 
 - 이 묶음으로 빌드 설정의 빈 칸이 모두 채워져 빌드 설정이 처음으로 끝까지 불러와지고 불변식 검사를 통과한다(빌드 설정 검증 EditMode 테스트).
+
+## 6. 3구간 겹친 조건 (2026-11-10)
+
+방향은 2-B 근거, 값은 2구간 값을 바탕으로 한 게임 표현값이다([section3.md](section3.md) 3절). 장면 길이는 2구간과 같다(200m, 집 140m). 2구간은 하루 한 번(`days: 1`).
+
+| 맵 | 1형 | 2형 |
+| --- | --- | --- |
+| 운동장 | `runDecayPerSec` 0.9(2구간과 같음), `suddenDropChancePerSec` 0.02(평소 0.01의 2배) | `foodRowInterval*` 2.5~4초 |
+| 놀이터 | `trackSnackIds` 크래커·사과(느린 당만), `trackSnackInterval*` 10~14초(드묾) | `restInterval*` 8~12초, `foodRowInterval*` 2.5~4초 |
+| 나들이 | `trackSnackInterval*` 3~4초(자주) | `foodRowInterval*` 2.5~4초, `foodRowIds` 물·치킨·피자·햄버거 |
+| 집 | 2구간과 같음 | 2구간과 같음 |
+
+- 개발 설정도 같은 구조와 값이다(2구간 개발 값은 그대로).
+
