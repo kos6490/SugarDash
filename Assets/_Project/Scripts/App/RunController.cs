@@ -106,6 +106,8 @@ namespace SugarDash.App
             _holdCountdown > 0 ? _holdCountdown : _session?.Fsm.ResumeCountdownRemaining ?? 0;
         /// <summary>3단계에서 양을 고를 간식.</summary>
         public string DoseSnackId => _session?.Fsm.DoseSnackId;
+        /// <summary>지금(또는 방금 끝난) 저혈당 이벤트가 빈 간식 가방인지(docs/section3.md 5절).</summary>
+        public bool IsEmptyBag => _session != null && _session.Fsm.IsEmptyBag;
 
         /// <summary>지금 점수. 주행 중(일시정지 포함)이 아니면 0.</summary>
         public double Score => State == RunState.Idle || _session == null
@@ -400,6 +402,7 @@ namespace SugarDash.App
             _sceneEndM = boundaryM + scene.LengthM.Value;
             s.Model.SetRunDecayPerSec(scene.Overrides.RunDecayPerSec);
             s.Director.SetSuddenDropChancePerSec(scene.Overrides.SuddenDropChancePerSec);
+            s.Director.SetEmptyBagChance(scene.Overrides.EmptyBagChance);
             _bus.Publish(new SceneEntered(scene.Id, scene.TimeOfDay, day, DistanceM, s.Model.SimTime,
                 s.Model.DecisionTime));
             if (scene.HabitCheck.HasValue && s.Config.Type1 != null && IsRecorded)

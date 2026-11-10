@@ -17,10 +17,20 @@ namespace SugarDash.Domain.Tests
     /// </summary>
     public sealed class HypoHarness
     {
-        private sealed class NoRandom : IRandomSource
+        /// <summary>넣어 둔 값만 돌려준다. 비어 있으면 읽지 않아야 하는 곳에서 읽은 것이다.</summary>
+        private sealed class QueuedRandom : IRandomSource
         {
-            public double NextDouble() => throw new InvalidOperationException("급하강 확률 0에서는 난수를 읽지 않아야 한다");
+            public readonly Queue<double> Values = new Queue<double>();
+
+            public double NextDouble() => Values.Count > 0
+                ? Values.Dequeue()
+                : throw new InvalidOperationException("급하강 확률 0에서는 난수를 읽지 않아야 한다");
         }
+
+        private readonly QueuedRandom _random = new QueuedRandom();
+
+        /// <summary>다음 난수 읽기에 돌려줄 값을 넣는다(빈 간식 가방 판정 등).</summary>
+        public void QueueRandom(double value) => _random.Values.Enqueue(value);
 
         public readonly ConfigBuilder Builder;
         public readonly GlucoseModel Model;
@@ -59,7 +69,7 @@ namespace SugarDash.Domain.Tests
             Collect<HabitCheckEnded>(bus);
 
             Model = new GlucoseModel(config.Glucose);
-            Director = new EventDirector(config.Glucose, Model, new NoRandom(), bus);
+            Director = new EventDirector(config.Glucose, Model, _random, bus);
             Fsm = new HypoEventFsm(config, Model, Director, bus, () => Distance);
             bus.Subscribe<HypoEventTriggered>(Fsm.Begin);
             bus.Subscribe<HyperEventTriggered>(Fsm.BeginHyper);

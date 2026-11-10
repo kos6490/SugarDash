@@ -73,5 +73,15 @@ namespace SugarDash.Presentation.Tests
             var picked = ChoiceOrder.RespondSnacks(new[] { Snack("juice", SnackKind.Fast) }, new System.Random(1));
             Assert.That(picked.Single().Id, Is.EqualTo("juice"));
         }
+
+        [Test]
+        public void RespondSnacks_EmptyBag_PicksOnlyOneSlow()
+        {
+            for (int seed = 0; seed < 20; seed++)
+            {
+                var picked = ChoiceOrder.RespondSnacks(Snacks, new System.Random(seed), emptyBag: true);
+                Assert.That(picked.Single().Kind, Is.EqualTo(SnackKind.Slow));
+            }
+        }
     }
 }

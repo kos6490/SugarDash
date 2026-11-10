@@ -62,6 +62,8 @@ namespace SugarDash.Domain.Hypo
         public int EventId { get; private set; }
         /// <summary>3단계에서 양을 고를 간식. 2단계에서 아동이 고른 간식, 고르지 못했으면 어른이 건넨 빠른 당.</summary>
         public string DoseSnackId { get; private set; }
+        /// <summary>지금(또는 방금 끝난) 저혈당 이벤트가 빈 간식 가방인지. 다음 이벤트가 시작될 때까지 남는다(재개 안내 문구용).</summary>
+        public bool IsEmptyBag { get; private set; }
 
         /// <summary>
         /// 연습 모드(튜토리얼). 오답은 부작용 없이 같은 단계를 다시 열고, 1~4단계·고혈당/저혈당 알리기에 시간 초과가 없다.
@@ -136,6 +138,7 @@ namespace SugarDash.Domain.Hypo
 
             EventId = e.EventId;
             DoseSnackId = null;
+            IsEmptyBag = e.EmptyBag;
             _anyError = false;
             _kind = EventKind.Hypo;
             EnterNow(HypoPhase.Recognize, _hypo.Step1TimeLimitSec);
@@ -149,6 +152,7 @@ namespace SugarDash.Domain.Hypo
 
             EventId = e.EventId;
             DoseSnackId = null;
+            IsEmptyBag = false;
             _anyError = false;
             _kind = EventKind.Hyper;
             EnterNow(HypoPhase.HyperNotify, _config.Hyper.NotifyTimeLimitSec);
@@ -162,6 +166,7 @@ namespace SugarDash.Domain.Hypo
 
             EventId = e.EventId;
             DoseSnackId = null;
+            IsEmptyBag = false;
             _anyError = false;
             _kind = EventKind.Low;
             EnterNow(HypoPhase.LowNotify, _config.Hyper.NotifyTimeLimitSec);
@@ -401,6 +406,13 @@ namespace SugarDash.Domain.Hypo
                 case HypoPhase.Respond:
                     if (IsPractice) return PracticeRetry(HypoStep.Respond, ChoiceHelp);
                     DoseSnackId = _hypo.GuardianSnackId;
+                    // 빈 간식 가방이면 빠른 당이 없으므로 어른에게 알리는 것이 정답이다. 어른이 빠른 당을 건넨다.
+                    if (IsEmptyBag)
+                    {
+                        Correct(HypoStep.Respond, ChoiceHelp);
+                        EnterDose();
+                        return true;
+                    }
                     HelpInstead(HypoStep.Respond, HypoErrorCode.HelpInstead, EnterDose);
                     return true;
                 case HypoPhase.Dose:

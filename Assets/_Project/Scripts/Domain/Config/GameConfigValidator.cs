@@ -386,6 +386,7 @@ namespace SugarDash.Domain.Config
             if (config.TrackType == TrackType.Type2)
             {
                 OtherTypeKey(errors, path, "suddenDropChancePerSec", o.SuddenDropChancePerSec.HasValue);
+                OtherTypeKey(errors, path, "emptyBagChance", o.EmptyBagChance.HasValue);
                 OtherTypeKey(errors, path, "trackSnackIds", o.TrackSnackIds != null);
                 OtherTypeKey(errors, path, "trackSnackIntervalMinSec", o.TrackSnackIntervalMinSec.HasValue);
                 OtherTypeKey(errors, path, "trackSnackIntervalMaxSec", o.TrackSnackIntervalMaxSec.HasValue);
@@ -417,6 +418,8 @@ namespace SugarDash.Domain.Config
                 if (!(chance >= 0 && chance <= 1))
                     errors.Add($"{path}.suddenDropChancePerSec는 0 이상 1 이하여야 한다 ({chance})");
             }
+            if (o.EmptyBagChance.HasValue && !(o.EmptyBagChance.Value >= 0 && o.EmptyBagChance.Value <= 1))
+                errors.Add($"{path}.emptyBagChance는 0 이상 1 이하여야 한다 ({o.EmptyBagChance.Value})");
             if (o.TrackSnackIds != null)
             {
                 var snacks = config.Glucose.Snacks;

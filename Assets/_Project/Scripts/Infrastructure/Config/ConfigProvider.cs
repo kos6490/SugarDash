@@ -342,7 +342,7 @@ namespace SugarDash.Infrastructure.Config
                         ? SceneOverrides.None
                         : new SceneOverrides(o.RunDecayPerSec, o.SuddenDropChancePerSec, o.TrackSnackIds,
                             o.TrackSnackIntervalMinSec, o.TrackSnackIntervalMaxSec, o.FoodRowIntervalMinSec,
-                            o.FoodRowIntervalMaxSec, o.RestIntervalMinSec, o.RestIntervalMaxSec, o.FoodRowIds);
+                            o.FoodRowIntervalMaxSec, o.RestIntervalMinSec, o.RestIntervalMaxSec, o.FoodRowIds, o.EmptyBagChance);
                     if (!scene.LengthM.HasValue) Missing.Add(path + ".lengthM");
                     scenes.Add(new SceneConfig(Text(scene.Id, path + ".id", scene),
                         TimeOfDayOf(scene.TimeOfDay, path + ".timeOfDay", scene), scene.LengthM,

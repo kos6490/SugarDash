@@ -57,6 +57,7 @@ namespace SugarDash.Domain.Tests
             yield return Case("ReleaseBandsOverlap", "hyperReleaseMargin", b => b.HyperReleaseMargin = 175);
             yield return Case("NormalRangeBelowHypo", "normalRangeMin", b => b.NormalRangeMin = 60);
             yield return Case("NormalRangeMaxAboveHyper", "normalRangeMax", b => b.NormalRangeMax = 251);
+            yield return Case("EmptyBagChanceInType2", "emptyBagChance", b => b.WithScenes(new SceneConfig("a", TimeOfDay.Morning, 50, true, new SceneOverrides(emptyBagChance: 0.5))));
             yield return Case("NormalRangeMaxNotAboveMin", "normalRangeMax", b => b.NormalRangeMax = 80);
             yield return Case("HighHoldNegative", "type2.highHoldSec", b => b.HighHoldSec = -1);
             yield return Case("NoticeNegative", "type2.noticeSec", b => b.NoticeSec = -1);
@@ -130,6 +131,7 @@ namespace SugarDash.Domain.Tests
             yield return Case("NormalRangeBelowHypo", b => b.NormalRangeMin = 60);
             yield return Case("NormalRangeNotBelowHyper", b => { b.NormalRangeMin = 250; b.DoseProper = 8; b.DoseOver = 9; });
             yield return Case("NormalRangeMaxAboveHyper", b => b.NormalRangeMax = 251);
+            yield return Case("EmptyBagChanceAboveOne", b => b.WithScenes(new SceneConfig("a", TimeOfDay.Morning, 50, true, new SceneOverrides(emptyBagChance: 1.5))));
             yield return Case("NormalRangeMaxNotAboveMin", b => b.NormalRangeMax = 80);
             yield return Case("RecheckNotLongerThanDelay", b => { b.DelaySec = 6; b.Step1TimeLimitSec = 7; }, 2);
             yield return Case("FastForwardTickZero", b => b.FastForwardTickSimSec = 0);

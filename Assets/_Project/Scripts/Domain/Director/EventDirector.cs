@@ -53,6 +53,7 @@ namespace SugarDash.Domain.Director
         private int _lastEventId;
         private bool _targetRangeEvaluated;
         private double? _suddenDropChanceOverride;
+        private double? _emptyBagChance;
 
         // 혈당 재기 습관 순간. 말풍선이 떠 있는 동안 ActiveHabitMoment에 값이 있다(decisionDt 기준 시각).
         private double _habitStart;
@@ -90,6 +91,9 @@ namespace SugarDash.Domain.Director
 
         /// <summary>장면 덮어쓰기. null이면 설정 값(suddenDrop.chancePerSec)으로 돌아간다.</summary>
         public void SetSuddenDropChancePerSec(double? chancePerSec) => _suddenDropChanceOverride = chancePerSec;
+
+        /// <summary>장면 덮어쓰기. 저혈당이 발동할 때 빈 간식 가방일 확률. null이나 0이면 난수를 읽지 않는다.</summary>
+        public void SetEmptyBagChance(double? chance) => _emptyBagChance = chance;
 
         /// <summary>
         /// 2형에서 notice가 시작된 뒤 그 tell이 끝날 때(<see cref="NotifyHyperEventEnded"/>, <see cref="NotifyLowEventEnded"/>)까지 값이 있다.
@@ -378,8 +382,10 @@ namespace SugarDash.Domain.Director
         {
             _hypoState = HypoState.Active;
             _lastEventId++;
+            double bag = _emptyBagChance ?? 0;
+            bool emptyBag = bag > 0 && _random.NextDouble() < bag;
             _bus.Publish(new HypoEventTriggered(_lastEventId, isRecurrence, _model.SimTime, _model.DecisionTime,
-                _model.Actual));
+                _model.Actual, emptyBag));
         }
 
         private void EvaluateHyper()

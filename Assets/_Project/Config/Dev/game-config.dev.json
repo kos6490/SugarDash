@@ -54,7 +54,7 @@
     {
       "id": "complex",
       "scenes": [
-        {"id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "habitCheck": "preExercise", "overrides": {"runDecayPerSec": 1.3, "suddenDropChancePerSec": 0.02}},
+        {"id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "habitCheck": "preExercise", "overrides": {"runDecayPerSec": 1.3, "suddenDropChancePerSec": 0.02, "emptyBagChance": 0.5}},
         {"id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {"trackSnackIds": ["cracker", "apple"], "trackSnackIntervalMinSec": 10, "trackSnackIntervalMaxSec": 14}},
         {"id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {"trackSnackIntervalMinSec": 3, "trackSnackIntervalMaxSec": 4}},
         {"id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false, "habitCheck": "bedtime"}

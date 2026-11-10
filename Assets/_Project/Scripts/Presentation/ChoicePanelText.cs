@@ -16,6 +16,7 @@ namespace SugarDash.Presentation
         public const string Juice = "주스 마시기";
 
         public const string RespondTitle = "무엇을 먹을까요?";
+        public const string EmptyBagTitle = "가방에 빠른 당이 없어요. 어떻게 할까요?";
         public const string NextActionTitle = "이제 무엇을 할까요?";
         public const string HighTitle = "혈당이 높아요. 어떻게 할까요?";
         public const string Type2TellTitle = "몸이 신호를 보내요. 어떻게 할까요?";

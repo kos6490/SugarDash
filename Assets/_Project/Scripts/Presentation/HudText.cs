@@ -5,6 +5,8 @@ namespace SugarDash.Presentation
     public static class HudText
     {
         public const string Paused = "잠시 멈춤";
+        /// <summary>빈 간식 가방 사건 뒤 다시 달리기 전 3-2-1 동안 보이는 습관 말.</summary>
+        public const string PackFastSugar = "다음엔 빠른 당을 챙겨요";
 
         public static string Measured(double glucose) => $"측정: {glucose:0} mg/dL";
 

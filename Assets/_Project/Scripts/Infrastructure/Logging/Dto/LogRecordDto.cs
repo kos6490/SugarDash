@@ -22,6 +22,8 @@ namespace SugarDash.Infrastructure.Logging.Dto
         public double? T { get; set; }
 
         public bool? IsRecurrence { get; set; }
+        /// <summary>HypoEventTriggered: 빈 간식 가방(1형 3구간). 예전 기록에는 없다(false로 읽는다).</summary>
+        public bool? EmptyBag { get; set; }
         public double? Actual { get; set; }
         public double? Displayed { get; set; }
         public double? Measured { get; set; }

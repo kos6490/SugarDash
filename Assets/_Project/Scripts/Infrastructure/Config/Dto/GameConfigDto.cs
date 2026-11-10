@@ -221,5 +221,6 @@ namespace SugarDash.Infrastructure.Config.Dto
         public double? RestIntervalMinSec { get; set; }
         public double? RestIntervalMaxSec { get; set; }
         public List<string> FoodRowIds { get; set; }
+        public double? EmptyBagChance { get; set; }
     }
 }

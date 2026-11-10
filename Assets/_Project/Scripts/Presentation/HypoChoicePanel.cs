@@ -87,15 +87,17 @@ namespace SugarDash.Presentation
             switch (phase)
             {
                 case HypoPhase.Respond:
-                    Show(ChoicePanelText.RespondTitle);
+                    bool emptyBag = _run.IsEmptyBag;
+                    Show(emptyBag ? ChoicePanelText.EmptyBagTitle : ChoicePanelText.RespondTitle);
                     var respond = new List<(string, Action)>();
-                    foreach (var snack in ChoiceOrder.RespondSnacks(_snacks, _random))
+                    foreach (var snack in ChoiceOrder.RespondSnacks(_snacks, _random, emptyBag))
                     {
                         string id = snack.Id;
                         respond.Add((FoodText.Name(id), () => _run.ChooseSnack(id)));
                     }
                     respond.Add((ChoicePanelText.KeepRunning, () => _run.ChooseKeepRunning()));
-                    respond.Add((ChoicePanelText.NoSugar, () => _run.ChooseNoSugar()));
+                    // 빈 간식 가방에서는 "먹을 게 없어요"를 빼 "어른에게 알리기"와 뜻이 겹치지 않게 한다.
+                    if (!emptyBag) respond.Add((ChoicePanelText.NoSugar, () => _run.ChooseNoSugar()));
                     AddShuffled(respond);
                     AddHelp(phase);
                     break;

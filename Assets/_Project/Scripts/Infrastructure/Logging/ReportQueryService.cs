@@ -111,7 +111,7 @@ namespace SugarDash.Infrastructure.Logging
             {
                 case "HypoEventTriggered":
                     return new HypoEventTriggered(Req(r.EventId), Req(r.IsRecurrence), Req(r.SimT), Req(r.T),
-                        Req(r.Actual));
+                        Req(r.Actual), r.EmptyBag ?? false);
                 case "HyperEventTriggered":
                     return new HyperEventTriggered(Req(r.EventId), Req(r.SimT), Req(r.T), Req(r.Actual));
                 case "SuddenDropStarted":

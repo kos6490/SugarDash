@@ -14,7 +14,7 @@ namespace SugarDash.Domain.Config
             IReadOnlyList<string> trackSnackIds = null, double? trackSnackIntervalMinSec = null,
             double? trackSnackIntervalMaxSec = null, double? foodRowIntervalMinSec = null,
             double? foodRowIntervalMaxSec = null, double? restIntervalMinSec = null, double? restIntervalMaxSec = null,
-            IReadOnlyList<string> foodRowIds = null)
+            IReadOnlyList<string> foodRowIds = null, double? emptyBagChance = null)
         {
             RunDecayPerSec = runDecayPerSec;
             SuddenDropChancePerSec = suddenDropChancePerSec;
@@ -26,10 +26,13 @@ namespace SugarDash.Domain.Config
             RestIntervalMinSec = restIntervalMinSec;
             RestIntervalMaxSec = restIntervalMaxSec;
             FoodRowIds = foodRowIds;
+            EmptyBagChance = emptyBagChance;
         }
 
         public double? RunDecayPerSec { get; }
         public double? SuddenDropChancePerSec { get; }
+        /// <summary>1형: 이 장면에서 저혈당이 발동할 때 "빈 간식 가방"(빠른 당 없음)일 확률(docs/section3.md 5절). 없으면 0.</summary>
+        public double? EmptyBagChance { get; }
         /// <summary>트랙에 나오는 간식 id 목록. 같은 id를 여러 번 적으면 더 자주 나온다.</summary>
         public IReadOnlyList<string> TrackSnackIds { get; }
         public double? TrackSnackIntervalMinSec { get; }

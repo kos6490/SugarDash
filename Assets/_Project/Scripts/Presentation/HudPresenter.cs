@@ -111,7 +111,8 @@ namespace SugarDash.Presentation
                 countdownText.text = number.HasValue ? number.Value.ToString() : "";
             }
 
-            statusText.text = _run.State == RunState.Paused ? HudText.Paused : "";
+            statusText.text = _run.State == RunState.Paused ? HudText.Paused
+                : _run.Phase == HypoPhase.ResumeCountdown && _run.IsEmptyBag ? HudText.PackFastSugar : "";
         }
 
         /// <summary>튜토리얼 조작 잠금에서 측정기가 허용되는지. 일반 판은 All이라 항상 허용된다.</summary>

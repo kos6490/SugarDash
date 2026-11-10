@@ -3,8 +3,9 @@ namespace SugarDash.Domain.Events
     /// <summary>실제 혈당이 저혈당 임계값 아래로 내려가 저혈당 이벤트가 발동했다.</summary>
     public sealed class HypoEventTriggered
     {
-        public HypoEventTriggered(int eventId, bool isRecurrence, double simT, double t, double actual)
+        public HypoEventTriggered(int eventId, bool isRecurrence, double simT, double t, double actual, bool emptyBag = false)
         {
+            EmptyBag = emptyBag;
             EventId = eventId;
             IsRecurrence = isRecurrence;
             SimT = simT;
@@ -21,5 +22,7 @@ namespace SugarDash.Domain.Events
         /// <summary>decisionDt 누적 시각.</summary>
         public double T { get; }
         public double Actual { get; }
+        /// <summary>1형 3구간 "빈 간식 가방": 2단계에 빠른 당이 없고 어른에게 알리기가 정답(docs/section3.md 5절).</summary>
+        public bool EmptyBag { get; }
     }
 }

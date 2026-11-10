@@ -60,6 +60,7 @@ namespace SugarDash.Infrastructure.Logging
                 {
                     r.IsRecurrence = e.IsRecurrence;
                     r.Actual = e.Actual;
+                    if (e.EmptyBag) r.EmptyBag = true;
                 }))),
                 bus.Subscribe<HyperEventTriggered>(e => Append(Event("HyperEventTriggered", e.EventId, e.SimT, e.T,
                     r => r.Actual = e.Actual))),

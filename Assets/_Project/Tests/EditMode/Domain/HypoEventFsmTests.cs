@@ -195,6 +195,57 @@ namespace SugarDash.Domain.Tests
             Assert.That(h.Fsm.DoseSnackId, Is.EqualTo("juice"));
         }
 
+        private static HypoHarness EmptyBagAtRespond()
+        {
+            var h = new HypoHarness();
+            h.Director.SetEmptyBagChance(0.5);
+            h.QueueRandom(0.2); // 0.2 < 0.5: 빈 간식 가방
+            h.RunUntilTriggered();
+            Assert.That(h.Last<HypoEventTriggered>().EmptyBag, Is.True);
+            h.Fsm.PressMeter();
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Respond));
+            return h;
+        }
+
+        [Test]
+        public void EmptyBag_HelpInRespond_IsCorrect_GuardianGivesFastSugar()
+        {
+            var h = EmptyBagAtRespond();
+            Assert.That(h.Fsm.IsEmptyBag, Is.True);
+
+            Assert.That(h.Fsm.PressHelp(h.Fsm.Phase), Is.True);
+
+            var answer = Answer(h, HypoStep.Respond);
+            Assert.That(answer.IsCorrect, Is.True);
+            Assert.That(answer.ErrorCode, Is.EqualTo(HypoErrorCode.None));
+            Assert.That(answer.HelpInstead, Is.False);
+            Assert.That(h.All<GuardianPromptStarted>(), Is.Empty);
+            Assert.That(h.Fsm.Phase, Is.EqualTo(HypoPhase.Dose));
+            Assert.That(h.Fsm.DoseSnackId, Is.EqualTo("juice"), "어른이 빠른 당을 건넨다");
+        }
+
+        [Test]
+        public void EmptyBag_SlowSnack_IsStillRsSlow()
+        {
+            var h = EmptyBagAtRespond();
+
+            h.Fsm.ChooseSnack("cracker");
+
+            Assert.That(Answer(h, HypoStep.Respond).ErrorCode, Is.EqualTo(HypoErrorCode.RsSlow));
+        }
+
+        [Test]
+        public void EmptyBag_NotDrawn_WhenRandomAtOrAboveChance()
+        {
+            var h = new HypoHarness();
+            h.Director.SetEmptyBagChance(0.5);
+            h.QueueRandom(0.5);
+            h.RunUntilTriggered();
+
+            Assert.That(h.Last<HypoEventTriggered>().EmptyBag, Is.False);
+            Assert.That(h.Fsm.IsEmptyBag, Is.False);
+        }
+
         [Test]
         public void WorldFrozen_SimAndAbsorptionContinue()
         {
