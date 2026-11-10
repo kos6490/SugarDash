@@ -98,5 +98,6 @@
 | 나들이 | `trackSnackInterval*` 3~4초(자주) | `foodRowInterval*` 2.5~4초, `foodRowIds` 물·치킨·피자·햄버거 |
 | 집 | 2구간과 같음 | 2구간과 같음 |
 
+- 1형 운동장 `emptyBagChance` 0.5: 3구간 운동장에서 저혈당이 나면 절반은 빈 간식 가방이다([section3.md](section3.md) 5절).
 - 개발 설정도 같은 구조와 값이다(2구간 개발 값은 그대로).
 

@@ -30,7 +30,7 @@
 | --- | --- |
 | `RunStarted` | `atUtc`, `trackType`(`type1`, `type2`. 없거나 모르는 값이면 `type1`으로 읽는다) |
 | `RunEnded` | `atUtc` |
-| `HypoEventTriggered` | `isRecurrence`, `actual` |
+| `HypoEventTriggered` | `isRecurrence`, `actual`, `emptyBag`(1형 3구간 빈 간식 가방일 때만 `true`, 없으면 빈 간식 가방이 아님. [section3.md](section3.md) 5절) |
 | `HyperEventTriggered` | `actual` |
 | `SuddenDropStarted` | - |
 | `GaugeWarningRaised` | `displayed` |
