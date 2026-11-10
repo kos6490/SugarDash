@@ -635,8 +635,12 @@ namespace SugarDash.Infrastructure.Tests
 
             var scenes = Regex.Matches(json, "\"id\":\\s*\"(\\w+)\",\\s*\"timeOfDay\":\\s*\"(\\w+)\"")
                 .Cast<Match>().ToList();
-            Assert.That(scenes.Select(m => m.Groups[1].Value), Is.EqualTo(new[] { "schoolyard", "playground", "outing", "home" }));
-            Assert.That(scenes.Select(m => m.Groups[2].Value), Is.EqualTo(new[] { "morning", "afternoon", "evening", "night" }));
+            // 2구간 하루(days 1)와 3구간 하루가 같은 장면 4개를 쓴다(docs/section3.md).
+            var day = new[] { "schoolyard", "playground", "outing", "home" };
+            Assert.That(scenes.Select(m => m.Groups[1].Value), Is.EqualTo(day.Concat(day)));
+            var times = new[] { "morning", "afternoon", "evening", "night" };
+            Assert.That(scenes.Select(m => m.Groups[2].Value), Is.EqualTo(times.Concat(times)));
+            Assert.That(json, Does.Match("\"id\":\\s*\"condition\",\\s*\"days\":\\s*1"));
             Assert.That(json, Does.Match("\"id\":\\s*\"home\"[^}]*\"spawns\":\\s*false"));
         }
 
@@ -649,7 +653,7 @@ namespace SugarDash.Infrastructure.Tests
             Assert.That(json, Does.Match("\"id\":\\s*\"schoolyard\"[^}]*\"overrides\":\\s*\\{\\s*\"runDecayPerSec\":\\s*[0-9.]+\\s*\\}"));
             Assert.That(json, Does.Match("\"id\":\\s*\"schoolyard\"[^}]*\"habitCheck\":\\s*\"preExercise\""));
             Assert.That(json, Does.Match("\"id\":\\s*\"home\"[^}]*\"habitCheck\":\\s*\"bedtime\""));
-            Assert.That(Regex.Matches(json, "habitCheck\"").Count, Is.EqualTo(2));
+            Assert.That(Regex.Matches(json, "habitCheck\"").Count, Is.EqualTo(4), "2·3구간 운동장·집");
         }
 
         [Test]
@@ -659,7 +663,7 @@ namespace SugarDash.Infrastructure.Tests
 
             Assert.That(json, Does.Match("\"id\":\\s*\"playground\"[^}]*\"restIntervalMinSec\"[^}]*\"restIntervalMaxSec\""));
             Assert.That(json, Does.Match("\"id\":\\s*\"outing\"[^}]*\"foodRowIntervalMinSec\"[^}]*\"foodRowIntervalMaxSec\"[^}]*\"foodRowIds\""));
-            Assert.That(Regex.Matches(json, "\"overrides\":\\s*\\{\\s*\"").Count, Is.EqualTo(2), "놀이터·나들이만 덮어쓴다");
+            Assert.That(Regex.Matches(json, "\"overrides\":\\s*\\{\\s*\"").Count, Is.EqualTo(5), "2구간 놀이터·나들이, 3구간 운동장·놀이터·나들이");
             Assert.That(json, Does.Not.Contain("habitCheck"));
         }
 

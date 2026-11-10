@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SugarDash.Domain.Config;
 using SugarDash.Domain.Director;
 using SugarDash.Domain.Events;
@@ -354,10 +355,12 @@ namespace SugarDash.App
                     _sectionEndM += SectionLength(_sectionIndex);
                     _bus.Publish(new SectionEntered(Sections[_sectionIndex].Id, DistanceM, s.Model.SimTime,
                         s.Model.DecisionTime));
-                    if (Sections[_sectionIndex].HasScenes) EnterScene(s, 0, 0, boundary);
+                    // 앞 구간도 장면 구간이면 다음 날 아침이다(날짜는 구간이 바뀌어도 이어진다).
+                    if (Sections[_sectionIndex].HasScenes)
+                        EnterScene(s, 0, Sections[_sectionIndex - 1].HasScenes ? _dayIndex + 1 : 0, boundary);
                 }
 
-                // 장면 구간은 마지막 구간이라 장면은 끝없이 되풀이된다.
+                // 장면은 구간이 끝날 때까지 되풀이된다(마지막 구간이면 끝없이). 구간 경계는 위에서 먼저 넘긴다.
                 var scenes = Sections[_sectionIndex].Scenes;
                 while (scenes != null && DistanceM >= _sceneEndM)
                 {
@@ -403,8 +406,16 @@ namespace SugarDash.App
                 s.Director.StartHabitPrompt(scene.HabitCheck.Value, s.Config.Type1.HabitCheckWindowSec);
         }
 
-        /// <summary>i번째 구간의 길이. 마지막 구간(lengthM 없음)이면 양의 무한대라 그 뒤 경계는 없다.</summary>
-        private double SectionLength(int index) => Sections[index].LengthM ?? double.PositiveInfinity;
+        /// <summary>
+        /// i번째 구간의 길이. 장면 구간은 하루(장면 길이 합) × days. 마지막 구간(lengthM·days 없음)이면 양의 무한대라 그 뒤 경계는 없다.
+        /// </summary>
+        private double SectionLength(int index)
+        {
+            var section = Sections[index];
+            if (section.HasScenes && section.Days.HasValue)
+                return section.Days.Value * section.Scenes.Sum(scene => scene.LengthM.Value);
+            return section.LengthM ?? double.PositiveInfinity;
+        }
 
         private void Enqueue(Action<RunSession> command)
         {

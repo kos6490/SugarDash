@@ -319,11 +319,12 @@ namespace SugarDash.Infrastructure.Config
                     var section = Section(sectionDtos[i], path);
                     bool last = i == sectionDtos.Count - 1;
                     double? length = section?.LengthM;
-                    // 마지막 구간과 장면이 있는 구간은 길이가 없다(끝없이 이어진다).
+                    // 마지막 구간과 장면이 있는 구간은 길이가 없다. 마지막이 아닌 장면 구간은 하루를 도는 횟수(days)로 끝난다.
                     bool hasScenes = section?.Scenes != null;
                     if (!last && !hasScenes && !length.HasValue && section != null) Missing.Add(path + ".lengthM");
+                    if (!last && hasScenes && !section.Days.HasValue) Missing.Add(path + ".days");
                     var scenes = hasScenes ? MapScenes(section.Scenes, path + ".scenes") : null;
-                    sections.Add(new SectionConfig(Text(section?.Id, path + ".id", section), length, scenes));
+                    sections.Add(new SectionConfig(Text(section?.Id, path + ".id", section), length, scenes, section?.Days));
                 }
                 return sections;
             }

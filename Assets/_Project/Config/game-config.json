@@ -64,13 +64,21 @@
   "sections": [
     { "id": "signal", "lengthM": 300 },
     {
-      "id": "condition",
+      "id": "condition", "days": 1,
       "scenes": [
-        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "habitCheck": "preExercise",
-          "overrides": { "runDecayPerSec": 0.9 } },
-        { "id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {} },
-        { "id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {} },
-        { "id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false, "habitCheck": "bedtime" }
+        {"id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "habitCheck": "preExercise", "overrides": {"runDecayPerSec": 0.9}},
+        {"id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {}},
+        {"id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {}},
+        {"id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false, "habitCheck": "bedtime"}
+      ]
+    },
+    {
+      "id": "complex",
+      "scenes": [
+        {"id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "habitCheck": "preExercise", "overrides": {"runDecayPerSec": 0.9, "suddenDropChancePerSec": 0.02}},
+        {"id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {"trackSnackIds": ["cracker", "apple"], "trackSnackIntervalMinSec": 10, "trackSnackIntervalMaxSec": 14}},
+        {"id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {"trackSnackIntervalMinSec": 3, "trackSnackIntervalMaxSec": 4}},
+        {"id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false, "habitCheck": "bedtime"}
       ]
     }
   ]

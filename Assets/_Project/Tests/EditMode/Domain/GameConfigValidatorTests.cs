@@ -287,7 +287,7 @@ namespace SugarDash.Domain.Tests
         }
 
         [Test]
-        public void ScenesSection_NotLast_Fails()
+        public void ScenesSection_NotLast_WithoutDays_Fails()
         {
             var builder = new ConfigBuilder();
             builder.Sections = new List<SectionConfig>
@@ -299,7 +299,34 @@ namespace SugarDash.Domain.Tests
 
             var errors = GameConfigValidator.Validate(builder.Build());
 
-            Assert.That(errors, Has.Some.Contains("sections[1]").And.Contains("마지막"));
+            Assert.That(errors, Has.Some.Contains("sections[1].days"));
+        }
+
+        private static IReadOnlyList<string> ValidateSections(params SectionConfig[] sections)
+        {
+            var builder = new ConfigBuilder { Sections = sections.ToList() };
+            return GameConfigValidator.Validate(builder.Build());
+        }
+
+        [Test]
+        public void ScenesSection_NotLast_WithDays_Passes()
+        {
+            Assert.That(ValidateSections(new SectionConfig("signal", 10),
+                new SectionConfig("condition", null, new List<SceneConfig> { Scene("a") }, days: 1),
+                new SectionConfig("complex", null, new List<SceneConfig> { Scene("a") })), Is.Empty);
+        }
+
+        [Test]
+        public void Days_OnLastOrWithoutScenesOrZero_Fails()
+        {
+            Assert.That(ValidateSections(new SectionConfig("signal", 10),
+                new SectionConfig("condition", null, new List<SceneConfig> { Scene("a") }, days: 1)),
+                Has.Some.Contains("sections[1].days"), "마지막 구간");
+            Assert.That(ValidateSections(new SectionConfig("signal", 10, days: 1), new SectionConfig("condition", null)),
+                Has.Some.Contains("sections[0].days"), "장면 없는 구간");
+            Assert.That(ValidateSections(new SectionConfig("signal", 10),
+                new SectionConfig("condition", null, new List<SceneConfig> { Scene("a") }, days: 0),
+                new SectionConfig("complex", null)), Has.Some.Contains("sections[1].days"), "0일");
         }
 
         [Test]

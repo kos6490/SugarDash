@@ -325,11 +325,17 @@ namespace SugarDash.Domain.Config
                 bool last = i == sections.Count - 1;
                 if (section.HasScenes)
                 {
-                    if (!last)
-                        errors.Add($"sections[{i}]: 장면이 있는 구간은 마지막 구간이어야 한다 ({section.Id})");
+                    if (last && section.Days != null)
+                        errors.Add($"sections[{i}].days는 마지막 구간에서 비어 있어야 한다(끝없이 되풀이) ({section.Days})");
+                    else if (!last && !(section.Days >= 1))
+                        errors.Add($"sections[{i}].days ≥ 1 이어야 한다(마지막이 아닌 장면 구간) ({section.Days})");
                     if (section.LengthM != null)
                         errors.Add($"sections[{i}].lengthM은 장면이 있는 구간에서 비어 있어야 한다 ({section.LengthM})");
                     ValidateScenes(errors, config, i, section.Scenes);
+                }
+                else if (section.Days != null)
+                {
+                    errors.Add($"sections[{i}].days는 장면이 있는 구간에서만 쓴다 ({section.Days})");
                 }
                 else if (last)
                 {

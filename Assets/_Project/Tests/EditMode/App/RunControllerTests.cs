@@ -1247,6 +1247,33 @@ namespace SugarDash.App.Tests
         }
 
         [Test]
+        public void SceneSectionWithDays_EndsAfterDays_ThenNextSectionContinuesDayCount()
+        {
+            // signal 10m → condition 하루 1번(A 5m + B 3m) → complex(C 5m, D 3m) 끝없이.
+            var c = new SceneConfig("C", TimeOfDay.Morning, 5, true, null);
+            var d = new SceneConfig("D", TimeOfDay.Night, 3, false, null);
+            var rig = new Rig(b => b.Sections = new List<SectionConfig>
+            {
+                new SectionConfig("signal", 10),
+                new SectionConfig("condition", null, new List<SceneConfig> { SceneA(), SceneB() }, days: 1),
+                new SectionConfig("complex", null, new List<SceneConfig> { c, d }),
+            });
+            rig.Run.StartRun(TrackType.Type1);
+
+            foreach (double step in new double[] { 10, 5, 3, 5, 3 })
+            {
+                rig.Run.AdvanceDistance(step);
+                rig.Run.Tick(1);
+            }
+
+            var scenes = rig.All<SceneEntered>().Select(e => e.Scene + e.DayIndex).ToList();
+            Assert.That(scenes, Is.EqualTo(new[] { "A0", "B0", "C1", "D1", "C2" }));
+            Assert.That(rig.All<SectionEntered>().Select(e => e.Section), Is.EqualTo(new[] { "signal", "condition", "complex" }));
+            Assert.That(rig.Run.CurrentSectionId, Is.EqualTo("complex"));
+            Assert.That(rig.Run.DayIndex, Is.EqualTo(2));
+        }
+
+        [Test]
         public void StartRun_FirstSectionWithScenes_EntersFirstScene()
         {
             var rig = new Rig(b => b.Sections = new List<SectionConfig>

@@ -49,15 +49,21 @@
   "sections": [
     { "id": "signal", "lengthM": 300 },
     {
-      "id": "condition",
+      "id": "condition", "days": 1,
       "scenes": [
-        { "id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "overrides": {} },
-        { "id": "playground", "timeOfDay": "afternoon", "lengthM": 200,
-          "overrides": { "restIntervalMinSec": 8, "restIntervalMaxSec": 12 } },
-        { "id": "outing", "timeOfDay": "evening", "lengthM": 200,
-          "overrides": { "foodRowIntervalMinSec": 2.5, "foodRowIntervalMaxSec": 4,
-            "foodRowIds": ["water", "juice", "soda", "chicken", "pizza", "burger"] } },
-        { "id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false }
+        {"id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "overrides": {}},
+        {"id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {"restIntervalMinSec": 8, "restIntervalMaxSec": 12}},
+        {"id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {"foodRowIntervalMinSec": 2.5, "foodRowIntervalMaxSec": 4, "foodRowIds": ["water", "juice", "soda", "chicken", "pizza", "burger"]}},
+        {"id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false}
+      ]
+    },
+    {
+      "id": "complex",
+      "scenes": [
+        {"id": "schoolyard", "timeOfDay": "morning", "lengthM": 200, "overrides": {"foodRowIntervalMinSec": 2.5, "foodRowIntervalMaxSec": 4}},
+        {"id": "playground", "timeOfDay": "afternoon", "lengthM": 200, "overrides": {"restIntervalMinSec": 8, "restIntervalMaxSec": 12, "foodRowIntervalMinSec": 2.5, "foodRowIntervalMaxSec": 4}},
+        {"id": "outing", "timeOfDay": "evening", "lengthM": 200, "overrides": {"foodRowIntervalMinSec": 2.5, "foodRowIntervalMaxSec": 4, "foodRowIds": ["water", "chicken", "pizza", "burger"]}},
+        {"id": "home", "timeOfDay": "night", "lengthM": 140, "spawns": false}
       ]
     }
   ]

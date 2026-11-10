@@ -188,6 +188,8 @@ namespace SugarDash.Infrastructure.Config.Dto
         public string Id { get; set; }
         public double? LengthM { get; set; }
         public List<SceneDto> Scenes { get; set; }
+        /// <summary>장면 구간이 하루를 도는 횟수. 마지막 구간이면 없다.</summary>
+        public int? Days { get; set; }
     }
 
     [Preserve]
