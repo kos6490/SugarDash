@@ -2,13 +2,13 @@ using System;
 using SugarDash.App;
 using UnityEngine;
 
-namespace SugarDash.Presentation.Character
+namespace SugarDash.Presentation
 {
     /// <summary>
     /// 플레이어 상태를 캐릭터 애니메이터 파라미터로 전달한다. 외형 프리팹 루트에 붙인다.
     /// PlayerController가 외형을 만든 직후 Init을 부른다. 상태를 읽기만 하고 바꾸지 않는다.
     /// </summary>
-    // [빈 틀] 담당: 캐릭터
+    // [영역 파일] 담당: 캐릭터
     public sealed class CharacterAnimatorView : MonoBehaviour
     {
         [Tooltip("비워 두면 자식에서 찾는다.")]

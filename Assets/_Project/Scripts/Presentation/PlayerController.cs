@@ -208,7 +208,7 @@ namespace SugarDash.Presentation
             }
 
             _view = Instantiate(viewPrefab, transform, false).transform;
-            var animatorView = _view.GetComponentInChildren<Character.CharacterAnimatorView>();
+            var animatorView = _view.GetComponentInChildren<CharacterAnimatorView>();
             if (animatorView != null) animatorView.Init(_run, this);
         }
 
