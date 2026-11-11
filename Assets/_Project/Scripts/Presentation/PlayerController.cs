@@ -41,9 +41,12 @@ namespace SugarDash.Presentation
         [Tooltip("캐릭터 뒤를 따라가는 카메라. 비워 두면 카메라를 움직이지 않는다.")]
         [SerializeField] private Transform cameraRig;
         [SerializeField] private Vector3 cameraOffset = new Vector3(0, 4.5f, -7f);
+        [Tooltip("캐릭터 외형 프리팹. 비워 두면 기본 캡슐을 쓴다. 기준점은 발 위치, 정면은 +Z.")]
+        [SerializeField] private GameObject viewPrefab;
 
         private RunController _run;
         private Transform _view;
+        private bool _isPrefabView;
         private int _targetLane;
         private float _x;
         private float _jumpLeft;
@@ -76,7 +79,7 @@ namespace SugarDash.Presentation
         public void Init(RunController run, bool createView)
         {
             _run = run ?? throw new ArgumentNullException(nameof(run));
-            if (createView && _view == null) _view = PrimitiveViews.CreatePlayer(transform);
+            if (createView && _view == null) CreateView();
             ResetRun();
         }
 
@@ -156,20 +159,42 @@ namespace SugarDash.Presentation
             return Outcome.Hit;
         }
 
+        /// <summary>외형 프리팹이 있으면 그것을, 없으면 기본 캡슐을 만든다.</summary>
+        private void CreateView()
+        {
+            _isPrefabView = viewPrefab != null;
+            if (!_isPrefabView)
+            {
+                _view = PrimitiveViews.CreatePlayer(transform);
+                return;
+            }
+
+            _view = Instantiate(viewPrefab, transform, false).transform;
+            var animatorView = _view.GetComponentInChildren<Character.CharacterAnimatorView>();
+            if (animatorView != null) animatorView.Init(_run, this);
+        }
+
         private void UpdateView()
         {
             if (_view != null)
             {
-                // 점프는 포물선, 슬라이드는 납작하게 표현한다.
+                // 점프는 포물선. 캡슐은 슬라이드를 납작하게 표현하고, 외형 프리팹은 위치만 옮긴다(자세는 애니메이션이 맡는다).
                 float y = 0;
                 if (IsAirborne)
                 {
                     float p = 1 - _jumpLeft / jumpSec;
                     y = 4 * jumpHeight * p * (1 - p);
                 }
-                bool sliding = IsSliding;
-                _view.localScale = new Vector3(0.8f, sliding ? 0.45f : 1f, 0.8f);
-                _view.localPosition = new Vector3(_x, y + (sliding ? 0.45f : 1f), 0);
+                if (_isPrefabView)
+                {
+                    _view.localPosition = new Vector3(_x, y, 0);
+                }
+                else
+                {
+                    bool sliding = IsSliding;
+                    _view.localScale = new Vector3(0.8f, sliding ? 0.45f : 1f, 0.8f);
+                    _view.localPosition = new Vector3(_x, y + (sliding ? 0.45f : 1f), 0);
+                }
             }
 
             if (cameraRig != null)
