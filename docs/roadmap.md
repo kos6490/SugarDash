@@ -71,11 +71,11 @@
 | 팀원1(캐릭터) | 2형 상태 애니메이션: 지친 표정·느린 걸음·처진 자세(고혈당·저혈당), 앉아 쉬기. 체형은 바꾸지 않음. 연출 방향은 출처 확인 뒤 고칠 수 있음 | [type-tracks.md](type-tracks.md) 5절 | 시작 가능 |
 | 팀원1(캐릭터) | `CharacterStateView` 채우기: 보통·쉬는 중·지침(높음)·지침(낮음) 상태를 애니메이터에 연결 | `Assets/_Project/Scripts/Presentation/Character/CharacterStateView.cs`, [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 팀원1(캐릭터) | `GuardianArrivalView` 채우기: 탈락 장면 어른 캐릭터 프리팹(발밑 기준점), 달려오기·서서 말하기 애니메이션. 지금은 주황색 캡슐 | `Assets/_Project/Scripts/Presentation/Character/GuardianArrivalView.cs`, [pause-elimination.md](pause-elimination.md) 3.2·5절 | 시작 가능 |
-| 팀원2(월드) | 1구간 트랙·배경, 장애물 3종(점프로 넘는 낮은 것, 슬라이드로 지나가는 높은 것, 옆으로 피하는 레인 막이) | | 시작 가능 |
+| 팀원2(월드) | 1구간 트랙·배경, 장애물 3종(점프로 넘는 낮은 것, 슬라이드로 지나가는 높은 것, 옆으로 피하는 레인 막이) | | 진행 중(우승제) |
 | 팀원2(월드) | 쉬는 곳 오브젝트(벤치, 게임기) | | 시작 가능 |
 | 팀원2(월드) | 장애물 패턴 만들기: `TrackPatterns.asset`에 패턴 더하기(두 레인 막이, 골라 지나가기, 점프 뒤 슬라이드, 지그재그 등), 나오기 시작하는 거리·비율 정하기, Play로 지나가 보기. Console 경고가 없고 `ProjectAsset_PassesRules_AndSpacing` 테스트가 통과해야 push | [track-patterns.md](track-patterns.md) | 시작 가능 |
 | 팀원2(월드) | 트랙 음식 모델 8종: 물, 주스, 탄산음료, 사과, 크래커, 치킨, 피자, 햄버거 | [type-select.md](type-select.md) 4.2절 | 시작 가능 |
-| 팀원2(월드) | 음식 8종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 시작 가능 |
+| 팀원2(월드) | 음식 8종·쉬는 곳 프리팹: 위 모델로 프리팹을 만들어 `TrackItemLook`에 연결할 수 있게 준비. 지금은 코드가 만든 기본 도형이 나옴 | [type-select.md](type-select.md) 4.2·5.2절 | 진행 중(우승제) |
 | 팀원2(월드) | `TrackItemLook` 채우기: 장애물·음식 id·쉬는 곳마다 프리팹 연결 | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [type-select.md](type-select.md) 11절 | 진행 중(우승제) |
 | 팀원2(월드) | `SceneLook` 채우기: 장면별 맵 배경(운동장, 놀이터, 나들이, 집), 때별 조명·하늘 | `Assets/_Project/Scripts/Presentation/World/SceneLook.cs`, [section2.md](section2.md) 5절 | 진행 중(우승제) |
 | 팀원2(월드) | `TrackItemLook` 장면별 장애물 모양(운동장 축구공, 놀이터 미끄럼틀 등) | `Assets/_Project/Scripts/Presentation/World/TrackItemLook.cs`, [section2.md](section2.md) 5절 | 진행 중(우승제) |
