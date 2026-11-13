@@ -473,6 +473,8 @@ MonoBehaviour:
   sandboxToZ: 12
   stripPrefab: {fileID: 0}
   stripColor: {r: 1, g: 0.92, b: 0.1, a: 0.35}
+  pulsePeriod: 0.8
+  pulseMinAlpha: 0.12
 --- !u!4 &241740043
 Transform:
   m_ObjectHideFlags: 0
@@ -525,7 +527,7 @@ MonoBehaviour:
   restClearDistance: 8
   markerSpacing: 5
   laneWidth: 2.5
-  look: {fileID: 0}
+  look: {fileID: 1321479495}
   patterns: {fileID: 11400000, guid: 7b72ce1eee79149a282d8c0111f89d80, type: 2}
 --- !u!4 &374208454
 Transform:
@@ -539,7 +541,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1321479496}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &438649188 stripped
@@ -734,6 +737,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SugarDash.Presentation::SugarDash.Presentation.SceneLook
   ground: {fileID: 166593310}
+  backdrops: {fileID: 0}
+  lighting: {fileID: 0}
 --- !u!4 &831845560
 Transform:
   m_ObjectHideFlags: 0
@@ -1032,6 +1037,75 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1321479494
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1321479496}
+  - component: {fileID: 1321479495}
+  m_Layer: 0
+  m_Name: TrackItemLook
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1321479495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1321479494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6bb40028aab442db811fe2792b38197, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SugarDash.Presentation::SugarDash.Presentation.TrackItemLook
+  defaultPrefabs:
+    lowObstacle: {fileID: 681749757785300470, guid: 2ccab152c3f6c364aa5b24f43ed182f5, type: 3}
+    highObstacle: {fileID: 8222965207753357629, guid: edc46c26270abb14dbce88cd78092136, type: 3}
+    laneBlock: {fileID: 7527331947939251389, guid: bee8bacba65328c4cb79b4f9b7c5bdd8, type: 3}
+    restSpot: {fileID: 2889310610081184226, guid: 11a78df53085d7f4b99842cfe9c0093f, type: 3}
+    marker: {fileID: 0}
+    foods:
+    - key: water
+      target: {fileID: 3790535956058353476, guid: e39d77069e765e1428472ea857212061, type: 3}
+    - key: juice
+      target: {fileID: 2275267687833272360, guid: fa10064c23b5642419fffcb6c881bd35, type: 3}
+    - key: soda
+      target: {fileID: 7913039608052432921, guid: aa62dad004ed6d2479db8f886f660e61, type: 3}
+    - key: apple
+      target: {fileID: 4761277562752349503, guid: 32858f8f2c4755f478608498d2a1bacb, type: 3}
+    - key: cracker
+      target: {fileID: 8029515782620837444, guid: 01aa92ec40e25e041aba4d9625e5248f, type: 3}
+    - key: chicken
+      target: {fileID: 3073923119559525776, guid: 08acfc3ef4fe7a441b78d41646950a7a, type: 3}
+    - key: pizza
+      target: {fileID: 2980832860595781030, guid: b3112c13e9f9c5d46acdf72b19ded5b6, type: 3}
+    - key: burger
+      target: {fileID: 1234805973093812068, guid: 3e64b7747a2addc4e8b4547ae9193f02, type: 3}
+    fallbackFood: {fileID: 0}
+  scenePrefabs: []
+--- !u!4 &1321479496
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1321479494}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 374208454}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1495567450
 GameObject:
   m_ObjectHideFlags: 0
@@ -1074,6 +1148,7 @@ MonoBehaviour:
   stumbleSpeedFactor: 0.5
   cameraRig: {fileID: 961739753}
   cameraOffset: {x: 0, y: 4.5, z: -7}
+  viewPrefab: {fileID: 1958917026942392635, guid: a640653bc10bb354e8b4000466596398, type: 3}
 --- !u!4 &1495567452
 Transform:
   m_ObjectHideFlags: 0
