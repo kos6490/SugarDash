@@ -14,7 +14,7 @@ namespace SugarDash.Presentation
         public const string TryAgain = "다시 해봐요"; // 확정
         public const string TapHint = "화면을 눌러요";
         public const string Skip = "건너뛰기"; // 확정
-        public const string SettingsButton = "튜토리얼 다시 하기"; // 확정
+        public const string SettingsButton = "튜토리얼 다시하기"; // 확정
 
         private const string Notify = "어른에게 알리기를 골라요";
 

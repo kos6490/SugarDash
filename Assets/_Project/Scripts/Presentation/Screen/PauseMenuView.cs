@@ -18,6 +18,8 @@ namespace SugarDash.Presentation
         [SerializeField] private GameObject menuRoot;
         [SerializeField] private Button continueButton;
         [SerializeField] private Button titleButton;
+        [Tooltip("메뉴 위쪽의 '잠시 멈춤' 글자. 비워 두면 글자 없이 버튼만 보인다.")]
+        [SerializeField] private Text pausedText;
 
         private GameFlowController _flow;
 
@@ -25,6 +27,7 @@ namespace SugarDash.Presentation
         public IDisposable Bind(GameFlowController flow)
         {
             _flow = flow ?? throw new ArgumentNullException(nameof(flow));
+            if (pausedText != null) pausedText.text = HudText.Paused;
             if (pauseButton != null) pauseButton.onClick.AddListener(OnPause);
             else Debug.LogWarning("PauseMenuView: pauseButton이 비어 있다. 씬에서 연결해야 한다.");
             if (continueButton != null) continueButton.onClick.AddListener(OnContinue);
