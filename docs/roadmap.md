@@ -64,7 +64,7 @@
 | 구조 | 팀원이 push한 스크립트 확인, 작업 브랜치를 `dev`에 머지 | | 대기(빈 틀 채우기) |
 | 구조 | 2구간 2-A 공통 틀: 장면 설정·검증, 장면 진행과 기록, 주행 중 배치 바꾸기, 빈 틀 2개(`SceneLook`, `SleepTransitionView`), 조립·개발 씬 문서 | [section2.md](section2.md) | 완료 |
 | 구조 | 2구간 2-B 유형별 조건: 장면 조건 설정 자리(1형 운동장 달리기 감소, 2형 놀이터 쉬는 곳 간격, 나들이 음식 줄 간격·구성), 1형 혈당 재기 습관 순간(판정·기록·습관 확인률), 빈 틀 `HabitPromptView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.13, 9.14절 | [section2.md](section2.md) 7절 | 완료 |
-| 구조 | 튜토리얼 규칙 코드와 빈 틀: 튜토리얼 판 결정·건너뛰기·다시 하기, 안내 순서(`TutorialController`), 연습 모드, 기록하지 않는 판, 안내 중 조작 잠금, 통과할 레인 강조, 화면 터치로 설명 창 넘기기, 빈 틀 `TutorialPromptView`·`TutorialLaneHighlightView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.11, 9.13절 | [tutorial.md](tutorial.md) | 완료 |
+| 구조 | 튜토리얼 규칙 코드와 빈 틀: 튜토리얼 판 결정·건너뛰기·다시하기, 안내 순서(`TutorialController`), 연습 모드, 기록하지 않는 판, 안내 중 조작 잠금, 통과할 레인 강조, 화면 터치로 설명 창 넘기기, 빈 틀 `TutorialPromptView`·`TutorialLaneHighlightView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.11, 9.13절 | [tutorial.md](tutorial.md) | 완료 |
 | 구조 | 일시정지 메뉴(버튼 숨김 조건, 계속하기 3-2-1, 타이틀로, 앱 복귀 시 메뉴)와 탈락 장면(장면 시간, 탈락 이유 세 갈래, 흔들림 약하게), 빈 틀 `PauseMenuView`·`EliminationSpeechView`·`GuardianArrivalView`, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 6.14~6.16, 9.15절 | [pause-elimination.md](pause-elimination.md) | 완료 |
 | 구조 | 장애물 패턴: 패턴 묶음 에셋(`TrackPatternSet`)과 지나갈 수 있는지 자동 확인, 패턴 고르기·놓기, 1형 1단계 쉬운 패턴만, 간식·음식 줄·쉬는 곳 주변 비움, 처음 패턴 6개, 조립·개발 씬 문서. 개발 씬 확인은 [dev-scene.md](dev-scene.md) 9.16절 | [track-patterns.md](track-patterns.md) | 완료 |
 | 팀원1(캐릭터) | 주인공 모델, 기본 애니메이션(달리기, 점프, 슬라이드, 옆 이동) | | 시작 가능 |
@@ -82,13 +82,13 @@
 | 팀원2(월드) | `TutorialLaneHighlightView` 채우기: 튜토리얼에서 지나가야 할 레인을 보여 주는 띠의 모양·색·반짝임. 지금은 노란 반투명 납작한 상자 | `Assets/_Project/Scripts/Presentation/World/TutorialLaneHighlightView.cs`, [tutorial.md](tutorial.md) 3.2·8절 | 진행 중(우승제) |
 | 구조(화면) | UI 디자인 시안(타이틀, 유형 선택, 설정, 혈당바, 측정기 버튼, 점수, 선택 패널, 카운트다운, 결과 화면) | | 시작 가능 |
 | 구조(화면) | 타이틀·유형 선택·설정 UI: 시안을 바탕으로 `Assets/_Project/Art/UI/Screens/`의 `TitleScreen`·`TypeSelect`·`Settings` 프리팹 꾸미기(바탕 그림, 버튼 그림) | [dev-scene.md](dev-scene.md) 3.1·6.6절 | 시작 가능 |
-| 구조(화면) | 한글 글꼴 후보(무료 상업 이용 가능한 라이선스) | | 시작 가능 |
+| 구조(화면) | 한글 글꼴: 모든 화면 글자를 주아(OFL)로 통일 | [dev-scene.md](dev-scene.md) 3.2절, README 5절 | 완료 |
 | 구조(화면) | 화면 문구 초안: 유형 선택 안내, 타이틀, 2형 tell, 2형 결과 요약. `docs/handoff/`에 정리 | [type-select.md](type-select.md) 2.1·4.4·9.2절 | 시작 가능 |
 | 구조(화면) | `TitleScreenView`, `TypeSelectView`, `SettingsView` 채우기: 화면 배치, 버튼 그림·소리 | `Assets/_Project/Scripts/Presentation/Screen/TitleScreenView.cs`, `TypeSelectView.cs`, `SettingsView.cs`, [type-select.md](type-select.md) 2·11절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | notice 그림: 갈증 말풍선, 화장실 아이콘(고혈당), 떨리는 손(저혈당). 근거 [notice-evidence.md](notice-evidence.md) | [type-select.md](type-select.md) 11절 | 시작 가능 |
 | 구조(화면) | `NoticeSignalView` 채우기: 고혈당 신호(갈증 말풍선, 화장실 아이콘 깜빡임), 저혈당 신호(떨리는 손) | `Assets/_Project/Scripts/Presentation/Screen/NoticeSignalView.cs`, [type-select.md](type-select.md) 11절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | `SleepTransitionView` 채우기: 수면 전환(잠자는 그림, 해·달 전환). 암전 길이는 Inspector 값 | `Assets/_Project/Scripts/Presentation/Screen/SleepTransitionView.cs`, [section2.md](section2.md) 5절 | 시작 가능 |
-| 구조(화면) | `TutorialPromptView` 채우기: 화면 전체를 덮어 아래 터치를 막고 화면 터치로 넘기는 설명 창(옅은 어두운 바탕 위 불투명 흰 박스, 검정 글자), 문구, `화면을 눌러요` 안내 글자, 그림 자리, `건너뛰기`, `다시 해봐요`. `SettingsView`의 `튜토리얼 다시 하기` 버튼 그림 | `Assets/_Project/Scripts/Presentation/Screen/TutorialPromptView.cs`, [tutorial.md](tutorial.md) 8절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
+| 구조(화면) | `TutorialPromptView` 채우기: 화면 전체를 덮어 아래 터치를 막고 화면 터치로 넘기는 설명 창(옅은 어두운 바탕 위 불투명 흰 박스, 검정 글자), 문구, `화면을 눌러요` 안내 글자, 그림 자리, `건너뛰기`, `다시 해봐요`. `SettingsView`의 `튜토리얼 다시하기` 버튼 그림 | `Assets/_Project/Scripts/Presentation/Screen/TutorialPromptView.cs`, [tutorial.md](tutorial.md) 8절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | `HabitPromptView` 채우기: 1형 혈당 재기 습관 순간의 말풍선(측정기 버튼 옆), 나타나고 사라지는 연출 | `Assets/_Project/Scripts/Presentation/Screen/HabitPromptView.cs`, [section2.md](section2.md) 7.1절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | `PauseMenuView` 채우기: 일시정지 버튼 아이콘, 메뉴 배치·그림, 버튼 소리 | `Assets/_Project/Scripts/Presentation/Screen/PauseMenuView.cs`, [pause-elimination.md](pause-elimination.md) 2·5절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
 | 구조(화면) | `EliminationSpeechView` 채우기: 탈락 장면 말풍선 그림, 어른 쪽 꼬리, 나타나는 연출 | `Assets/_Project/Scripts/Presentation/Screen/EliminationSpeechView.cs`, [pause-elimination.md](pause-elimination.md) 3.2·5절 | 진행 중(구조). 나타나는 연출·깜빡임·유형 강조는 넣음, 그림이 남음 |
@@ -111,13 +111,13 @@
 | #7 | 조립 지점(GameBootstrapper), HUD(HudPresenter), 선택 패널(HypoChoicePanel), 개발용 씬 `DevRun` |
 | #8 | 지표 계산(MetricsCalculator), 결과 흐름(GameFlowController) |
 | #9 | 러너 코어: 3레인 이동·점프·슬라이드(PlayerController), 장애물·트랙 간식(TrackSpawner), 터치·키 입력(InputAdapter). 모양은 코드로 만든 기본 도형 |
-| #10 | 결과 화면(ResultScreenView): 제목, 요약 한 줄, 다시 하기 |
+| #10 | 결과 화면(ResultScreenView): 제목, 요약 한 줄, 다시하기 |
 | #11 | 고혈당 "어른에게 알리기": 발동·재발동 조건, 알리기 한 단계 UI, 기록, 결과 화면 반영 |
 | #12 | 무한 주행과 1구간: 탈락할 때까지 이어지는 한 판, 점점 빨라지는 속도, 탈락 세 조건(알리지 않음, 장애물 한 번, 혈당 안전 범위), 점수 세 갈래(혈당 유지, 대처 가중치, 거리)와 최고 점수 저장, 구간 기록, 선택지 섞기, 트랙 간식 간격 무작위, 저혈당 화면 흔들림, 측정 결과 자동 숨김, 정답 표시와 3-2-1 재개 카운트다운 |
 | #16 | 템플릿 정리: 쓰지 않는 패키지 5개(visualscripting, multiplayer.center, collab-proxy, ai.navigation, timeline), `Assets/TutorialInfo/`, `Assets/Readme.asset` 삭제 |
 | #17 | 빌드 운영 규칙: APK 직접 설치 기준 서명 키스토어 하나(구조 담당 보관), 버전 규칙, 빌드 기록 표, 키스토어 gitignore |
 
-- 지금 에디터에서 `DevRun` 씬으로 1형 1구간(달리기 → 혈당 저하 → 측정 → 4단계 대처 → 카운트다운 → 다시 달리기 → 탈락 → 결과 → 다시 하기)을 끝까지 해 볼 수 있음
+- 지금 에디터에서 `DevRun` 씬으로 1형 1구간(달리기 → 혈당 저하 → 측정 → 4단계 대처 → 카운트다운 → 다시 달리기 → 탈락 → 결과 → 다시하기)을 끝까지 해 볼 수 있음
 - 수치는 개발용 임시 값(`game-config.dev.json`, 실제 수치 아님)
 - 씬 구성과 확인 방법은 [dev-scene.md](dev-scene.md)에 있음
 
@@ -133,7 +133,7 @@
 | 음식 목록(햄버거, 치킨, 물, 주스 등)과 음식별 혈당 영향, 1형 빠른 당·느린 당 종류, 출처 | 결정, 의학 | 등급 방식으로 정함: 음식별 등급과 1형 빠른 당(주스·탄산음료)·느린 당(크래커·사과)은 [food-evidence.md](food-evidence.md). 발췌 원문 대조(담당자)와 등급별 게임 수치가 남음. 설정 `source` 칸은 대조 뒤 채움 | 음식 표시 이름·그림, 선택지 그림, 음식 아이템 확장 |
 | 1형 주행에서 일반 음식을 혈당에 어떻게 반영할지(게임은 인슐린 투여를 다루지 않음) | 결정, 의학 | 정함: 1형 트랙에는 간식(주스·탄산음료·크래커·사과)만, 일반 음식은 2형만([type-tracks.md](type-tracks.md) 6절) | 없음 |
 | 의학 출처의 해당 장·페이지 | 의학 | 판본·장·쪽 정리함([medical-sources.md](medical-sources.md)). ADA 6·14장 쪽, 국문 전문 쪽, ADA 소아 수면 권고는 미확인 | 음식 목록, 2형 규칙, 퀴즈 문항 작성 |
-| 설정 화면의 다른 항목(소리 등) | 기획 | 설정 화면에는 유형 바꾸기와 튜토리얼 다시 하기만 있음 | 없음(항목이 생길 때만) |
+| 설정 화면의 다른 항목(소리 등) | 기획 | 설정 화면에는 유형 바꾸기와 튜토리얼 다시하기만 있음 | 없음(항목이 생길 때만) |
 | 증상 연출 추가 여부: 1형 흐림, 고혈당 쪽 연출 | 기획, 의학 | 1형 저혈당 화면 흔들림만 있음 | 증상 연출 추가 |
 | 고혈당 알리기 화면 문구와 선택지 추가 여부 | 기획 | 개발용 문구("혈당이 높아요. 어떻게 할까요?") | 화면 문구 검토 |
 | 간식 흡수 곡선 모양 | 결정, 의학 | 균등 흡수로 구현함 | 없음(바꿀 때만 코드 수정) |
@@ -198,7 +198,6 @@
 | UI 디자인: 유형 선택 화면, 혈당바, 혈당 경고, 측정기 버튼, 점수, 선택 패널, 재개 카운트다운, 결과 화면 박스, 버튼 | 없음 |
 | 탈락 장면: 어른 캐릭터, 달려와 옆에 서는 애니메이션, 말풍선 | 없음 |
 | 앱 아이콘, 스플래시 화면 | 없음 |
-| 한글 글꼴 선정(무료 상업 이용 가능한 라이선스). 지금은 Legacy Text 기본 글꼴에 기기 글꼴이 대신 쓰이는 상태 | 없음 |
 
 ### 5.4 사운드
 
