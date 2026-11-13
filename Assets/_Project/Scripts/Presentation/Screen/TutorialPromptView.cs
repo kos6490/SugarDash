@@ -85,12 +85,12 @@ namespace SugarDash.Presentation
             _flow.Tutorial.Acknowledge();
         }
 
-        // 설명 창을 넘기려던 터치가 막 뜬 건너뛰기에 닿지 않게 같은 지연을 둔다.
-        private void OnSkip()
-        {
-            if (!TapReady()) return;
-            _flow.SkipTutorial();
-        }
+        // 건너뛰기는 설명 창 밖 화면 왼쪽 아래 구석에 따로 있어 설명 창을 넘기는 터치와 겹치지 않는다. 지연 없이 받는다.
+        private void OnSkip() => _flow?.SkipTutorial();
+
+        /// <summary>건너뛰기 버튼을 보일지. 건너뛸 수 있는 튜토리얼 안내 구간이면 설명 창이 없어도 언제든 보인다(일시정지 메뉴 중 제외).</summary>
+        public static bool IsSkipVisible(FlowScreen screen, bool pauseMenuOpen, bool guided, bool canSkip) =>
+            screen == FlowScreen.Running && !pauseMenuOpen && guided && canSkip;
 
         private bool TapReady() =>
             _flow != null && _shownAt >= 0f && AcceptsTap(Time.unscaledTime - _shownAt, tapDelaySec);
@@ -107,7 +107,8 @@ namespace SugarDash.Presentation
             if (root != null && root.activeSelf != prompt) root.SetActive(prompt);
             if (prompt && messageText != null && tutorial.Step != null)
                 messageText.text = TutorialText.For(tutorial.Step.Value, tutorial.Type);
-            if (skipButton != null) skipButton.gameObject.SetActive(prompt && tutorial.CanSkip);
+            bool skip = IsSkipVisible(_flow.Screen, _flow.IsPauseMenuOpen, tutorial.IsGuided, tutorial.CanSkip);
+            if (skipButton != null && skipButton.gameObject.activeSelf != skip) skipButton.gameObject.SetActive(skip);
 
             bool retry = IsRetryVisible(stage);
             if (retryText != null && retryText.gameObject.activeSelf != retry) retryText.gameObject.SetActive(retry);

@@ -84,6 +84,16 @@ namespace SugarDash.Presentation.Tests
         }
 
         [Test]
+        public void TutorialSkip_VisibleWheneverSkippableGuidedRun()
+        {
+            Assert.That(TutorialPromptView.IsSkipVisible(FlowScreen.Running, false, true, true), Is.True, "설명 창이 없어도 보인다");
+            Assert.That(TutorialPromptView.IsSkipVisible(FlowScreen.Running, false, true, false), Is.False, "처음 튜토리얼은 건너뛸 수 없다");
+            Assert.That(TutorialPromptView.IsSkipVisible(FlowScreen.Running, false, false, true), Is.False, "안내 구간이 끝났다");
+            Assert.That(TutorialPromptView.IsSkipVisible(FlowScreen.Running, true, true, true), Is.False, "일시정지 메뉴");
+            Assert.That(TutorialPromptView.IsSkipVisible(FlowScreen.Title, false, true, true), Is.False);
+        }
+
+        [Test]
         public void TitleTypeLabel()
         {
             Assert.That(TitleScreenView.TypeLabel(TrackType.Type1), Is.EqualTo("1형"));
