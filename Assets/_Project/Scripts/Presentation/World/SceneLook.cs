@@ -37,14 +37,23 @@ namespace SugarDash.Presentation
         public IDisposable Bind(DomainEventBus bus)
         {
             if (bus == null) throw new ArgumentNullException(nameof(bus));
-            // 구간에 들어가면 장면 없는 색으로 되돌린다. 장면 구간이면 바로 뒤의 SceneEntered가 장면 색을 칠한다.
-            var section = bus.Subscribe<SectionEntered>(_ => SetGround(null));
+            // 구간에 들어가면 장면 없는 모습(바닥 색·배경·조명)으로 되돌린다. 장면 구간이면 바로 뒤의 SceneEntered가 장면 모습을 칠한다.
+            var section = bus.Subscribe<SectionEntered>(OnSectionEntered);
             var scene = bus.Subscribe<SceneEntered>(OnSceneEntered);
             return new Unbinder(() =>
             {
                 section.Dispose();
                 scene.Dispose();
             });
+        }
+
+        private void OnSectionEntered(SectionEntered e)
+        {
+            SetGround(null);
+            if (backdrops != null) backdrops.Show(null);
+            if (lighting != null) lighting.ApplyImmediate(null);
+            // 새 판(거리 0)이면 하루 번호도 처음으로. 판 중간의 구간 경계에서는 하루가 이어지므로 그대로 둔다.
+            if (e.DistanceM <= 0) _lastDayIndex = -1;
         }
 
         private void OnSceneEntered(SceneEntered e)

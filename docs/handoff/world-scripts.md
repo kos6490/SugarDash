@@ -50,6 +50,7 @@
 - `SceneLook.Bind`의 `SectionEntered` 구독이 `SetGround(null)`만 부른다. 새 판을 시작해 1구간(장면 없음)으로 돌아가도 맵 배경과 조명은 마지막 장면(예: 집·밤) 그대로 남는다.
   - 고칠 방법 제안: 그 구독에서 `backdrops.Show(null)`, `lighting.Apply(null)`도 부르게 하거나, 그 자리에 `TODO(월드)` 메서드를 두기.
   - `Bind`는 빈 틀에서 바꿀 수 없는 곳이라 직접 고치지 않았다.
+  - 반영함(구조): 구간에 들어갈 때 바닥 색과 함께 배경(`backdrops.Show(null)`)과 조명(`lighting.ApplyImmediate(null)`)도 장면 없는 모습으로 되돌린다. 새 판(거리 0)이면 하루 번호도 처음으로 되돌린다.
 
 ## 5. 확인
 
