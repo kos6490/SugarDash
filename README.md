@@ -216,3 +216,12 @@ git switch -c <작업 브랜치명>    # dev에서 작업 브랜치 생성
 - Unity 버전·패키지 변경은 합의 후 단독 PR (다른 작업과 섞지 않고 해당 변경만 담은 PR, 팀원의 에디터·패키지 버전이 같아야 함)
 - Newtonsoft.Json으로 역직렬화하는 클래스(DTO·세이브 데이터 등)에는 `[Preserve]` (`UnityEngine.Scripting`)를 붙이기. IL2CPP 빌드(iOS/Android)의 코드 스트리핑이 생성자·프로퍼티를 지워 기기에서만 깨지는 것을 방지
 - **공개 리포이므로 유료 에셋, API 키 커밋 금지**
+
+## 5. 사용한 외부 에셋
+
+| 에셋 | 위치 | 라이선스 | 출처 |
+| --- | --- | --- | --- |
+| 주아(Jua) 글꼴 | `Assets/_Project/Art/Fonts/Jua-Regular.ttf` | SIL Open Font License 1.1 (`Jua-OFL.txt`) | 우아한형제들, [google/fonts](https://github.com/google/fonts/tree/main/ofl/jua) |
+
+- 외부 에셋을 더하면 이 표에 한 줄을 더하고 라이선스 파일을 같은 폴더에 둔다. 라이선스가 불분명한 에셋은 커밋하지 않는다.
+
