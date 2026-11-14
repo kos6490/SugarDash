@@ -1181,6 +1181,62 @@ MonoBehaviour:
   m_EditorClassIdentifier: SugarDash.Presentation::SugarDash.Presentation.CharacterStateView
   sandboxMode: 0
   sandboxState: 0
+--- !u!1 &1614547514
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1614547516}
+  - component: {fileID: 1614547515}
+  m_Layer: 0
+  m_Name: IntroCuttoon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1614547515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1614547514}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a156464b6f5b45f2a1e5164cb493eef7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SugarDash.Presentation::SugarDash.Presentation.IntroCuttoonView
+  panels:
+  - {fileID: 21300000, guid: ca55bb6f3b094e45846ad5fa3eb1d783, type: 3}
+  font: {fileID: 12800000, guid: cc8e976697e7f46a1bf8a4f40f873b1f, type: 3}
+  showEveryLaunch: 0
+  backgroundColor: {r: 1, g: 0.98, b: 0.94, a: 1}
+  buttonColor: {r: 0.29, g: 0.2, b: 0.17, a: 0.85}
+  buttonTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hintColor: {r: 0.29, g: 0.2, b: 0.17, a: 1}
+  sortingOrder: 500
+  skipLabel: "\uAC74\uB108\uB6F0\uAE30"
+  nextHint: "\uD654\uBA74\uC744 \uB204\uB974\uBA74 \uB2E4\uC74C\uC73C\uB85C \uB118\uC5B4\uAC00\uC694"
+  lastHint: "\uD654\uBA74\uC744 \uB204\uB974\uBA74 \uC2DC\uC791\uD574\uC694"
+--- !u!4 &1614547516
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1614547514}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.32261, y: 1.26751, z: -0.515}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!224 &1662305106 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 706675196279277323, guid: aefa01ca69e354134944a084095117d2, type: 3}
@@ -1295,6 +1351,7 @@ MonoBehaviour:
   eliminationSpeech: {fileID: 3285096955984340230}
   screenFade: {fileID: 4333522626462261678}
   guardianArrival: {fileID: 1286284621}
+  introCuttoon: {fileID: 1614547515}
   pauseCountdownSec: 3
   eliminationSceneSec: 2.5
   tutorialStopDistance: 12
@@ -2695,3 +2752,4 @@ SceneRoots:
   - {fileID: 1889234218}
   - {fileID: 831845560}
   - {fileID: 241740043}
+  - {fileID: 1614547516}

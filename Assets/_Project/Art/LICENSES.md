@@ -19,3 +19,4 @@
 | `World/Food_Chicken.fbx` | 직접 제작(AI 도구 활용) | 우승제 | 미정 |
 | `World/Food_Pizza.fbx` | 직접 제작(AI 도구 활용) | 우승제 | 미정 |
 | `World/Food_Burger.fbx` | 직접 제작(AI 도구 활용) | 우승제 | 미정 |
+| `UI/Cuttoon_A.png` | 직접 제작(AI 도구 활용: 마인드로직) | 우승제 | 미정 |
