@@ -739,6 +739,9 @@ MonoBehaviour:
   ground: {fileID: 166593310}
   backdrops: {fileID: 0}
   lighting: {fileID: 0}
+  showPlaceholderBackdrops: 1
+  addLightingIfMissing: 1
+  track: {fileID: 374208453}
 --- !u!4 &831845560
 Transform:
   m_ObjectHideFlags: 0
