@@ -33,6 +33,42 @@ namespace SugarDash.Presentation
         public Color fogColor;
         [Min(0f)] public float fogDensity;
 
+        /// <summary>낮의 옅은 안개 농도. 안개를 끄지 않고 옅게만 두어 때가 바뀔 때 셰이더가 새로 준비되지 않게 한다.</summary>
+        public const float LightFogDensity = 0.004f;
+
+        /// <summary>
+        /// 때 4종의 처음 값(TimeOfDayLighting Inspector 목록의 처음 값). 연출 값이며 Inspector에서 고친다.
+        /// 밤에는 해를 지평선 아래로 내려 하늘(기본 Procedural 하늘)이 어두워지게 한다.
+        /// </summary>
+        public static System.Collections.Generic.List<LightingPreset> CreateDefaults() =>
+            new System.Collections.Generic.List<LightingPreset>
+            {
+                Make("morning", new Color(1f, 0.92f, 0.80f), 0.95f, new Vector3(22f, -30f, 0f),
+                    new Color(0.60f, 0.62f, 0.68f), new Color(0.70f, 0.82f, 0.95f)),
+                Make("afternoon", new Color(1f, 0.98f, 0.94f), 1.15f, new Vector3(55f, -30f, 0f),
+                    new Color(0.68f, 0.68f, 0.70f), new Color(0.55f, 0.75f, 0.95f)),
+                Make("evening", new Color(1f, 0.62f, 0.40f), 0.75f, new Vector3(6f, -60f, 0f),
+                    new Color(0.52f, 0.44f, 0.46f), new Color(0.95f, 0.62f, 0.45f), 0.008f),
+                Make("night", new Color(0.55f, 0.62f, 0.90f), 0f, new Vector3(-20f, -30f, 0f),
+                    new Color(0.20f, 0.23f, 0.36f), new Color(0.06f, 0.08f, 0.18f), 0.02f),
+            };
+
+        // 안개는 늘 켜고 그 색(하늘색)과 농도만 바꾼다. 해가 연결되지 않아도 저녁·밤 느낌이 나게 한다.
+        private static LightingPreset Make(string key, Color sun, float intensity, Vector3 euler, Color ambient, Color background,
+            float fogDensity = LightFogDensity) =>
+            new LightingPreset
+            {
+                key = key,
+                sunColor = sun,
+                sunIntensity = intensity,
+                sunEuler = euler,
+                ambientColor = ambient,
+                cameraBackground = background,
+                fog = true,
+                fogColor = background,
+                fogDensity = fogDensity,
+            };
+
         /// <summary>두 값 사이. 색·밝기·각도·안개 농도는 섞고, 하늘 머티리얼과 안개 켜기는 t가 0.5를 넘을 때 b로 바뀐다.</summary>
         public static LightingPreset Lerp(LightingPreset a, LightingPreset b, float t)
         {

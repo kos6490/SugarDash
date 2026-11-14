@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace SugarDash.Presentation
 {
@@ -11,14 +12,16 @@ namespace SugarDash.Presentation
     // [영역 파일] 담당: 월드
     public sealed class TimeOfDayLighting : MonoBehaviour
     {
-        [Tooltip("해 역할의 Directional Light. 비워 두면 해는 바꾸지 않는다.")]
+        [Tooltip("해 역할의 Directional Light. 비워 두면 Lighting 창의 Sun Source를 쓰고, 그것도 없으면 해는 바꾸지 않는다.")]
         [SerializeField] private Light sun;
+        [Tooltip("켜 두면 주변광을 단색(Flat)으로 바꿔 때별 주변광 색이 바로 보이게 한다. 없어질 때 원래 방식으로 되돌린다.")]
+        [SerializeField] private bool flatAmbient = true;
         [Tooltip("배경색을 바꿀 카메라. 비워 두면 배경색은 바꾸지 않는다.")]
         [SerializeField] private Camera targetCamera;
         [Tooltip("때별 값. key는 morning, afternoon, evening, night")]
-        [SerializeField] private List<LightingPreset> presets = new List<LightingPreset>();
-        [Tooltip("켜 두면 시작할 때 씬의 지금 조명을 아래 fallback 값으로 쓴다. 그래서 목록을 채우기 전에는 모습이 바뀌지 않는다.")]
-        [SerializeField] private bool useSceneLightingAsFallback = true;
+        [SerializeField] private List<LightingPreset> presets = LightingPreset.CreateDefaults();
+        [Tooltip("켜 두면 시작할 때 씬의 지금 조명을 아래 fallback 값으로 쓴다. 꺼 두면 아래 fallback 값(낮, 옅은 안개)을 쓴다.")]
+        [SerializeField] private bool useSceneLightingAsFallback;
         [Tooltip("장면이 없는 구간(튜토리얼, 1구간)과 목록에 없는 때에 쓰는 값")]
         [SerializeField] private LightingPreset fallback = new LightingPreset
         {
@@ -26,9 +29,12 @@ namespace SugarDash.Presentation
             sunColor = Color.white,
             sunIntensity = 1f,
             sunEuler = new Vector3(50f, -30f, 0f),
-            ambientColor = new Color(0.55f, 0.55f, 0.6f),
+            ambientColor = new Color(0.66f, 0.66f, 0.68f),
             cameraBackground = new Color(0.55f, 0.75f, 0.95f),
-            fogColor = Color.gray,
+            // 안개는 처음부터 켜 둔다. 중간에 켜면 그 순간 셰이더가 새로 준비되며 화면이 번쩍일 수 있다.
+            fog = true,
+            fogColor = new Color(0.70f, 0.82f, 0.95f),
+            fogDensity = LightingPreset.LightFogDensity,
         };
         [Tooltip("다른 때로 바뀔 때 섞는 시간(초). 0이면 바로 바뀐다.")]
         [Min(0f)] [SerializeField] private float blendSec = 1.5f;
@@ -88,18 +94,19 @@ namespace SugarDash.Presentation
         private void Awake()
         {
             _saved = SavedRenderSettings.Capture();
+            // 씬 조명을 그대로 쓰는 fallback이면 시작할 때 아무것도 바꾸지 않는다.
             if (useSceneLightingAsFallback) fallback = CaptureSceneLighting();
             _current = fallback;
-            Write(fallback);
+            if (!useSceneLightingAsFallback) Write(fallback);
         }
 
         /// <summary>씬의 지금 조명을 값 하나로 읽는다(fallback 키는 "default").</summary>
         private LightingPreset CaptureSceneLighting() => new LightingPreset
         {
             key = "default",
-            sunColor = sun != null ? sun.color : fallback.sunColor,
-            sunIntensity = sun != null ? sun.intensity : fallback.sunIntensity,
-            sunEuler = sun != null ? sun.transform.rotation.eulerAngles : fallback.sunEuler,
+            sunColor = Sun != null ? Sun.color : fallback.sunColor,
+            sunIntensity = Sun != null ? Sun.intensity : fallback.sunIntensity,
+            sunEuler = Sun != null ? Sun.transform.rotation.eulerAngles : fallback.sunEuler,
             ambientColor = RenderSettings.ambientLight,
             skybox = RenderSettings.skybox,
             cameraBackground = targetCamera != null ? targetCamera.backgroundColor : fallback.cameraBackground,
@@ -126,25 +133,44 @@ namespace SugarDash.Presentation
         private void Write(LightingPreset p)
         {
             _current = p;
-            if (sun != null)
+            var light = Sun;
+            if (light != null)
             {
-                sun.color = p.sunColor;
-                sun.intensity = p.sunIntensity;
-                sun.transform.rotation = Quaternion.Euler(p.sunEuler);
+                light.color = p.sunColor;
+                light.intensity = p.sunIntensity;
+                light.transform.rotation = Quaternion.Euler(p.sunEuler);
+            }
+            if (UsesOwnAmbient(p))
+            {
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = p.ambientColor;
+            }
+            else
+            {
+                _saved.RestoreAmbient();
             }
             if (targetCamera != null) targetCamera.backgroundColor = p.cameraBackground;
-            RenderSettings.ambientLight = p.ambientColor;
             if (p.skybox != null) RenderSettings.skybox = p.skybox;
             RenderSettings.fog = p.fog;
             RenderSettings.fogColor = p.fogColor;
             RenderSettings.fogDensity = p.fogDensity;
         }
 
+        // 씬 조명을 읽어 둔 fallback은 씬의 주변광 방식(하늘 기반 등)을 그대로 둔다.
+        private bool UsesOwnAmbient(LightingPreset p) =>
+            flatAmbient && !(useSceneLightingAsFallback && p.key == SceneFallbackKey);
+
+        private const string SceneFallbackKey = "default";
+
+        // 연결한 해가 없으면 Lighting 창의 Sun Source(RenderSettings.sun)를 쓴다. 다른 오브젝트를 찾지는 않는다.
+        private Light Sun => sun != null ? sun : RenderSettings.sun;
+
         private void OnDestroy() => _saved.Restore();
 
         /// <summary>RenderSettings는 씬 전체 값이라 이 컴포넌트가 바꾼 것을 되돌리기 위해 처음 값을 기억한다.</summary>
         private struct SavedRenderSettings
         {
+            private AmbientMode _ambientMode;
             private Color _ambient;
             private Material _skybox;
             private bool _fog;
@@ -153,6 +179,7 @@ namespace SugarDash.Presentation
 
             public static SavedRenderSettings Capture() => new SavedRenderSettings
             {
+                _ambientMode = RenderSettings.ambientMode,
                 _ambient = RenderSettings.ambientLight,
                 _skybox = RenderSettings.skybox,
                 _fog = RenderSettings.fog,
@@ -160,8 +187,15 @@ namespace SugarDash.Presentation
                 _fogDensity = RenderSettings.fogDensity,
             };
 
+            public void RestoreAmbient()
+            {
+                RenderSettings.ambientMode = _ambientMode;
+                RenderSettings.ambientLight = _ambient;
+            }
+
             public void Restore()
             {
+                RenderSettings.ambientMode = _ambientMode;
                 RenderSettings.ambientLight = _ambient;
                 RenderSettings.skybox = _skybox;
                 RenderSettings.fog = _fog;

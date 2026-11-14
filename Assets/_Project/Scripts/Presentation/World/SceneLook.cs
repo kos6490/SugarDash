@@ -18,6 +18,14 @@ namespace SugarDash.Presentation
         [Tooltip("때별 조명·하늘을 바꾸는 컴포넌트. 비워 두면 조명을 바꾸지 않는다.")]
         [SerializeField] private TimeOfDayLighting lighting;
 
+        [Header("개발용(모델·조명 연결 전)")]
+        [Tooltip("Backdrops가 비어 있으면 기본 도형으로 만든 개발용 배경(학교, 놀이 기구, 언덕, 집 등)을 보여 준다.")]
+        [SerializeField] private bool showPlaceholderBackdrops = true;
+        [Tooltip("Lighting이 비어 있으면 실행 중에 TimeOfDayLighting을 붙여 기본 때별 조명(주변광·안개)을 쓴다.")]
+        [SerializeField] private bool addLightingIfMissing = true;
+        [Tooltip("트랙(TrackSpawner). 연결하면 개발용 배경이 달린 거리만큼 뒤로 흘러간다. 비워 두면 배경이 멈춰 있다.")]
+        [SerializeField] private TrackSpawner track;
+
         private Material _groundCopy;
 
         /// <summary>장면 id별 개발용 바닥 색. 모르는 id(장면 없는 구간 포함)는 회색.</summary>
@@ -50,8 +58,10 @@ namespace SugarDash.Presentation
         private void OnSectionEntered(SectionEntered e)
         {
             SetGround(null);
-            if (backdrops != null) backdrops.Show(null);
-            if (lighting != null) lighting.ApplyImmediate(null);
+            // 연결된 배경·조명이 없으면 개발용 배경(street)과 기본 조명으로 되돌린다.
+            ShowBackdrop(null);
+            ApplyLighting(null, true);
+            _sceneShown = true;
             // 새 판(거리 0)이면 하루 번호도 처음으로. 판 중간의 구간 경계에서는 하루가 이어지므로 그대로 둔다.
             if (e.DistanceM <= 0) _lastDayIndex = -1;
         }
@@ -60,15 +70,69 @@ namespace SugarDash.Presentation
         {
             SetGround(e.Scene);
             // 장면 id(e.Scene)별 맵 배경(운동장, 놀이터, 나들이, 집)을 켜고 끈다.
-            if (backdrops != null) backdrops.Show(e.Scene);
+            ShowBackdrop(e.Scene);
             // 때(e.TimeOfDay)별 조명·하늘(아침, 오후, 저녁, 밤)을 바꾼다.
             // 다음 날 첫 장면은 수면 전환(암전) 중에 바뀌므로 섞지 않고 바로 바꾼다.
-            if (lighting == null) return;
-            string key = TimeOfDayKey(e.TimeOfDay);
-            if (e.DayIndex > _lastDayIndex && _lastDayIndex >= 0) lighting.ApplyImmediate(key);
-            else lighting.Apply(key);
+            bool newDay = e.DayIndex > _lastDayIndex && _lastDayIndex >= 0;
+            ApplyLighting(TimeOfDayKey(e.TimeOfDay), newDay);
             _lastDayIndex = e.DayIndex;
+            _sceneShown = true;
         }
+
+        private void ShowBackdrop(string sceneId)
+        {
+            if (backdrops != null) { backdrops.Show(sceneId); return; }
+            var placeholders = Placeholders();
+            if (placeholders != null) placeholders.Show(sceneId);
+        }
+
+        // Backdrops가 비어 있을 때 쓰는 개발용 배경. 처음 부를 때 자식으로 만든다.
+        private PlaceholderBackdrops Placeholders()
+        {
+            if (_placeholders == null && showPlaceholderBackdrops)
+            {
+                var go = new GameObject("Placeholder Backdrops");
+                go.transform.SetParent(transform, false);
+                _placeholders = go.AddComponent<PlaceholderBackdrops>();
+            }
+            return _placeholders;
+        }
+
+        // 시작부터(튜토리얼, 1구간) 장면 없는 배경과 기본 조명을 보여 준다.
+        // 안개 등 조명 설정을 처음부터 켜 두어, 장면이 바뀌는 순간 셰이더가 새로 준비되며 화면이 번쩍이는 일을 줄인다.
+        private void Start()
+        {
+            if (_sceneShown) return; // 게임이 먼저 구간·장면을 알려 줬으면(시작 순서는 정해져 있지 않다) 덮어쓰지 않는다.
+            ShowBackdrop(null);
+            ApplyLighting(null, true);
+        }
+
+        private void ApplyLighting(string key, bool immediate)
+        {
+            var target = lighting != null ? lighting : RuntimeLighting();
+            if (target == null) return;
+            if (immediate) target.ApplyImmediate(key);
+            else target.Apply(key);
+        }
+
+        // Lighting이 비어 있을 때 실행 중에 이 오브젝트에 붙이는 조명. 처음 부를 때 만든다.
+        private TimeOfDayLighting RuntimeLighting()
+        {
+            if (_runtimeLighting == null && addLightingIfMissing)
+                _runtimeLighting = gameObject.AddComponent<TimeOfDayLighting>();
+            return _runtimeLighting;
+        }
+
+        // 트랙이 연결되어 있으면 개발용 배경을 달린 거리만큼 뒤로 흘려보낸다.
+        private void LateUpdate()
+        {
+            if (_placeholders != null && track != null) _placeholders.Scroll(track.Distance);
+        }
+
+        private PlaceholderBackdrops _placeholders;
+        private TimeOfDayLighting _runtimeLighting;
+        // 게임이 구간이나 장면을 한 번이라도 알려 줬는지. Start가 그 모습을 덮어쓰지 않게 한다.
+        private bool _sceneShown;
 
         // 마지막으로 받은 하루 번호. 하루가 넘어가는 순간을 알아보는 데만 쓴다.
         private int _lastDayIndex = -1;
